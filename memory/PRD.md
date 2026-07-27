@@ -1,0 +1,47 @@
+# DocuAnalytics AI — PRD & Stato Progetto
+
+## Problem statement (originale, IT)
+"rivedi questo sito nella zip controlla se ci sono bug rendilo piu professionale possibile controlla tutti i metodi di pagamento che siano funzionanti fai un check completo prima del lancio"
+
+## Contesto
+L'utente ha fornito solo la BUILD COMPILATA (dist) di un sito vanilla JS "DocuAnalytics AI" (analisi documenti AI per studi legali/commercialisti IT). I sorgenti non erano nello zip. Bug critici trovati nella build:
+- Link pagamento Stripe finti (placeholder `buy.stripe.com/test_...`) -> 404.
+- SECRET KEY Stripe esposta nel frontend + chiamata `api.stripe.com` dal browser (gravissimo).
+- Chiave Gemini vuota -> analisi AI non funzionante.
+
+## Decisione architetturale
+Ricostruito come full-stack sicuro: React (frontend) + FastAPI + MongoDB (backend). Secret key solo lato server.
+
+## Tech stack / Integrazioni
+- AI analisi documenti + copilot chat: Gemini `gemini-2.5-flash` via `emergentintegrations` (EMERGENT_LLM_KEY).
+- Pagamenti Stripe: account PROPRIO dell'utente (BYOK, `STRIPE_API_KEY` in backend/.env, TEST mode sk_test). Account con Managed Payments attivo -> uso stripe SDK raw con `price_data` + `tax_code txcd_10000000` (niente payment_method_types). Tax mode = Stripe gestisce tutto (incl. tasse).
+- Crypto: incasso MANUALE (BTC + USDT TRC20) con QR (api.qrserver.com). Nessun accredito automatico.
+
+## Modello utente
+Sessione anonima: user_id (uuid) in localStorage, 3 crediti gratis, 1 credito per analisi. Nessun login.
+
+## Endpoint backend (server.py)
+- POST /api/session, GET /api/session/{id}
+- POST /api/analyze (guard mime+size, ownership), POST /api/chat (ownership 403)
+- POST /api/payments/checkout (6 pacchetti, origin_url validato), GET /api/payments/status/{sid}, POST /api/webhook/stripe (re-verifica con Stripe)
+- GET /api/crypto/info, POST /api/crypto/order, GET /api/packages
+
+## Catalogo (server-side, EUR)
+starter 50cr/€19 · pro 200cr/€49 · enterprise 1000cr/€149 · sub_single 100cr/€29 · sub_pro 500cr/€99 · sub_unlimited illimitato/€299.
+
+## Stato (2026-06)
+IMPLEMENTATO E TESTATO (19/19 backend + frontend E2E, 100%):
+- Analisi documenti AI (estrazione campi + red-flag audit), copilot chat IT.
+- Crediti + esaurimento (402).
+- Stripe checkout REALE per tutti i 6 pacchetti (cs_test_ URL), status polling + accredito idempotente.
+- Crypto: info wallet + QR + ordine manuale.
+- Export CSV/JSON, UI fedele (dark glassmorphism neon).
+
+## Backlog / Next
+- P1: Configurare STRIPE_WEBHOOK_SECRET in produzione (ora l'accredito è comunque sicuro via polling + re-verify).
+- P1: Andare LIVE: attivare account Stripe (KYC) e sostituire sk_test con sk_live in STRIPE_API_KEY.
+- P1: RIGENERARE la secret key Stripe esposta in passato.
+- P2: Abbonamenti come recurring reali (ora sono ricariche one-time di crediti).
+- P2: Pannello admin per confermare pagamenti crypto e accreditare crediti.
+- P2: Multi-lingua (IT/EN/ES/DE/FR), PWA, referral (presenti nell'originale, rimandati).
+- P3: Rate limiting su /session e /analyze; restringere mime a PDF/JPG/PNG/WEBP.
