@@ -37,7 +37,12 @@ IMPLEMENTATO E TESTATO (19/19 backend + frontend E2E, 100%):
 - Crypto: info wallet + QR + ordine manuale.
 - Export CSV/JSON, UI fedele (dark glassmorphism neon).
 
-## Backlog / Next
+## Aggiornamento (2026-06) — Sessione 2
+- **FIX CRITICO**: la piattaforma iniettava `STRIPE_API_KEY=sk_test_emergent` a livello OS, shadowando il .env -> il backend usava il sandbox condiviso, non l'account dell'utente. Ora la chiave Stripe è letta con `dotenv_values('.env')` -> usa l'account reale `acct_1TwFeeFPaY5VPYYX` (IT, numberne@gmail.com).
+- **ABBONAMENTI RICORRENTI REALI**: i pacchetti sub_* ora sono `mode=subscription` mensili su Stripe (Managed Payments + API version 2026-02-25.preview). Accredito iniziale via status-poll; rinnovi via webhook `invoice.payment_succeeded` (billing_reason=subscription_cycle). Endpoint: GET /api/subscriptions/{user_id}, POST /api/subscriptions/cancel (ownership 403, cancel_at_period_end). Frontend: sezione "I tuoi abbonamenti" con annullamento.
+- Testato end-to-end con pagamenti REALI (carta 4242): pack +50 e abbonamento +100 crediti accreditati, lista+cancel OK. 26/26 backend, frontend 100%.
+- NOTA: i rinnovi mensili automatici richiedono che il webhook `/api/webhook/stripe` sia registrato nel dashboard Stripe dell'utente (+ STRIPE_WEBHOOK_SECRET) in produzione.
+
 - P1: Configurare STRIPE_WEBHOOK_SECRET in produzione (ora l'accredito è comunque sicuro via polling + re-verify).
 - P1: Andare LIVE: attivare account Stripe (KYC) e sostituire sk_test con sk_live in STRIPE_API_KEY.
 - P1: RIGENERARE la secret key Stripe esposta in passato.

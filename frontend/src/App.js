@@ -53,7 +53,7 @@ function Home() {
   const [toast, setToast] = useState("");
   const inputRef = useRef();
 
-  const notify = (m) => { setToast(m); setTimeout(() => setToast(""), 3500); };
+  const notify = (m) => { setToast(m); setTimeout(() => setToast(""), 6000); };
 
   useEffect(() => {
     // handle payment return
