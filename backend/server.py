@@ -2,6 +2,7 @@ import os
 import re
 import json
 import base64
+import asyncio
 import tempfile
 import logging
 import uuid
@@ -439,8 +440,8 @@ class SubCancelReq(BaseModel):
 @api.get("/subscriptions/{user_id}")
 async def list_subscriptions(user_id: str):
     subs = await db.subscriptions.find({"user_id": user_id}, {"_id": 0}).to_list(50)
-    out = []
-    for sdoc in subs:
+
+    def _enrich(sdoc):
         item = {"subscription_id": sdoc["subscription_id"], "package_name": sdoc.get("package_name"),
                 "credits": sdoc.get("credits"), "amount": sdoc.get("amount"), "status": sdoc.get("status")}
         try:
@@ -450,8 +451,11 @@ async def list_subscriptions(user_id: str):
             item["current_period_end"] = live.get("current_period_end")
         except Exception:
             pass
-        out.append(item)
-    return {"subscriptions": out}
+        return item
+
+    # Run blocking Stripe calls off the event loop, in parallel.
+    out = await asyncio.gather(*[asyncio.to_thread(_enrich, s) for s in subs]) if subs else []
+    return {"subscriptions": list(out)}
 
 
 @api.post("/subscriptions/cancel")
