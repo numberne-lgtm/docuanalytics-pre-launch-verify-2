@@ -176,6 +176,24 @@ class TestPayments:
         })
         assert r.status_code == 400
 
+    @pytest.mark.parametrize("pkg,expected_mode", [
+        ("starter", "payment"), ("pro", "payment"), ("enterprise", "payment"),
+        ("sub_single", "subscription"), ("sub_pro", "subscription"), ("sub_unlimited", "subscription"),
+    ])
+    def test_checkout_session_mode(self, fresh_user, pkg, expected_mode):
+        """Verify sub_* creates a subscription session and packs create a payment session."""
+        import stripe as _stripe
+        from dotenv import dotenv_values
+        _stripe.api_key = dotenv_values('/app/backend/.env').get('STRIPE_API_KEY')
+        r = requests.post(f"{API}/payments/checkout", json={
+            "package_id": pkg, "origin_url": BASE_URL, "user_id": fresh_user["user_id"],
+        }, timeout=30)
+        assert r.status_code == 200, r.text
+        sid = r.json()["session_id"]
+        sess = _stripe.checkout.Session.retrieve(sid)
+        assert sess["mode"] == expected_mode, f"{pkg}: got mode={sess['mode']}"
+        assert sess["url"] and "checkout.stripe.com" in sess["url"]
+
     def test_status_pending(self, fresh_user):
         r = requests.post(f"{API}/payments/checkout", json={
             "package_id": "starter", "origin_url": BASE_URL, "user_id": fresh_user["user_id"],
@@ -212,3 +230,40 @@ class TestCrypto:
             "user_id": fresh_user["user_id"], "package_id": "nope", "coin": "BTC",
         })
         assert r.status_code == 400
+
+
+# ---------------- Subscriptions ----------------
+class TestSubscriptions:
+    def test_list_subscriptions_empty(self, fresh_user):
+        r = requests.get(f"{API}/subscriptions/{fresh_user['user_id']}")
+        assert r.status_code == 200
+        assert r.json()["subscriptions"] == []
+
+    def test_cancel_unknown_subscription_404(self, fresh_user):
+        r = requests.post(f"{API}/subscriptions/cancel", json={
+            "user_id": fresh_user["user_id"], "subscription_id": "sub_does_not_exist_xyz",
+        })
+        assert r.status_code == 404
+
+    def test_cancel_forbidden_when_not_owner(self, fresh_user):
+        """Seed a fake subscription doc owned by user A, then attempt cancel as user B -> 403."""
+        from pymongo import MongoClient
+        from dotenv import dotenv_values
+        env = dotenv_values('/app/backend/.env')
+        mc = MongoClient(env['MONGO_URL'])
+        db = mc[env['DB_NAME']]
+        fake_sid = "sub_TESTFAKE_ownership_check"
+        db.subscriptions.insert_one({
+            "subscription_id": fake_sid, "user_id": fresh_user["user_id"],
+            "package_id": "sub_single", "package_name": "Studio Single",
+            "credits": 100, "amount": 29.0, "status": "active",
+        })
+        try:
+            other = requests.post(f"{API}/session", json={}).json()["user_id"]
+            r = requests.post(f"{API}/subscriptions/cancel", json={
+                "user_id": other, "subscription_id": fake_sid,
+            })
+            assert r.status_code == 403
+        finally:
+            db.subscriptions.delete_one({"subscription_id": fake_sid})
+            mc.close()

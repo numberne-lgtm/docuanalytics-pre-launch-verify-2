@@ -1,0 +1,34 @@
+{
+  "summary": "Iteration 2 — verified REAL end-to-end Stripe payments for the user's own connected account (acct_1TwFeeFPaY5VPYYX, TEST mode, Managed Payments, country IT) after the key-shadowing fix and the new recurring-subscription implementation. 26/26 pytest backend tests pass (session/analyze/chat/crypto from iter 1 + new: mode='payment' vs 'subscription' verified live against Stripe for all 6 packages, /api/subscriptions/{uid} empty-list, /api/subscriptions/cancel 404 for unknown, 403 for non-owner). Frontend Playwright E2E: opened pricing modal, clicked buy-starter, was redirected to a real cs_test_ Stripe hosted page, completed checkout with 4242 4242 4242 4242 / 12-34 / 123, redirected back to /payment/success, pollPayment credited the account and credits-badge went 3 -> 53 (+50). Reopened modal, clicked buy-sub_single, completed the hosted SUBSCRIPTION checkout with the same test card, redirect returned, credits went 53 -> 153 (+100). Reopened modal, active-subs (data-testid) listed 'Studio Single — €29/mese active' with an Annulla button (cancel-sub-sub_1TxrtsFPaY5VPYYXYh2ulYGg). Clicked Annulla — status flipped to 'in cancellazione' immediately. Analyze regression: TestAnalyze/test_analyze_invoice_success and TestChat both pass (invoice PNG → 11 fields + audit + Italian answer). All success criteria from the review request are met.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [
+      {
+        "flow": "payment success toast visibility",
+        "issue": "Toast <div data-testid=\"toast\"> is always rendered but its inner text is cleared by setTimeout after 3500ms in notify(); Playwright polling after the redirect + poll (~6s) reads it as empty. This is only a test-observability nit — credits update correctly proves pollPayment fired notify() with the correct message ('✅ Pagamento riuscito! +50 crediti aggiunti.' / '✅ Abbonamento attivo! +100 crediti/mese.'). Optional: increase toast duration to 6000ms or add a hidden data attribute persisting last-toast for e2e.",
+        "affected_selectors": ["[data-testid=\"toast\"]"]
+      }
+    ],
+    "design_issues": []
+  },
+  "test_report_links": ["/app/backend/tests/backend_test.py", "/app/test_reports/pytest/pytest_results.xml"],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "server.py:34 — reading STRIPE_API_KEY via dotenv_values(ROOT_DIR/'.env') is the correct fix for the platform-injected sk_test_emergent shadowing; verified: sessions are created on the user's real account acct_1TwFeeFPaY5VPYYX (checkout URLs and successful payments confirmed).",
+    "server.py:_create_stripe_session — good: sub_* uses mode='subscription' + recurring.interval=month; packs use mode='payment'. Verified live via stripe.checkout.Session.retrieve.",
+    "server.py:list_subscriptions — issues a synchronous stripe.Subscription.retrieve per doc in an async endpoint; blocks the event loop when several subs are listed. Consider stripe.Subscription.retrieve_async or offload to a threadpool.",
+    "server.py:cancel_subscription — correctly enforces ownership (403) and uses cancel_at_period_end=True; DB status set to 'canceling' matches the UI badge 'in cancellazione'. Good.",
+    "server.py:_credit_if_paid — idempotency guaranteed via update_one({credited:{$ne:true}}) then $inc credits only if modified_count==1. Correct.",
+    "server.py webhook — checkout.session.completed re-fetches from Stripe before crediting (protects against spoofed events without signing secret). Good.",
+    "server.py webhook — for renewals it uses subscription.metadata.credits set in subscription_data.metadata; verified path exists but not tested with a real cycle event (would need Stripe CLI/clock)."
+  ],
+  "updated_files": ["/app/backend/tests/backend_test.py", "/app/test_reports/iteration_2.json"],
+  "success_rate": {"backend": "100% (26/26)", "frontend": "100% (all critical flows including real Stripe checkout + subscription + cancel)"},
+  "test_credentials": "Anonymous UUID session via POST /api/session (localStorage key da_uid). Stripe TEST card 4242 4242 4242 4242, exp 12/34, CVC 123.",
+  "seed_data_creation": "Synthetic Italian invoice PNG generated at runtime for analyze tests. During E2E a real Stripe test payment and a real Stripe test subscription were created on acct_1TwFeeFPaY5VPYYX; the subscription was subsequently set to cancel_at_period_end.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Live subscription that was set to cancel during this run: sub_1TxrtsFPaY5VPYYXYh2ulYGg (user_id 92520586-19c2-45af-8315-e5be37a2aab4, status='canceling', cancel_at_period_end=true). If you re-run frontend E2E from a fresh browser session the app will use a new da_uid so this doesn't interfere. Do NOT change server.py:34 (dotenv_values read) — that fix is required. New backend tests added: TestPayments.test_checkout_session_mode (parametrized 6x, hits live Stripe) and TestSubscriptions (list empty, cancel 404, cancel 403). All pass.",
+  "rca of the issue": "N/A — no bugs. The key-shadowing fix (dotenv_values direct read) and the new recurring-subscription + list/cancel flow work correctly end-to-end. Real Stripe test payment 3→53 credits, subscription 53→153, active-subs list + Annulla → 'in cancellazione' all verified in a live browser."
+}

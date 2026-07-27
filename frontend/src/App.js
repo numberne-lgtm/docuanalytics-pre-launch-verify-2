@@ -72,7 +72,9 @@ function Home() {
       const { data } = await axios.get(`${API}/payments/status/${sid}`);
       if (data.payment_status === "paid") {
         refresh();
-        notify(`✅ Pagamento riuscito! +${data.credits_added} crediti aggiunti.`);
+        notify(data.is_subscription
+          ? `✅ Abbonamento attivo! +${data.credits_added} crediti/mese. Rinnovo automatico.`
+          : `✅ Pagamento riuscito! +${data.credits_added} crediti aggiunti.`);
         window.history.replaceState({}, "", "/");
         return;
       }
@@ -342,11 +344,23 @@ function PricingModal({ user, onClose, notify }) {
   const [coin, setCoin] = useState("BTC");
   const [selPkg, setSelPkg] = useState("pro");
   const [loading, setLoading] = useState("");
+  const [subs, setSubs] = useState([]);
 
-  useEffect(() => { axios.get(`${API}/crypto/info`).then(({ data }) => setInfo(data)).catch(() => {}); }, []);
+  const loadSubs = useCallback(() => {
+    if (user.user_id) axios.get(`${API}/subscriptions/${user.user_id}`).then(({ data }) => setSubs(data.subscriptions || [])).catch(() => {});
+  }, [user.user_id]);
 
-  const packs = info?.packages?.filter((p) => p.type === "pack") || [];
-  const subs = info?.packages?.filter((p) => p.type === "sub") || [];
+  useEffect(() => { axios.get(`${API}/crypto/info`).then(({ data }) => setInfo(data)).catch(() => {}); loadSubs(); }, [loadSubs]);
+
+  const cancelSub = async (id) => {
+    try {
+      const { data } = await axios.post(`${API}/subscriptions/cancel`, { user_id: user.user_id, subscription_id: id });
+      notify(data.message || "Abbonamento in cancellazione."); loadSubs();
+    } catch { notify("Errore annullamento abbonamento."); }
+  };
+
+  const packPkgs = info?.packages?.filter((p) => p.type === "pack") || [];
+  const subPkgs = info?.packages?.filter((p) => p.type === "sub") || [];
 
   const buyStripe = async (id) => {
     setLoading(id);
@@ -394,11 +408,29 @@ function PricingModal({ user, onClose, notify }) {
 
         {tab === "stripe" && (
           <>
+            {subs.length > 0 && (
+              <div className="glass pad mb1" data-testid="active-subs" style={{ border: "1px solid #00e67644" }}>
+                <strong style={{ fontSize: ".9rem" }}>I tuoi abbonamenti</strong>
+                {subs.map((s) => (
+                  <div className="flex between aic wrapf" key={s.subscription_id} style={{ marginTop: ".5rem", gap: ".5rem" }}>
+                    <span style={{ fontSize: ".82rem" }}>
+                      {s.package_name} — €{s.amount}/mese
+                      <span className={`badge ${s.status === "active" ? "badge-ok" : "badge-info"}`} style={{ marginLeft: 8 }}>
+                        {s.cancel_at_period_end ? "in cancellazione" : s.status}
+                      </span>
+                    </span>
+                    {!s.cancel_at_period_end && s.status === "active" && (
+                      <button className="btn btn-sm" data-testid={`cancel-sub-${s.subscription_id}`} onClick={() => cancelSub(s.subscription_id)}>Annulla</button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
             <p className="section-sub mb1">Pacchetti Crediti (pagamento singolo)</p>
-            <div className="price-grid mb1">{packs.map((p) => Card(p, p.id === "pro"))}</div>
-            <p className="section-sub mb1 mt2">Abbonamenti Studio (ricarica mensile crediti)</p>
-            <div className="price-grid">{subs.map((p) => Card(p, p.id === "sub_pro"))}</div>
-            <p style={{ color: "var(--text-muted)", fontSize: ".74rem", marginTop: "1rem" }}>Pagamenti sicuri via Stripe. Test: carta 4242 4242 4242 4242, data futura, CVC qualsiasi.</p>
+            <div className="price-grid mb1">{packPkgs.map((p) => Card(p, p.id === "pro"))}</div>
+            <p className="section-sub mb1 mt2">Abbonamenti Studio (rinnovo mensile automatico dei crediti)</p>
+            <div className="price-grid">{subPkgs.map((p) => Card(p, p.id === "sub_pro"))}</div>
+            <p style={{ color: "var(--text-muted)", fontSize: ".74rem", marginTop: "1rem" }}>Pagamenti sicuri via Stripe (Managed Payments, IVA gestita da Stripe). Test: carta 4242 4242 4242 4242, data futura, CVC qualsiasi.</p>
           </>
         )}
 
