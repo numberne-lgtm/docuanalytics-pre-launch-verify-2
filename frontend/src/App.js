@@ -81,7 +81,7 @@ function Home() {
       if (data.payment_status === "expired" || data.payment_status === "failed") {
         notify("Pagamento non completato."); window.history.replaceState({}, "", "/"); return;
       }
-    } catch (e) {}
+    } catch (e) { console.error("payment status poll error", e); }
     if (tries < 6) setTimeout(() => pollPayment(sid, tries + 1), 2000);
     else { notify("Verifica in corso, i crediti appariranno a breve."); window.history.replaceState({}, "", "/"); }
   };

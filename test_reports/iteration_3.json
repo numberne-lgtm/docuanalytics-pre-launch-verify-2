@@ -1,0 +1,27 @@
+{
+  "summary": "Iteration 3 — regression check after code-quality fixes (variable initialization: resp='' in /api/analyze & /api/chat, session=None in /api/payments/checkout; frontend pollPayment catch now logs). Ran full pytest suite: 28/28 backend tests PASS in 51s (session create/get/404, analyze invoice success with 11 fields + audit, unsupported mime -> 400, credit exhaustion -> 402, chat owner 200 / non-owner 403, /api/payments/checkout for all 6 packages returns cs_test_ + https://checkout.stripe.com/ URL, invalid package -> 400, invalid origin_url ('javascript:...') -> 400, session mode verified live via stripe.checkout.Session.retrieve for all 6 pkgs (starter/pro/enterprise='payment', sub_single/sub_pro/sub_unlimited='subscription'), /api/payments/status fresh -> 'pending', /api/crypto/info returns BTC+USDT with address+qr, /api/crypto/order 200 + 'awaiting_payment' + invalid pkg 400, /api/subscriptions/{uid} empty [], cancel unknown -> 404, cancel non-owner -> 403). Frontend Playwright smoke: landing renders with credits-badge='3 Crediti'; pricing modal (topup-btn) opens, shows 6 buy buttons; Crypto tab shows wallet-address (BTC 17XeWLxs2NJ8m5xdYVAvCo8XnM9E4QSECF) + QR image. Full analyze flow: uploaded synthetic invoice PNG via file-input, clicked chip-fattura + analyze-btn, Risultati Analisi appeared in ~8s with 9 extracted fields (Numero Fattura 2025/0042, Totale 2440.00, IVA 22%, etc.), 2 audit items, credits went 3->2, chat-input answered 'Il totale della fattura è 2440.00.' correctly in Italian, export-csv/export-json buttons visible. No regressions detected.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "PricingModal Crypto tab", "issues": ["Minor React hydration warning in console: <span> child inside <option> (data-ve-dynamic instrumentation wrapping). Non-breaking but noisy in DevTools; safe to ignore or strip x-* instrumentation attrs on <option> children."]}
+    ]
+  },
+  "test_report_links": ["/app/backend/tests/backend_test.py", "/app/test_reports/pytest/pytest_iter3.xml"],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "server.py:/api/analyze — resp='' initialization before the LLM call is correct; the ValueError guard after the call still triggers on empty payloads (verified mime 400 + credit 402 branches).",
+    "server.py:/api/chat — resp='' init + ownership 403 check verified live.",
+    "server.py:/api/payments/checkout — session=None init is defensive-only; all 6 pkg success paths + invalid package/origin_url 400s verified.",
+    "server.py:list_subscriptions still calls sync stripe.Subscription.retrieve inside an async endpoint (carry-over note from iter 2). Not a regression."
+  ],
+  "updated_files": ["/app/test_reports/iteration_3.json", "/app/test_reports/pytest/pytest_iter3.xml"],
+  "success_rate": {"backend": "100% (28/28)", "frontend": "100% (landing + pricing modal + crypto + analyze + chat + exports)"},
+  "test_credentials": "Anonymous session via POST /api/session; no login. Stripe TEST card 4242 4242 4242 4242 (not exercised this pass — regression only).",
+  "seed_data_creation": "Synthetic Italian invoice PNG generated at runtime for analyze and chat tests. No real Stripe payment/subscription created in this iteration (regression pass, per request).",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "All regression checks green. Fixture from iter 2 sub_1TxrtsFPaY5VPYYXYh2ulYGg is still 'canceling' and won't interfere with fresh sessions. Full pytest is at /app/backend/tests/backend_test.py (28 tests, ~51s). Do NOT change server.py:34 (dotenv_values direct read of STRIPE_API_KEY — required to bypass platform key shadowing).",
+  "rca of the issue": "N/A — no bugs. The three defensive initializations (resp='' x2, session=None) and the frontend catch-logging change had no observable side effects: 28/28 backend tests pass and the full analyze+chat+pricing+crypto UI flows work end-to-end."
+}

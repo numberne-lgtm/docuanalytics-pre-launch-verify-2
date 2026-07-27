@@ -169,6 +169,7 @@ async def analyze(req: AnalyzeReq):
     # write temp file for Gemini file input (supports images + pdf)
     suffix = os.path.splitext(req.filename)[1] or ".bin"
     tmp = tempfile.NamedTemporaryFile(delete=False, suffix=suffix)
+    resp = ""
     try:
         tmp.write(base64.b64decode(raw_b64))
         tmp.flush()
@@ -227,6 +228,7 @@ async def chat_copilot(req: ChatReq):
     if a.get("user_id") != req.user_id:
         raise HTTPException(403, "Accesso negato")
     context = a["result"].get("full_text") or json.dumps(a["result"], ensure_ascii=False)
+    resp = ""
     try:
         from emergentintegrations.llm.chat import LlmChat, UserMessage
         chat = LlmChat(api_key=EMERGENT_LLM_KEY, session_id=f"chat-{req.analysis_id}",
@@ -288,6 +290,7 @@ async def checkout(req: CheckoutReq, request: Request):
         raise HTTPException(400, "Pacchetto non valido")
     if not (req.origin_url.startswith("https://") or req.origin_url.startswith("http://localhost")):
         raise HTTPException(400, "origin_url non valido")
+    session = None
     try:
         session = _create_stripe_session(pkg, req)
     except Exception as e:
