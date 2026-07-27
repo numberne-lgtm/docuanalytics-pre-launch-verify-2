@@ -235,6 +235,7 @@ async def chat_copilot(req: ChatReq):
 # ---------------- Payments (raw Stripe SDK; account uses Managed Payments) ----------------
 import stripe
 stripe.api_key = STRIPE_API_KEY
+STRIPE_MANAGED_PAYMENTS_VERSION = "2026-02-25.preview"
 
 
 def _create_stripe_session(pkg, req):
@@ -252,8 +253,17 @@ def _create_stripe_session(pkg, req):
         cancel_url=f"{req.origin_url}/payment/cancel",
         metadata={"user_id": req.user_id, "package_id": req.package_id, "credits": str(pkg["credits"])},
     )
-    # Account has Managed Payments enabled by default -> do NOT pass payment_method_types.
-    return stripe.checkout.Session.create(**kwargs)
+    # Managed Payments: enable explicitly with the required preview API version.
+    # Fall back to account defaults if the preview version/param is unavailable.
+    try:
+        return stripe.checkout.Session.create(
+            **kwargs,
+            managed_payments={"enabled": True},
+            stripe_version=STRIPE_MANAGED_PAYMENTS_VERSION,
+        )
+    except stripe.error.StripeError as e:
+        logger.warning(f"managed_payments explicit call failed ({e}); using account defaults")
+        return stripe.checkout.Session.create(**kwargs)
 
 
 @api.post("/payments/checkout")
