@@ -373,7 +373,7 @@ async def payment_status(session_id: str):
 async def stripe_webhook(request: Request):
     payload = await request.body()
     sig = request.headers.get("stripe-signature", "")
-    secret = os.environ.get("STRIPE_WEBHOOK_SECRET", "")
+    secret = _ENV_FILE.get("STRIPE_WEBHOOK_SECRET") or os.environ.get("STRIPE_WEBHOOK_SECRET", "")
     try:
         if secret:
             event = stripe.Webhook.construct_event(payload, sig, secret)
