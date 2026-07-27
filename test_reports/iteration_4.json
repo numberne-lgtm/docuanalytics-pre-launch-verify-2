@@ -1,0 +1,19 @@
+{
+  "summary": "Iteration 4 — LIVE MODE Stripe verification after switching sk_test_ -> sk_live_ in /app/backend/.env. Updated /app/backend/tests/backend_test.py assertions: session_id must start with 'cs_live_' (was 'cs_'), and stripe.checkout.Session.retrieve(sid) must return livemode == True. Full pytest suite: 28/28 PASS in 75s (2 workers). Highlights: (1) POST /api/payments/checkout for all 6 packages (starter/pro/enterprise -> mode='payment'; sub_single/sub_pro/sub_unlimited -> mode='subscription') returns https://checkout.stripe.com/ URL + cs_live_ session_id, and livemode=True verified via Stripe API retrieve for every package. (2) Invalid package -> 400, invalid origin_url ('javascript:...') -> 400. (3) GET /api/payments/status/{sid} on fresh unpaid session -> payment_status='pending'. (4) Regression: POST /api/session -> credits=3; /api/analyze with real invoice PNG returns 11 fields + audit, credits 3->2; unsupported mime -> 400; 4th analyze on same session -> 402; /api/chat owner 200 + non-owner 403; /api/crypto/info -> BTC 17XeWLxs2NJ8m5xdYVAvCo8XnM9E4QSECF + USDT TSpn13ng6SBmTi9WbCQnoVZKUUHbzrA2WR with QR; /api/crypto/order -> awaiting_payment; /api/subscriptions/{uid} -> []; cancel unknown -> 404; cancel non-owner -> 403. Frontend smoke (LIVE, NO payment completed): landing loaded, credits-badge='3 Crediti', topup-btn opens pricing-modal with 6 buy buttons [buy-starter,buy-pro,buy-enterprise,buy-sub_single,buy-sub_pro,buy-sub_unlimited]. Clicked buy-pro; intercepted network response showed a checkout_url starting with https://checkout.stripe.com/ and session_id 'cs_live_a1QjUy8StPeGn2145DhHrcR8sDDPq3Go3UL4OM...' — navigation to Stripe hosted page was BLOCKED before any load so no real charge was possible. LIVE MODE confirmed end-to-end from frontend to Stripe.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": ["/app/backend/tests/backend_test.py", "/app/test_reports/pytest/pytest_iter4.xml"],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "server.py:34 STRIPE_API_KEY still read via dotenv_values('/app/backend/.env') (bypasses os.environ) — this is the pattern that lets sk_live_ take effect immediately. Do NOT change.",
+    "Analyze/chat/subscriptions endpoints unchanged since iter 3; carry-over note: list_subscriptions uses sync stripe.Subscription.retrieve inside an async endpoint (minor, no regression)."
+  ],
+  "updated_files": ["/app/backend/tests/backend_test.py", "/app/test_reports/iteration_4.json", "/app/test_reports/pytest/pytest_iter4.xml"],
+  "success_rate": {"backend": "100% (28/28)", "frontend": "100% (landing + pricing modal + buy-pro -> cs_live_ verified without navigation)"},
+  "test_credentials": "Anonymous session via POST /api/session. NO Stripe payment performed (LIVE mode — real charges avoided). Live account acct_1TwFeIF8wNmKqhiF confirmed via cs_live_ sessions and livemode=true responses.",
+  "seed_data_creation": "Synthetic Italian invoice PNG at runtime for analyze/chat tests. Test subscription doc sub_TESTFAKE_ownership_check is inserted and deleted within its test.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Stripe is LIVE. NEVER complete a checkout on the Stripe hosted page (real money). Backend tests at /app/backend/tests/backend_test.py already assert cs_live_ + livemode=True. To smoke the FE without risking a charge, always page.route('**/*') and abort any request to checkout.stripe.com before clicking any buy-* button; the API response cs_live_ session_id is visible from the blocked navigation URL if response body capture fails.",
+  "rca of the issue": "N/A — key-only change (sk_test_ -> sk_live_). All 28 backend tests pass with cs_live_/livemode=True assertions; frontend buy-pro produces a cs_live_ session as expected."
+}

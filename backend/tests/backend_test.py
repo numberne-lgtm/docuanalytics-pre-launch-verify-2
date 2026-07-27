@@ -162,7 +162,7 @@ class TestPayments:
         assert r.status_code == 200, f"{pkg}: {r.text}"
         d = r.json()
         assert d["checkout_url"].startswith("https://checkout.stripe.com/"), d["checkout_url"]
-        assert d["session_id"].startswith("cs_"), d["session_id"]
+        assert d["session_id"].startswith("cs_live_"), f"expected cs_live_ session, got: {d['session_id']}"
 
     def test_invalid_package(self, fresh_user):
         r = requests.post(f"{API}/payments/checkout", json={
@@ -192,6 +192,7 @@ class TestPayments:
         sid = r.json()["session_id"]
         sess = _stripe.checkout.Session.retrieve(sid)
         assert sess["mode"] == expected_mode, f"{pkg}: got mode={sess['mode']}"
+        assert sess.get("livemode") is True, f"{pkg}: expected livemode=True, got {sess.get('livemode')}"
         assert sess["url"] and "checkout.stripe.com" in sess["url"]
 
     def test_status_pending(self, fresh_user):
