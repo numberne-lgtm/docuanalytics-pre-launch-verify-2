@@ -1,0 +1,27 @@
+{
+  "summary": "Full backend + frontend E2E for DocuAnalytics AI. 19/19 pytest backend tests pass (session, analyze real invoice PNG, credit exhaustion 402, chat ownership 403, 6 Stripe packages checkout returns cs_ + checkout.stripe.com URLs, invalid package/origin_url 400, payments/status pending, crypto info + order). Frontend E2E: landing loads with credits=3, all chips + upload-zone + analyze-btn present, pricing modal opens with all 6 stripe buy buttons, buy-pro POST /api/payments/checkout succeeds and browser navigates to checkout.stripe.com, crypto tab shows BTC + USDT addresses/QR/toggles, crypto-order-btn creates awaiting_payment order, real invoice upload analyzed (11 structured fields, correct IVA quadrature audit), credits decrement 3->2, chat copilot answers in Italian ('Il totale della fattura è 2440.00.'), export-csv and export-json present.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Console (dev only)", "issues": ["React hydration warning: <span> cannot be a child of <option> - originates from dev-tool editor source-map overlay injecting spans into <option> elements in the crypto-pkg <select>. Not a runtime bug (dropdown works). Consider suppressing in prod build."]}
+    ]
+  },
+  "test_report_links": ["/app/backend/tests/backend_test.py", "/app/test_reports/pytest/pytest_results.xml"],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "server.py: analyze() mime guard allows any 'image/*' including image/gif/bmp/svg - spec says PDF/JPG/PNG/WEBP. Minor.",
+    "server.py: /api/crypto/info exposes BTC/USDT env addresses to any unauthenticated caller - by design but log/rate-limit would help.",
+    "App.js: PricingModal loads /api/crypto/info on every open; consider caching. Minor.",
+    "No CSRF on POST endpoints; acceptable given anonymous UUID model but noteworthy."
+  ],
+  "updated_files": ["/app/backend/tests/backend_test.py"],
+  "success_rate": {"backend": "100%", "frontend": "100%"},
+  "test_credentials": "N/A - anonymous UUID session (POST /api/session)",
+  "seed_data_creation": "Generated synthetic Italian invoice PNG at runtime (PIL) with real fattura fields: numero, data, P.IVA, IBAN, imponibile 2000, IVA 22% 440, totale 2440. Used for both backend and frontend analyze tests.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "All 6 Stripe package IDs verified to return real cs_test_ sessions on the connected account (Managed Payments enabled, no payment_method_types needed). Chat ownership 403 works. mime/size guards enforced. Payment status polling correctly returns 'pending' for unpaid sessions. Crypto is manual settlement (no auto-credit). If retesting frontend checkout, block navigation to https://checkout.stripe.com/** via page.route to keep the browser on the app.",
+  "rca of the issue": "No bugs found; all tested flows work."
+}
