@@ -63,3 +63,17 @@ IMPLEMENTATO E TESTATO (19/19 backend + frontend E2E, 100%):
 - BLOG SEO + landing per settore: da implementare (richiesto/rinviato dall'utente).
 - PayPal: messo in pausa (servono Client ID + Secret).
 - Ogni modifica in preview richiede un nuovo DEPLOY per andare in produzione (docuanalytics.online).
+
+## Aggiornamento (2026-06) — Sessione 4: Contenuti extra + Logo + Social + Video demo + i18n
+- Loghi eleganti generati (monogramma DA su sfondo nero) → header/footer/favicon/PWA icon. Social nel footer (LinkedIn/Facebook/Instagram/X/YouTube/Telegram; Facebook = facebook.com/lampone.francesco, resto placeholder da aggiornare).
+- Sezioni contenuto: NewFeatures, Tutorials con DEMO ANIMATO auto-play (5 scene, play/pausa, dots), ServicesGuideModal.
+- SEO: title/meta/OG/JSON-LD/GA4 + robots.txt + sitemap.xml + og-image.png.
+- Auth JWT (register/login/me, Bearer) + Referral +5/+5.
+- **i18n multilingua** (IT/EN/ES/DE/FR): I18nProvider + t() + LanguageSwitcher in header, persistenza localStorage 'da_lang', <html lang> sincronizzato. Tradotti: header, hero, upload, titoli/sottotitoli sezioni, footer, modali pricing/auth. I testi lunghi (descrizioni servizi, recensioni, step tutorial) restano in IT (traduzione profonda opzionale futura). Verificato dal testing agent (iteration_6): 5 lingue OK + persistenza.
+
+## Promemoria aperto
+- BLOG SEO + landing per settore (richiesto/rinviato).
+- PayPal in pausa (servono Client ID + Secret).
+- Social URL reali da fornire (tranne Facebook già impostato).
+- Traduzione profonda contenuti lunghi (opzionale).
+- Ogni modifica richiede DEPLOY per andare in produzione.

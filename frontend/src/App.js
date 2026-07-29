@@ -40,6 +40,7 @@ const T = {
     foot_guide: "Guida ai servizi", foot_topup: "Ricarica Crediti",
     pric_title: "Ricarica Crediti", tab_card: "Carta / Stripe", tab_crypto: "Crypto (BTC/USDT)",
     auth_login: "Accedi", auth_register: "Crea account", lang_label: "Lingua",
+    auth_submit_reg: "Registrati (+3 crediti gratis)", auth_pw_ph: "Password (min 6 caratteri)", auth_name_ph: "Nome (es. Studio Rossi)", auth_helper: "Registrandoti salvi i tuoi crediti e puoi accedere da qualsiasi dispositivo.", auth_bonus: "🎁 Invito valido: riceverai +5 crediti bonus!",
   },
   en: {
     credits: "Credits", topup: "Top up", login: "Sign in", invite: "Invite", logout: "Log out",
@@ -61,6 +62,7 @@ const T = {
     foot_guide: "Services guide", foot_topup: "Buy Credits",
     pric_title: "Buy Credits", tab_card: "Card / Stripe", tab_crypto: "Crypto (BTC/USDT)",
     auth_login: "Sign in", auth_register: "Create account", lang_label: "Language",
+    auth_submit_reg: "Sign up (+3 free credits)", auth_pw_ph: "Password (min 6 characters)", auth_name_ph: "Name (e.g. Rossi Firm)", auth_helper: "By signing up you keep your credits and can log in from any device.", auth_bonus: "🎁 Valid invite: you will get +5 bonus credits!",
   },
   es: {
     credits: "Créditos", topup: "Recargar", login: "Acceder", invite: "Invitar", logout: "Salir",
@@ -82,6 +84,7 @@ const T = {
     foot_guide: "Guía de servicios", foot_topup: "Comprar Créditos",
     pric_title: "Comprar Créditos", tab_card: "Tarjeta / Stripe", tab_crypto: "Cripto (BTC/USDT)",
     auth_login: "Acceder", auth_register: "Crear cuenta", lang_label: "Idioma",
+    auth_submit_reg: "Registrarse (+3 créditos gratis)", auth_pw_ph: "Contraseña (mín 6 caracteres)", auth_name_ph: "Nombre (p. ej. Despacho Rossi)", auth_helper: "Al registrarte conservas tus créditos y puedes acceder desde cualquier dispositivo.", auth_bonus: "🎁 Invitación válida: recibirás +5 créditos de bonificación!",
   },
   de: {
     credits: "Guthaben", topup: "Aufladen", login: "Anmelden", invite: "Einladen", logout: "Abmelden",
@@ -103,6 +106,7 @@ const T = {
     foot_guide: "Service-Leitfaden", foot_topup: "Guthaben kaufen",
     pric_title: "Guthaben kaufen", tab_card: "Karte / Stripe", tab_crypto: "Krypto (BTC/USDT)",
     auth_login: "Anmelden", auth_register: "Konto erstellen", lang_label: "Sprache",
+    auth_submit_reg: "Registrieren (+3 Gratis-Guthaben)", auth_pw_ph: "Passwort (min. 6 Zeichen)", auth_name_ph: "Name (z. B. Kanzlei Rossi)", auth_helper: "Mit der Registrierung behalten Sie Ihr Guthaben und können sich von jedem Gerät anmelden.", auth_bonus: "🎁 Gültige Einladung: Sie erhalten +5 Bonus-Guthaben!",
   },
   fr: {
     credits: "Crédits", topup: "Recharger", login: "Se connecter", invite: "Inviter", logout: "Déconnexion",
@@ -124,13 +128,15 @@ const T = {
     foot_guide: "Guide des services", foot_topup: "Acheter des crédits",
     pric_title: "Acheter des crédits", tab_card: "Carte / Stripe", tab_crypto: "Crypto (BTC/USDT)",
     auth_login: "Se connecter", auth_register: "Créer un compte", lang_label: "Langue",
+    auth_submit_reg: "S'inscrire (+3 crédits gratuits)", auth_pw_ph: "Mot de passe (min 6 caractères)", auth_name_ph: "Nom (ex. Cabinet Rossi)", auth_helper: "En vous inscrivant, vous conservez vos crédits et pouvez vous connecter depuis n'importe quel appareil.", auth_bonus: "🎁 Invitation valide : vous recevrez +5 crédits bonus !",
   },
 };
 const I18nContext = createContext({ lang: "it", t: (k) => k, change: () => {} });
 function I18nProvider({ children }) {
   const [lang, setLang] = useState(localStorage.getItem("da_lang") || "it");
   const t = useCallback((k) => (T[lang] && T[lang][k]) || T.it[k] || k, [lang]);
-  const change = useCallback((l) => { setLang(l); localStorage.setItem("da_lang", l); document.documentElement.lang = l; }, []);
+  const change = useCallback((l) => { setLang(l); localStorage.setItem("da_lang", l); }, []);
+  useEffect(() => { document.documentElement.lang = lang; }, [lang]);
   return <I18nContext.Provider value={{ lang, t, change }}>{children}</I18nContext.Provider>;
 }
 const useI18n = () => useContext(I18nContext);
@@ -945,20 +951,20 @@ function AuthModal({ user, onClose, onAuthed, notify }) {
           <div className={`tab ${mode === "register" ? "active" : ""}`} data-testid="tab-register" onClick={() => setMode("register")}>{t("auth_register")}</div>
         </div>
         {mode === "register" && (
-          <input className="input mb1" data-testid="auth-name" placeholder="Nome (es. Studio Rossi)" value={name} onChange={(e) => setName(e.target.value)} />
+          <input className="input mb1" data-testid="auth-name" placeholder={t("auth_name_ph")} value={name} onChange={(e) => setName(e.target.value)} />
         )}
         <input className="input mb1" data-testid="auth-email" type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} />
-        <input className="input mb1" data-testid="auth-password" type="password" placeholder="Password (min 6 caratteri)" value={password}
+        <input className="input mb1" data-testid="auth-password" type="password" placeholder={t("auth_pw_ph")} value={password}
           onChange={(e) => setPassword(e.target.value)} onKeyDown={(e) => e.key === "Enter" && submit()} />
         {mode === "register" && localStorage.getItem("da_ref") && (
-          <p className="badge badge-ok mb1" style={{ display: "block" }}>🎁 Invito valido: riceverai +5 crediti bonus!</p>
+          <p className="badge badge-ok mb1" style={{ display: "block" }}>{t("auth_bonus")}</p>
         )}
         {err && <p style={{ color: "var(--error)", fontSize: ".82rem", marginBottom: ".6rem" }} data-testid="auth-error">{err}</p>}
         <button className="btn btn-primary" style={{ width: "100%" }} data-testid="auth-submit" disabled={loading} onClick={submit}>
-          {loading ? <Loader2 className="spinner" /> : mode === "login" ? "Accedi" : "Registrati (+3 crediti gratis)"}
+          {loading ? <Loader2 className="spinner" /> : mode === "login" ? t("auth_login") : t("auth_submit_reg")}
         </button>
         <p style={{ color: "var(--text-muted)", fontSize: ".76rem", marginTop: ".8rem", textAlign: "center" }}>
-          Registrandoti salvi i tuoi crediti e puoi accedere da qualsiasi dispositivo.
+          {t("auth_helper")}
         </p>
       </div>
     </div>
