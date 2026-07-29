@@ -1,0 +1,32 @@
+{
+  "summary": "Iteration 5 — Verified new JWT auth + referral + content sections on top of previously-passing app (iter 1-4). Added /app/backend/tests/test_auth_referral.py with 11 tests covering register/login/me/referral. Result: 11/11 PASS. Regression backend_test.py: 28/28 PASS (Stripe LIVE mode preserved; cs_live_ + livemode=True across all 6 packages, analyze/chat/crypto/subscriptions all green). Frontend Playwright: verified auth-btn visible when logged out; auth-modal opens with tab-login/tab-register; registering fresh anon user preserves credits at 3; user-badge + logout-btn appear post-register; referral-modal shows link containing ?ref=<CODE> plus copy-referral; NewFeatures ('Nuove Funzionalità Avanzate' Red-Flag+Copilot) and Tutorials ('Come Funziona' + tutorial-video placeholder) render; ServicesGuide open-guide-btn opens guide-modal; ReferralBanner referral-cta present; session persists across reload via localStorage da_token; logout returns to auth-btn state; login again with same credentials succeeds; pricing-modal opens with 6 buy-* buttons and crypto tab wallet-address visible. Stripe LIVE navigation was hard-blocked via page.route; NO payment attempted.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/backend/tests/test_auth_referral.py",
+    "/app/backend/tests/backend_test.py",
+    "/app/test_reports/pytest/pytest_iter5_auth.xml",
+    "/app/test_reports/pytest/pytest_iter5_regression.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "server.py:516 JWT_SECRET falls back to hardcoded 'change-me' if neither .env nor os.environ provides one — for production, ensure JWT_SECRET is set explicitly in backend/.env (currently works because a value is likely set; no functional issue observed).",
+    "server.py:580 email validation is a very loose '@ in string' check — accepts inputs like 'a@b' as valid; consider EmailStr from pydantic for stricter validation (low priority).",
+    "server.py:614 register upgrade path sets password_hash but does not reset/preserve credits explicitly — the update uses $set so anonymous 'credits' field is untouched (correct behaviour verified: 3 preserved).",
+    "server.py:628 login lazily assigns a referral_code if missing — safe but a one-off migration would be cleaner.",
+    "App.js is 790 lines and growing (Header + AuthModal + ReferralModal + GuideModal + NewFeatures + Tutorials + Pricing all in one file). Consider splitting into src/components/* for maintainability (>700 line threshold)."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_auth_referral.py",
+    "/app/test_reports/iteration_5.json",
+    "/app/test_reports/pytest/pytest_iter5_auth.xml",
+    "/app/test_reports/pytest/pytest_iter5_regression.xml"
+  ],
+  "success_rate": {"backend": "100% (39/39: 28 regression + 11 auth/referral)", "frontend": "100% on all reviewed flows (auth register/login/logout/reload, referral modal, new content sections, guide modal, pricing modal 6 buy buttons + crypto wallet)"},
+  "test_credentials": "Anonymous session via POST /api/session; fresh emails per-run using test+<uuid8>@studio.it / secret123. mario@studio.it / secret123 also valid if registered previously.",
+  "seed_data_creation": "Per-test unique users (test+<uuid>@studio.it). Referral flow test creates 2 users (A inviter, B invitee with ref=A_code) and asserts B.credits=8 and A.credits=8 (both +5). No data cleanup needed — TEST_ prefix not used but emails are uuid-random so no collision risk.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Stripe remains LIVE — NEVER complete a checkout on the Stripe hosted page. Frontend Playwright script should page.route('**/*') and abort any request to checkout.stripe.com. Backend tests split into backend_test.py (regression) + test_auth_referral.py (new features). Run both: pytest /app/backend/tests/ -v. Referral behaviour: +5 to both inviter & invitee when invitee registers with valid ?ref=<CODE>. Register from an anonymous user_id preserves that user's credits (verified 3 remain 3). If reloading the FE with wait_until='networkidle', it may hang due to route interception on stripe URLs — use 'domcontentloaded' instead.",
+  "rca of the issue": "N/A — all features work as specified."
+}

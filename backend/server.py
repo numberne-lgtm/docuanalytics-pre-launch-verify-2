@@ -7,7 +7,7 @@ import tempfile
 import logging
 import uuid
 from pathlib import Path
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from typing import Optional
 
 from fastapi import FastAPI, APIRouter, HTTPException, Request
@@ -508,6 +508,149 @@ async def crypto_order(req: CryptoOrderReq):
 @api.get("/packages")
 async def packages():
     return {"packages": [{"id": k, **v} for k, v in PACKAGES.items()]}
+
+# ---------------- Auth (JWT email/password) + Referral ----------------
+import bcrypt
+import jwt as pyjwt
+
+JWT_SECRET = _ENV_FILE.get("JWT_SECRET") or os.environ.get("JWT_SECRET", "change-me")
+JWT_ALG = "HS256"
+REFERRAL_BONUS = 5
+
+
+def _hash_pw(p: str) -> str:
+    return bcrypt.hashpw(p.encode(), bcrypt.gensalt()).decode()
+
+
+def _verify_pw(p: str, h: str) -> bool:
+    try:
+        return bcrypt.checkpw(p.encode(), h.encode())
+    except Exception:
+        return False
+
+
+def _make_token(user_id: str, email: str) -> str:
+    payload = {"sub": user_id, "email": email,
+               "exp": datetime.now(timezone.utc) + timedelta(days=30)}
+    return pyjwt.encode(payload, JWT_SECRET, algorithm=JWT_ALG)
+
+
+def _gen_ref_code() -> str:
+    return uuid.uuid4().hex[:8].upper()
+
+
+def _public_user(u: dict) -> dict:
+    return {"user_id": u["user_id"], "email": u.get("email"), "name": u.get("name"),
+            "credits": u.get("credits", 0), "referral_code": u.get("referral_code")}
+
+
+async def get_current_user(request: Request) -> dict:
+    auth = request.headers.get("Authorization", "")
+    token = auth[7:] if auth.startswith("Bearer ") else None
+    if not token:
+        raise HTTPException(401, "Non autenticato")
+    try:
+        payload = pyjwt.decode(token, JWT_SECRET, algorithms=[JWT_ALG])
+    except pyjwt.ExpiredSignatureError:
+        raise HTTPException(401, "Sessione scaduta")
+    except pyjwt.InvalidTokenError:
+        raise HTTPException(401, "Token non valido")
+    u = await db.users.find_one({"user_id": payload["sub"]}, {"_id": 0})
+    if not u:
+        raise HTTPException(401, "Utente non trovato")
+    return u
+
+
+class RegisterReq(BaseModel):
+    email: str
+    password: str
+    name: Optional[str] = None
+    user_id: Optional[str] = None   # anonymous uuid to upgrade (preserves credits)
+    ref: Optional[str] = None       # referral code of the inviter
+
+
+class LoginReq(BaseModel):
+    email: str
+    password: str
+
+
+@api.post("/auth/register")
+async def register(req: RegisterReq):
+    email = req.email.strip().lower()
+    if "@" not in email or len(req.password) < 6:
+        raise HTTPException(400, "Email non valida o password troppo corta (min 6 caratteri).")
+    if await db.users.find_one({"email": email}):
+        raise HTTPException(409, "Email già registrata. Accedi.")
+
+    ref_code = _gen_ref_code()
+    now = datetime.now(timezone.utc).isoformat()
+
+    # Upgrade the existing anonymous user (keeps its credits) if provided & not yet an account.
+    existing = None
+    if req.user_id:
+        existing = await db.users.find_one({"user_id": req.user_id}, {"_id": 0})
+        if existing and existing.get("email"):
+            existing = None  # already an account -> create a fresh one instead
+
+    if existing:
+        await db.users.update_one({"user_id": req.user_id}, {"$set": {
+            "email": email, "password_hash": _hash_pw(req.password),
+            "name": req.name or email.split("@")[0], "referral_code": ref_code,
+            "updated_at": now}})
+        user_id = req.user_id
+    else:
+        user_id = str(uuid.uuid4())
+        await db.users.insert_one({
+            "user_id": user_id, "email": email, "password_hash": _hash_pw(req.password),
+            "name": req.name or email.split("@")[0], "credits": FREE_CREDITS,
+            "referral_code": ref_code, "created_at": now})
+
+    # Referral bonus: +5 to both, once, if a valid inviter code is provided.
+    if req.ref:
+        inviter = await db.users.find_one({"referral_code": req.ref.strip().upper()}, {"_id": 0})
+        if inviter and inviter["user_id"] != user_id:
+            await add_credits(inviter["user_id"], REFERRAL_BONUS)
+            await add_credits(user_id, REFERRAL_BONUS)
+            await db.users.update_one({"user_id": user_id}, {"$set": {"referred_by": inviter["user_id"]}})
+            await db.referrals.insert_one({"inviter": inviter["user_id"], "invitee": user_id,
+                                           "bonus": REFERRAL_BONUS, "created_at": now})
+
+    u = await db.users.find_one({"user_id": user_id}, {"_id": 0})
+    return {"token": _make_token(user_id, email), "user": _public_user(u)}
+
+
+@api.post("/auth/login")
+async def login(req: LoginReq):
+    email = req.email.strip().lower()
+    u = await db.users.find_one({"email": email}, {"_id": 0})
+    if not u or not u.get("password_hash") or not _verify_pw(req.password, u["password_hash"]):
+        raise HTTPException(401, "Email o password errati.")
+    if not u.get("referral_code"):
+        code = _gen_ref_code()
+        await db.users.update_one({"user_id": u["user_id"]}, {"$set": {"referral_code": code}})
+        u["referral_code"] = code
+    return {"token": _make_token(u["user_id"], email), "user": _public_user(u)}
+
+
+@api.get("/auth/me")
+async def auth_me(request: Request):
+    u = await get_current_user(request)
+    return {"user": _public_user(u)}
+
+
+@api.get("/referral/{user_id}")
+async def referral_info(user_id: str):
+    u = await db.users.find_one({"user_id": user_id}, {"_id": 0})
+    if not u:
+        raise HTTPException(404, "Utente non trovato")
+    code = u.get("referral_code")
+    if not code:
+        code = _gen_ref_code()
+        await db.users.update_one({"user_id": user_id}, {"$set": {"referral_code": code}})
+    count = await db.referrals.count_documents({"inviter": user_id})
+    return {"referral_code": code, "invited_count": count, "bonus_per_invite": REFERRAL_BONUS}
+
+
 
 
 app.include_router(api)

@@ -5,7 +5,8 @@ import axios from "axios";
 import {
   Upload, Zap, CreditCard, FileText, ScrollText, Building2, Landmark, Wallet,
   Bot, ShieldAlert, MessageSquare, Star, CheckCircle2, X, Send, Loader2,
-  Download, ChevronRight, Bitcoin
+  Download, ChevronRight, Bitcoin, LogIn, LogOut, User, Gift, BookOpen,
+  Sparkles, Copy, Play, Lock
 } from "lucide-react";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
@@ -20,19 +21,58 @@ const DOC_TYPES = [
 const PIPE = ["Parsing", "Classificazione", "Estrazione", "Validazione"];
 
 function useUser() {
-  const [user, setUser] = useState({ user_id: null, credits: 0 });
-  useEffect(() => {
+  const [user, setUser] = useState({ user_id: null, credits: 0, email: null });
+  const [authed, setAuthed] = useState(false);
+
+  const initAnon = useCallback(() => {
     const uid = localStorage.getItem("da_uid");
     axios.post(`${API}/session`, { user_id: uid }).then(({ data }) => {
       localStorage.setItem("da_uid", data.user_id);
-      setUser(data);
+      setUser(data); setAuthed(false);
     }).catch(() => {});
   }, []);
+
+  useEffect(() => {
+    // capture referral code from URL (?ref=CODE)
+    const ref = new URLSearchParams(window.location.search).get("ref");
+    if (ref) localStorage.setItem("da_ref", ref);
+
+    const token = localStorage.getItem("da_token");
+    if (token) {
+      axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+      axios.get(`${API}/auth/me`).then(({ data }) => {
+        localStorage.setItem("da_uid", data.user.user_id);
+        setUser(data.user); setAuthed(true);
+      }).catch(() => {
+        localStorage.removeItem("da_token");
+        delete axios.defaults.headers.common["Authorization"];
+        initAnon();
+      });
+    } else initAnon();
+  }, [initAnon]);
+
   const refresh = useCallback(() => {
     const uid = localStorage.getItem("da_uid");
-    if (uid) axios.get(`${API}/session/${uid}`).then(({ data }) => setUser(data)).catch(() => {});
+    if (uid) axios.get(`${API}/session/${uid}`).then(({ data }) => setUser((u) => ({ ...u, ...data }))).catch(() => {});
   }, []);
-  return { user, setUser, refresh };
+
+  const login = useCallback((token, userObj) => {
+    localStorage.setItem("da_token", token);
+    localStorage.setItem("da_uid", userObj.user_id);
+    localStorage.removeItem("da_ref");
+    axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+    setUser(userObj); setAuthed(true);
+  }, []);
+
+  const logout = useCallback(() => {
+    localStorage.removeItem("da_token");
+    localStorage.removeItem("da_uid");
+    delete axios.defaults.headers.common["Authorization"];
+    setAuthed(false);
+    initAnon();
+  }, [initAnon]);
+
+  return { user, setUser, refresh, authed, login, logout };
 }
 
 function Toast({ msg }) {
@@ -41,7 +81,7 @@ function Toast({ msg }) {
 }
 
 function Home() {
-  const { user, setUser, refresh } = useUser();
+  const { user, setUser, refresh, authed, login, logout } = useUser();
   const [docType, setDocType] = useState("auto");
   const [file, setFile] = useState(null);
   const [drag, setDrag] = useState(false);
@@ -50,6 +90,9 @@ function Home() {
   const [result, setResult] = useState(null);
   const [analysisId, setAnalysisId] = useState(null);
   const [pricingOpen, setPricingOpen] = useState(false);
+  const [authOpen, setAuthOpen] = useState(false);
+  const [refOpen, setRefOpen] = useState(false);
+  const [guideOpen, setGuideOpen] = useState(false);
   const [toast, setToast] = useState("");
   const inputRef = useRef();
 
@@ -117,7 +160,9 @@ function Home() {
 
   return (
     <div className="App">
-      <Header credits={user.credits} onTopup={() => setPricingOpen(true)} />
+      <Header credits={user.credits} authed={authed} user={user}
+        onTopup={() => setPricingOpen(true)} onAuth={() => setAuthOpen(true)}
+        onReferral={() => setRefOpen(true)} onLogout={() => { logout(); notify("Disconnesso."); }} />
 
       <main className="wrap">
         {/* Hero */}
@@ -181,18 +226,24 @@ function Home() {
 
         {result && <Results result={result} analysisId={analysisId} notify={notify} />}
 
-        <Services />
+        <NewFeatures />
+        <Services onGuide={() => setGuideOpen(true)} />
+        <Tutorials />
+        <ReferralBanner authed={authed} onInvite={() => (authed ? setRefOpen(true) : setAuthOpen(true))} />
         <Testimonials />
       </main>
 
-      <Footer onTopup={() => setPricingOpen(true)} />
+      <Footer onTopup={() => setPricingOpen(true)} onGuide={() => setGuideOpen(true)} />
       {pricingOpen && <PricingModal user={user} onClose={() => setPricingOpen(false)} notify={notify} />}
+      {authOpen && <AuthModal user={user} onClose={() => setAuthOpen(false)} onAuthed={login} notify={notify} />}
+      {refOpen && <ReferralModal user={user} onClose={() => setRefOpen(false)} notify={notify} />}
+      {guideOpen && <ServicesGuideModal onClose={() => setGuideOpen(false)} />}
       <Toast msg={toast} />
     </div>
   );
 }
 
-function Header({ credits, onTopup }) {
+function Header({ credits, authed, user, onTopup, onAuth, onReferral, onLogout }) {
   return (
     <header className="header">
       <div className="header-inner">
@@ -200,6 +251,15 @@ function Header({ credits, onTopup }) {
         <nav className="nav">
           <span className="credits-badge" data-testid="credits-badge"><Zap size={15} /> {credits} Crediti</span>
           <button className="btn btn-primary btn-sm" data-testid="topup-btn" onClick={onTopup}><CreditCard size={15} /> Ricarica</button>
+          {authed ? (
+            <>
+              <button className="btn btn-sm" data-testid="referral-btn" onClick={onReferral}><Gift size={15} /> Invita</button>
+              <span className="btn btn-sm btn-ghost" data-testid="user-badge" title={user.email}><User size={15} /> {user.name || "Account"}</span>
+              <button className="btn btn-sm" data-testid="logout-btn" onClick={onLogout}><LogOut size={15} /></button>
+            </>
+          ) : (
+            <button className="btn btn-accent btn-sm" data-testid="auth-btn" onClick={onAuth}><LogIn size={15} /> Accedi</button>
+          )}
         </nav>
       </div>
     </header>
@@ -286,25 +346,125 @@ function Results({ result, analysisId, notify }) {
   );
 }
 
-function Services() {
+function Services({ onGuide }) {
   const cards = [
     { Icon: Landmark, t: "F24 & Fatture Elettroniche", d: "Quadratura automatica Debito/Credito/Saldo, avviso visto conformità IVA sopra €5.000, controllo IBAN esteri e Prima Nota per Zucchetti/TeamSystem." },
     { Icon: ScrollText, t: "Contratti & Visure Camerali", d: "Rilevamento clausole vessatorie (Art. 1341 c.c.), preavvisi recesso, verifica antiriciclaggio KYC/AML con estrazione REA, soci e amministratori." },
     { Icon: Wallet, t: "Buste Paga & HR", d: "Quadratura Lordo/INPS/IRPEF/Netto, TFR maturato, compliance GDPR & EU AI Act con server 100% in UE e crittografia AES 256-bit." },
   ];
   return (
-    <section className="section">
+    <section className="section" id="servizi">
       <div className="accent-bar" />
       <h2 className="section-title">Servizi AI Specialistici per il Tuo Settore</h2>
       <p className="section-sub mb1">Algoritmi addestrati per Commercialisti, Avvocati, Notai e CFO</p>
       <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(280px,1fr))" }}>
-        {cards.map((c, i) => (
-          <div className="glass pad" key={i}>
+        {cards.map((c) => (
+          <div className="glass pad" key={c.t}>
             <c.Icon size={28} color="var(--accent)" />
             <h3 style={{ fontSize: "1.05rem", fontWeight: 800, margin: ".6rem 0 .4rem" }}>{c.t}</h3>
             <p style={{ color: "var(--text-secondary)", fontSize: ".85rem", lineHeight: 1.55 }}>{c.d}</p>
           </div>
         ))}
+      </div>
+      <div className="center mt2">
+        <button className="btn btn-accent" data-testid="open-guide-btn" onClick={onGuide}><BookOpen size={16} /> Guida Completa ai Servizi Enterprise</button>
+      </div>
+    </section>
+  );
+}
+
+const FEATURES = [
+  {
+    Icon: ShieldAlert, tag: "AUDIT", t: "Rilevatore Red-Flag AI",
+    d: "Un secondo cervello AI che controlla i tuoi documenti e segnala automaticamente i rischi prima che diventino un problema.",
+    points: [
+      "Quadratura automatica di F24, fatture e buste paga (Debito/Credito/Netto)",
+      "Allerta clausole vessatorie nei contratti (Art. 1341 c.c.)",
+      "Rilevamento IBAN esteri e anomalie antiriciclaggio (AML)",
+      "Avviso visto di conformità IVA per crediti superiori a €5.000",
+    ],
+  },
+  {
+    Icon: MessageSquare, tag: "COPILOT", t: "Copilot Interattivo",
+    d: "Fai domande in linguaggio naturale sui tuoi documenti e ricevi risposte immediate, come un assistente esperto sempre disponibile.",
+    points: [
+      "Chiedi \"Qual è il totale da pagare?\" e ottieni la risposta all'istante",
+      "Riepiloghi e spiegazioni di clausole complesse in italiano semplice",
+      "Confronto tra documenti e verifica dei dati chiave",
+      "Basato su AI Gemini, risposte contestuali solo sul tuo documento",
+    ],
+  },
+];
+
+function NewFeatures() {
+  return (
+    <section className="section" id="funzionalita">
+      <div className="accent-bar" />
+      <div className="flex aic gap mb1"><h2 className="section-title">Nuove Funzionalità Avanzate</h2><span className="badge badge-new">NEW</span></div>
+      <p className="section-sub mb1">Non solo estrazione dati: intelligenza che protegge il tuo studio</p>
+      <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(320px,1fr))" }}>
+        {FEATURES.map((f) => (
+          <div className="glass pad" key={f.t}>
+            <div className="flex aic gap mb1"><f.Icon size={26} color="var(--accent)" /><span className="badge badge-info">{f.tag}</span></div>
+            <h3 style={{ fontSize: "1.15rem", fontWeight: 800, margin: ".4rem 0" }}>{f.t}</h3>
+            <p style={{ color: "var(--text-secondary)", fontSize: ".88rem", lineHeight: 1.55, marginBottom: ".6rem" }}>{f.d}</p>
+            {f.points.map((p) => (
+              <div className="flex gap" key={p} style={{ alignItems: "flex-start", marginBottom: ".4rem" }}>
+                <CheckCircle2 size={16} color="var(--success)" style={{ flexShrink: 0, marginTop: 2 }} />
+                <span style={{ fontSize: ".84rem", color: "var(--text-secondary)" }}>{p}</span>
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+const TUTORIAL_STEPS = [
+  { n: 1, t: "Carica il documento", d: "Trascina o seleziona una fattura, un F24, un contratto, una visura o una busta paga (PDF, JPG, PNG)." },
+  { n: 2, t: "Scegli il tipo (opzionale)", d: "Seleziona la categoria del documento per un'estrazione ancora più precisa, oppure lascia che l'AI la rilevi da sola." },
+  { n: 3, t: "Analizza con l'AI", d: "In circa 2 secondi ottieni tutti i dati strutturati (importi, date, P.IVA, IBAN, totali) e l'audit anti-errore." },
+  { n: 4, t: "Chiedi al Copilot", d: "Fai domande sul documento in linguaggio naturale e ricevi risposte immediate e contestuali." },
+  { n: 5, t: "Esporta i dati", d: "Scarica i risultati in CSV o JSON, pronti per il tuo gestionale (Zucchetti, TeamSystem, ecc.)." },
+];
+
+function Tutorials() {
+  return (
+    <section className="section" id="tutorial">
+      <div className="accent-bar" />
+      <div className="flex aic gap mb1"><h2 className="section-title">Come Funziona — Tutorial</h2><Play size={20} color="var(--accent)" /></div>
+      <p className="section-sub mb1">Dalla A alla Z: analizza il tuo primo documento in meno di un minuto</p>
+
+      <div className="glass pad mb1" data-testid="tutorial-video" style={{ textAlign: "center", padding: "2.4rem 1rem" }}>
+        <Play size={44} color="var(--accent)" />
+        <p style={{ fontWeight: 700, marginTop: ".6rem" }}>Video dimostrativo</p>
+        <p style={{ color: "var(--text-muted)", fontSize: ".82rem" }}>Il video tutorial ufficiale sarà disponibile a breve. Nel frattempo, segui i passaggi qui sotto.</p>
+      </div>
+
+      <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))" }}>
+        {TUTORIAL_STEPS.map((s) => (
+          <div className="glass pad" key={s.n}>
+            <div className="pcircle" style={{ margin: "0 0 .6rem", width: 40, height: 40, borderColor: "var(--accent)" }}>{s.n}</div>
+            <h4 style={{ fontWeight: 800, fontSize: ".98rem", marginBottom: ".3rem" }}>{s.t}</h4>
+            <p style={{ color: "var(--text-secondary)", fontSize: ".84rem", lineHeight: 1.5 }}>{s.d}</p>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function ReferralBanner({ authed, onInvite }) {
+  return (
+    <section className="section">
+      <div className="glass pad" style={{ textAlign: "center", border: "1px solid #00d2ff44" }}>
+        <Gift size={34} color="var(--accent)" />
+        <h2 className="section-title mt1">Invita un collega, guadagnate entrambi</h2>
+        <p className="section-sub mb1">Per ogni collega che si registra con il tuo link ricevete <strong style={{ color: "var(--accent)" }}>+5 crediti a testa</strong>. Senza limiti.</p>
+        <button className="btn btn-primary" data-testid="referral-cta" onClick={onInvite}>
+          <Gift size={16} /> {authed ? "Ottieni il tuo link invito" : "Accedi e invita"}
+        </button>
       </div>
     </section>
   );
@@ -461,18 +621,160 @@ function PricingModal({ user, onClose, notify }) {
   );
 }
 
-function Footer({ onTopup }) {
+function Footer({ onTopup, onGuide }) {
   return (
     <footer className="footer">
       <div className="wrap">
         <p style={{ fontWeight: 800 }}>DocuAnalytics Enterprise — AI Document Intelligence</p>
         <p style={{ color: "var(--text-muted)", fontSize: ".82rem", marginTop: ".3rem" }}>Estrazione automatica ad alta precisione per studi legali, notai e commercialisti • Server UE • GDPR</p>
         <div className="flex gap wrapf aic" style={{ justifyContent: "center", marginTop: "1rem" }}>
+          <button className="btn btn-sm btn-ghost" onClick={onGuide}><BookOpen size={14} /> Guida ai servizi</button>
           <a className="btn btn-sm" href="https://t.me/docuanalytics_ai" target="_blank" rel="noreferrer">Canale Telegram</a>
           <button className="btn btn-primary btn-sm" onClick={onTopup}><CreditCard size={14} /> Ricarica Crediti</button>
         </div>
       </div>
     </footer>
+  );
+}
+
+function AuthModal({ user, onClose, onAuthed, notify }) {
+  const [mode, setMode] = useState("login");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [name, setName] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [err, setErr] = useState("");
+
+  const fmtErr = (d) => (typeof d === "string" ? d : Array.isArray(d) ? d.map((e) => e.msg || "").join(" ") : "Errore. Riprova.");
+
+  const submit = async () => {
+    setErr(""); setLoading(true);
+    try {
+      if (mode === "register") {
+        const { data } = await axios.post(`${API}/auth/register`, {
+          email, password, name, user_id: user.user_id, ref: localStorage.getItem("da_ref") || undefined,
+        });
+        onAuthed(data.token, data.user); notify(`Benvenuto, ${data.user.name}! 🎉`); onClose();
+      } else {
+        const { data } = await axios.post(`${API}/auth/login`, { email, password });
+        onAuthed(data.token, data.user); notify("Accesso effettuato ✅"); onClose();
+      }
+    } catch (e) {
+      setErr(fmtErr(e?.response?.data?.detail) || "Errore. Riprova.");
+    } finally { setLoading(false); }
+  };
+
+  return (
+    <div className="modal-bg" onClick={onClose}>
+      <div className="modal glass pad fade" style={{ maxWidth: 440 }} onClick={(e) => e.stopPropagation()} data-testid="auth-modal">
+        <div className="modal-head">
+          <h2 className="section-title flex aic gap"><Lock size={20} /> {mode === "login" ? "Accedi" : "Crea account"}</h2>
+          <button className="close-x" data-testid="close-auth" onClick={onClose}><X size={18} /></button>
+        </div>
+        <div className="tabs">
+          <div className={`tab ${mode === "login" ? "active" : ""}`} data-testid="tab-login" onClick={() => setMode("login")}>Accedi</div>
+          <div className={`tab ${mode === "register" ? "active" : ""}`} data-testid="tab-register" onClick={() => setMode("register")}>Registrati</div>
+        </div>
+        {mode === "register" && (
+          <input className="input mb1" data-testid="auth-name" placeholder="Nome (es. Studio Rossi)" value={name} onChange={(e) => setName(e.target.value)} />
+        )}
+        <input className="input mb1" data-testid="auth-email" type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} />
+        <input className="input mb1" data-testid="auth-password" type="password" placeholder="Password (min 6 caratteri)" value={password}
+          onChange={(e) => setPassword(e.target.value)} onKeyDown={(e) => e.key === "Enter" && submit()} />
+        {mode === "register" && localStorage.getItem("da_ref") && (
+          <p className="badge badge-ok mb1" style={{ display: "block" }}>🎁 Invito valido: riceverai +5 crediti bonus!</p>
+        )}
+        {err && <p style={{ color: "var(--error)", fontSize: ".82rem", marginBottom: ".6rem" }} data-testid="auth-error">{err}</p>}
+        <button className="btn btn-primary" style={{ width: "100%" }} data-testid="auth-submit" disabled={loading} onClick={submit}>
+          {loading ? <Loader2 className="spinner" /> : mode === "login" ? "Accedi" : "Registrati (+3 crediti gratis)"}
+        </button>
+        <p style={{ color: "var(--text-muted)", fontSize: ".76rem", marginTop: ".8rem", textAlign: "center" }}>
+          Registrandoti salvi i tuoi crediti e puoi accedere da qualsiasi dispositivo.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function ReferralModal({ user, onClose, notify }) {
+  const [info, setInfo] = useState(null);
+  useEffect(() => { axios.get(`${API}/referral/${user.user_id}`).then(({ data }) => setInfo(data)).catch(() => {}); }, [user.user_id]);
+  const link = info ? `${window.location.origin}/?ref=${info.referral_code}` : "";
+  return (
+    <div className="modal-bg" onClick={onClose}>
+      <div className="modal glass pad fade" style={{ maxWidth: 480 }} onClick={(e) => e.stopPropagation()} data-testid="referral-modal">
+        <div className="modal-head">
+          <h2 className="section-title flex aic gap"><Gift size={20} /> Invita e guadagna</h2>
+          <button className="close-x" data-testid="close-referral" onClick={onClose}><X size={18} /></button>
+        </div>
+        <p className="section-sub mb1">Condividi il tuo link: tu e il tuo collega ricevete <strong style={{ color: "var(--accent)" }}>+5 crediti</strong> quando lui si registra.</p>
+        <div className="addr" data-testid="referral-link">{link || "..."}</div>
+        <div className="flex gap wrapf">
+          <button className="btn btn-primary btn-sm" data-testid="copy-referral" onClick={() => { navigator.clipboard.writeText(link); notify("Link copiato!"); }}><Copy size={14} /> Copia link</button>
+          <a className="btn btn-sm" href={`https://wa.me/?text=${encodeURIComponent("Analizza i tuoi documenti con l'AI, provalo gratis: " + link)}`} target="_blank" rel="noreferrer">WhatsApp</a>
+          <a className="btn btn-sm" href={`https://t.me/share/url?url=${encodeURIComponent(link)}`} target="_blank" rel="noreferrer">Telegram</a>
+        </div>
+        {info && <p className="mt2" style={{ fontSize: ".85rem" }}>Colleghi invitati: <strong style={{ color: "var(--accent)" }} data-testid="invited-count">{info.invited_count}</strong> · Crediti guadagnati: <strong>{info.invited_count * info.bonus_per_invite}</strong></p>}
+      </div>
+    </div>
+  );
+}
+
+const GUIDE_SECTIONS = [
+  { Icon: Landmark, t: "F24 & Fatture Elettroniche", items: [
+    "Estrazione automatica di codici tributo, importi, scadenze e saldi",
+    "Quadratura Debito / Credito / Saldo finale con avviso in caso di squadratura",
+    "Rilevamento visto di conformità per crediti IVA superiori a €5.000",
+    "Controllo IBAN esteri e generazione Prima Nota per Zucchetti / TeamSystem / Datev",
+  ]},
+  { Icon: ScrollText, t: "Contratti & Documenti Legali", items: [
+    "Individuazione clausole vessatorie ai sensi dell'Art. 1341 c.c.",
+    "Estrazione parti, oggetto, durata, corrispettivi e termini di recesso",
+    "Segnalazione preavvisi e scadenze contrattuali critiche",
+    "Riepilogo in linguaggio chiaro delle clausole complesse",
+  ]},
+  { Icon: Building2, t: "Visure Camerali", items: [
+    "Estrazione numero REA, P.IVA, sede, capitale sociale e PEC",
+    "Elenco soci, amministratori e poteri di firma",
+    "Verifiche antiriciclaggio (KYC / AML) e titolare effettivo",
+    "Stato attività e procedure in corso",
+  ]},
+  { Icon: Wallet, t: "Buste Paga & HR", items: [
+    "Quadratura Lordo / Contributi INPS / IRPEF / Netto in busta",
+    "Calcolo e verifica TFR maturato",
+    "Compliance GDPR ed EU AI Act con dati trattati 100% in UE",
+    "Crittografia AES 256-bit dei documenti",
+  ]},
+];
+
+function ServicesGuideModal({ onClose }) {
+  return (
+    <div className="modal-bg" onClick={onClose}>
+      <div className="modal glass pad fade" onClick={(e) => e.stopPropagation()} data-testid="guide-modal">
+        <div className="modal-head">
+          <h2 className="section-title flex aic gap"><BookOpen size={20} /> Guida Completa ai Servizi Enterprise</h2>
+          <button className="close-x" data-testid="close-guide" onClick={onClose}><X size={18} /></button>
+        </div>
+        <p className="section-sub mb1">Tutto ciò che DocuAnalytics AI estrae e verifica per te, categoria per categoria.</p>
+        <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(300px,1fr))" }}>
+          {GUIDE_SECTIONS.map((g) => (
+            <div className="glass pad" key={g.t}>
+              <div className="flex aic gap mb1"><g.Icon size={24} color="var(--accent)" /><strong>{g.t}</strong></div>
+              {g.items.map((it) => (
+                <div className="flex gap" key={it} style={{ alignItems: "flex-start", marginBottom: ".4rem" }}>
+                  <CheckCircle2 size={15} color="var(--success)" style={{ flexShrink: 0, marginTop: 2 }} />
+                  <span style={{ fontSize: ".84rem", color: "var(--text-secondary)" }}>{it}</span>
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+        <div className="glass pad mt2 flex aic gap wrapf" style={{ justifyContent: "space-between" }}>
+          <span className="flex aic gap"><Sparkles size={18} color="var(--accent)" /> Ogni analisi include l'AI Red-Flag Audit e il Copilot interattivo.</span>
+          <button className="btn btn-primary btn-sm" data-testid="guide-close-cta" onClick={onClose}>Inizia ora <ChevronRight size={14} /></button>
+        </div>
+      </div>
+    </div>
   );
 }
 
