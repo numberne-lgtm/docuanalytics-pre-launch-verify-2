@@ -14,7 +14,7 @@ const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 // Social links — sostituisci gli URL con i tuoi profili reali quando li crei.
 const SOCIALS = [
   { name: "LinkedIn", Icon: Linkedin, url: "https://www.linkedin.com/company/docuanalytics-ai" },
-  { name: "Facebook", Icon: Facebook, url: "https://www.facebook.com/docuanalytics.ai" },
+  { name: "Facebook", Icon: Facebook, url: "https://www.facebook.com/lampone.francesco" },
   { name: "Instagram", Icon: Instagram, url: "https://www.instagram.com/docuanalytics.ai" },
   { name: "X (Twitter)", Icon: Twitter, url: "https://x.com/docuanalytics_ai" },
   { name: "YouTube", Icon: Youtube, url: "https://www.youtube.com/@docuanalytics-ai" },
