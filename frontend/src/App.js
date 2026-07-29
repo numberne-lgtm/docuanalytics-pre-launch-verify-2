@@ -439,20 +439,107 @@ const TUTORIAL_STEPS = [
   { n: 5, t: "Esporta i dati", d: "Scarica i risultati in CSV o JSON, pronti per il tuo gestionale (Zucchetti, TeamSystem, ecc.)." },
 ];
 
+const DEMO_SCENES = [
+  {
+    title: "1. Carica il documento",
+    render: () => (
+      <div className="demo-doc fade">
+        <FileText size={30} color="var(--accent)" />
+        <div>
+          <div style={{ fontWeight: 700 }}>Fattura_128_2026.pdf</div>
+          <div style={{ color: "var(--text-muted)", fontSize: ".78rem" }}>caricato · 214 KB</div>
+        </div>
+        <span className="badge badge-ok" style={{ marginLeft: "auto" }}>OK</span>
+      </div>
+    ),
+  },
+  {
+    title: "2. Analisi con l'Intelligenza Artificiale",
+    render: () => (
+      <div className="demo-pipe">
+        {["Parsing", "Classificazione", "Estrazione", "Validazione"].map((s, i) => (
+          <div className="demo-pstep" key={s} style={{ animationDelay: `${i * 0.4}s` }}>
+            <div className="demo-pcircle"><CheckCircle2 size={16} color="var(--success)" /></div>
+            <span>{s}</span>
+          </div>
+        ))}
+      </div>
+    ),
+  },
+  {
+    title: "3. Dati estratti automaticamente",
+    render: () => (
+      <div style={{ width: "100%" }}>
+        {[["Numero", "128/2026"], ["Imponibile", "1.000,00 €"], ["IVA 22%", "220,00 €"], ["Totale", "1.220,00 €"], ["IBAN", "IT60X0542811101…"]].map(([k, v], i) => (
+          <div className="demo-field fade" key={k} style={{ animationDelay: `${i * 0.18}s` }}>
+            <span style={{ color: "var(--text-muted)" }}>{k}</span><strong>{v}</strong>
+          </div>
+        ))}
+      </div>
+    ),
+  },
+  {
+    title: "4. AI Red-Flag Audit",
+    render: () => (
+      <div style={{ width: "100%" }}>
+        <div className="demo-audit audit-ok fade"><CheckCircle2 size={15} /> Quadratura IVA corretta (1.000 + 220 = 1.220 €)</div>
+        <div className="demo-audit audit-ok fade" style={{ animationDelay: ".2s" }}><CheckCircle2 size={15} /> IBAN italiano valido</div>
+        <div className="demo-audit audit-warning fade" style={{ animationDelay: ".4s" }}><ShieldAlert size={15} /> Scadenza pagamento tra 15 giorni</div>
+      </div>
+    ),
+  },
+  {
+    title: "5. Chiedi all'AI Copilot",
+    render: () => (
+      <div className="demo-chat">
+        <div className="msg u fade">Qual è il totale da pagare?</div>
+        <div className="msg a fade" style={{ animationDelay: ".5s" }}>Il totale da pagare è <strong>1.220,00 €</strong>, con scadenza 30/04/2026.</div>
+      </div>
+    ),
+  },
+];
+
+function DemoPlayer() {
+  const [scene, setScene] = useState(0);
+  const [playing, setPlaying] = useState(true);
+  useEffect(() => {
+    if (!playing) return;
+    const t = setTimeout(() => setScene((s) => (s + 1) % DEMO_SCENES.length), 3000);
+    return () => clearTimeout(t);
+  }, [scene, playing]);
+  const cur = DEMO_SCENES[scene];
+  return (
+    <div className="glass demo-player" data-testid="tutorial-video">
+      <div className="demo-chrome">
+        <span className="dotc r" /><span className="dotc y" /><span className="dotc g" />
+        <span className="demo-url">docuanalytics.online — Demo</span>
+        <button className="demo-play" data-testid="demo-playpause" onClick={() => setPlaying((p) => !p)}>
+          {playing ? "❚❚" : <Play size={14} />}
+        </button>
+      </div>
+      <div className="demo-stage" key={scene}>
+        <div className="demo-scene-title">{cur.title}</div>
+        <div className="demo-scene-body">{cur.render()}</div>
+      </div>
+      <div className="demo-progress">
+        {DEMO_SCENES.map((_, i) => (
+          <span key={i} className={`demo-dot ${i === scene ? "on" : ""}`} onClick={() => setScene(i)} data-testid={`demo-dot-${i}`} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function Tutorials() {
   return (
     <section className="section" id="tutorial">
       <div className="accent-bar" />
       <div className="flex aic gap mb1"><h2 className="section-title">Come Funziona — Tutorial</h2><Play size={20} color="var(--accent)" /></div>
-      <p className="section-sub mb1">Dalla A alla Z: analizza il tuo primo documento in meno di un minuto</p>
+      <p className="section-sub mb1">Guarda la demo animata: analizza il tuo primo documento in meno di un minuto</p>
 
-      <div className="glass pad mb1" data-testid="tutorial-video" style={{ textAlign: "center", padding: "2.4rem 1rem" }}>
-        <Play size={44} color="var(--accent)" />
-        <p style={{ fontWeight: 700, marginTop: ".6rem" }}>Video dimostrativo</p>
-        <p style={{ color: "var(--text-muted)", fontSize: ".82rem" }}>Il video tutorial ufficiale sarà disponibile a breve. Nel frattempo, segui i passaggi qui sotto.</p>
-      </div>
+      <DemoPlayer />
 
-      <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))" }}>
+      <div className="grid mt2" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))" }}>
         {TUTORIAL_STEPS.map((s) => (
           <div className="glass pad" key={s.n}>
             <div className="pcircle" style={{ margin: "0 0 .6rem", width: 40, height: 40, borderColor: "var(--accent)" }}>{s.n}</div>
