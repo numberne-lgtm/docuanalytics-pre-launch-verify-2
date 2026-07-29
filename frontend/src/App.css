@@ -20,7 +20,7 @@ body{background:var(--bg-color);color:var(--text-primary);font-family:'Inter',sa
 .header{position:sticky;top:0;z-index:50;backdrop-filter:blur(16px);background:#0a0a0fcc;border-bottom:1px solid var(--border-color)}
 .header-inner{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:.7rem 1.25rem;max-width:1200px;margin:0 auto;flex-wrap:wrap}
 .logo{font-weight:900;font-size:1.35rem;letter-spacing:-.5px;display:flex;align-items:center;gap:.5rem}
-.logo-img{width:34px;height:34px;border-radius:9px;object-fit:cover;box-shadow:0 0 16px #00d2ff55}
+.logo-img{width:38px;height:38px;object-fit:contain;filter:drop-shadow(0 0 8px #00d2ff44)}
 .logo .dot{width:12px;height:12px;border-radius:50%;background:var(--accent);box-shadow:0 0 14px var(--accent)}
 .socials{display:flex;justify-content:center;flex-wrap:wrap;gap:.6rem;margin-top:1.2rem}
 .social-btn{display:inline-flex;align-items:center;justify-content:center;width:42px;height:42px;border-radius:50%;
