@@ -6,10 +6,20 @@ import {
   Upload, Zap, CreditCard, FileText, ScrollText, Building2, Landmark, Wallet,
   Bot, ShieldAlert, MessageSquare, Star, CheckCircle2, X, Send, Loader2,
   Download, ChevronRight, Bitcoin, LogIn, LogOut, User, Gift, BookOpen,
-  Sparkles, Copy, Play, Lock
+  Sparkles, Copy, Play, Lock, Facebook, Instagram, Linkedin, Youtube, Twitter, Send as Telegram
 } from "lucide-react";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+
+// Social links — sostituisci gli URL con i tuoi profili reali quando li crei.
+const SOCIALS = [
+  { name: "LinkedIn", Icon: Linkedin, url: "https://www.linkedin.com/company/docuanalytics-ai" },
+  { name: "Facebook", Icon: Facebook, url: "https://www.facebook.com/docuanalytics.ai" },
+  { name: "Instagram", Icon: Instagram, url: "https://www.instagram.com/docuanalytics.ai" },
+  { name: "X (Twitter)", Icon: Twitter, url: "https://x.com/docuanalytics_ai" },
+  { name: "YouTube", Icon: Youtube, url: "https://www.youtube.com/@docuanalytics-ai" },
+  { name: "Telegram", Icon: Telegram, url: "https://t.me/docuanalytics_ai" },
+];
 
 const DOC_TYPES = [
   { id: "fattura", label: "Fattura", Icon: FileText },
@@ -247,7 +257,7 @@ function Header({ credits, authed, user, onTopup, onAuth, onReferral, onLogout }
   return (
     <header className="header">
       <div className="header-inner">
-        <div className="logo"><span className="dot" /> Docu<span className="grad">Analytics</span> AI</div>
+        <div className="logo"><img src="/logo.png" alt="DocuAnalytics AI" className="logo-img" /> Docu<span className="grad">Analytics</span> AI</div>
         <nav className="nav">
           <span className="credits-badge" data-testid="credits-badge"><Zap size={15} /> {credits} Crediti</span>
           <button className="btn btn-primary btn-sm" data-testid="topup-btn" onClick={onTopup}><CreditCard size={15} /> Ricarica</button>
@@ -625,13 +635,26 @@ function Footer({ onTopup, onGuide }) {
   return (
     <footer className="footer">
       <div className="wrap">
-        <p style={{ fontWeight: 800 }}>DocuAnalytics Enterprise — AI Document Intelligence</p>
+        <div className="flex aic gap" style={{ justifyContent: "center", marginBottom: ".4rem" }}>
+          <img src="/logo.png" alt="DocuAnalytics AI" className="logo-img" />
+          <p style={{ fontWeight: 800 }}>DocuAnalytics Enterprise — AI Document Intelligence</p>
+        </div>
         <p style={{ color: "var(--text-muted)", fontSize: ".82rem", marginTop: ".3rem" }}>Estrazione automatica ad alta precisione per studi legali, notai e commercialisti • Server UE • GDPR</p>
+
+        <div className="socials" data-testid="social-links">
+          {SOCIALS.map(({ name, Icon, url }) => (
+            <a key={name} className="social-btn" href={url} target="_blank" rel="noreferrer"
+              aria-label={name} title={name} data-testid={`social-${name.toLowerCase().split(" ")[0]}`}>
+              <Icon size={18} />
+            </a>
+          ))}
+        </div>
+
         <div className="flex gap wrapf aic" style={{ justifyContent: "center", marginTop: "1rem" }}>
           <button className="btn btn-sm btn-ghost" onClick={onGuide}><BookOpen size={14} /> Guida ai servizi</button>
-          <a className="btn btn-sm" href="https://t.me/docuanalytics_ai" target="_blank" rel="noreferrer">Canale Telegram</a>
           <button className="btn btn-primary btn-sm" onClick={onTopup}><CreditCard size={14} /> Ricarica Crediti</button>
         </div>
+        <p style={{ color: "var(--text-muted)", fontSize: ".72rem", marginTop: "1.2rem" }}>© {new Date().getFullYear()} DocuAnalytics AI · Tutti i diritti riservati</p>
       </div>
     </footer>
   );

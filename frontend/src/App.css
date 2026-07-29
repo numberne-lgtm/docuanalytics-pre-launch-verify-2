@@ -20,7 +20,13 @@ body{background:var(--bg-color);color:var(--text-primary);font-family:'Inter',sa
 .header{position:sticky;top:0;z-index:50;backdrop-filter:blur(16px);background:#0a0a0fcc;border-bottom:1px solid var(--border-color)}
 .header-inner{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:.7rem 1.25rem;max-width:1200px;margin:0 auto;flex-wrap:wrap}
 .logo{font-weight:900;font-size:1.35rem;letter-spacing:-.5px;display:flex;align-items:center;gap:.5rem}
+.logo-img{width:34px;height:34px;border-radius:9px;object-fit:cover;box-shadow:0 0 16px #00d2ff55}
 .logo .dot{width:12px;height:12px;border-radius:50%;background:var(--accent);box-shadow:0 0 14px var(--accent)}
+.socials{display:flex;justify-content:center;flex-wrap:wrap;gap:.6rem;margin-top:1.2rem}
+.social-btn{display:inline-flex;align-items:center;justify-content:center;width:42px;height:42px;border-radius:50%;
+  background:#ffffff0d;border:1px solid var(--border-color);color:var(--text-secondary);
+  transition:transform .15s ease,background-color .2s ease,color .2s ease,box-shadow .2s ease}
+.social-btn:hover{transform:translateY(-3px);color:#fff;background:var(--gradient-primary);border-color:transparent;box-shadow:var(--glow)}
 .logo .grad{background:var(--gradient-primary);-webkit-background-clip:text;background-clip:text;color:transparent}
 .nav{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap}
 .credits-badge{display:inline-flex;align-items:center;gap:.35rem;background:#00d2ff14;border:1px solid #00d2ff44;color:var(--accent);padding:.3rem .7rem;border-radius:20px;font-weight:700;font-size:.82rem}
