@@ -50,3 +50,16 @@ IMPLEMENTATO E TESTATO (19/19 backend + frontend E2E, 100%):
 - P2: Pannello admin per confermare pagamenti crypto e accreditare crediti.
 - P2: Multi-lingua (IT/EN/ES/DE/FR), PWA, referral (presenti nell'originale, rimandati).
 - P3: Rate limiting su /session e /analyze; restringere mime a PDF/JPG/PNG/WEBP.
+
+## Aggiornamento (2026-06) — Sessione 3: Auth + Referral + Contenuti + SEO + Live
+- **Stripe LIVE**: chiave sk_live_ (letta da .env), account acct_1TwFeIF8wNmKqhiF, charges_enabled. Webhook Live configurato (STRIPE_WEBHOOK_SECRET) con verifica firma.
+- **SEO**: index.html con title/description/keywords IT, canonical docuanalytics.online, Open Graph + Twitter + og-image.png, JSON-LD SoftwareApplication, GA4 (G-ZQ2FJJKY2H). robots.txt + sitemap.xml. (Token Search Console da sostituire per il nuovo dominio.)
+- **Auth JWT email/password** (Bearer token in localStorage): register/login/me. La registrazione fa UPGRADE dell'utente anonimo preservando i crediti. Endpoint /api/auth/*. Nessun ruolo admin (non necessario).
+- **Referral +5/+5**: codice referral per utente, link ?ref=CODE, bonus a inviter+invitee. Endpoint /api/referral/{user_id}. UI: header "Invita", ReferralModal (link+copy+WhatsApp/Telegram), ReferralBanner.
+- **Contenuti completi ripristinati**: sezione NewFeatures (Red-Flag Audit, Copilot), Tutorials (5 step + placeholder video), ServicesGuideModal (guida enterprise 4 categorie).
+- Testato: 39/39 backend (28 regressione + 11 auth/referral), frontend 100%.
+
+## Promemoria aperto per l'utente
+- BLOG SEO + landing per settore: da implementare (richiesto/rinviato dall'utente).
+- PayPal: messo in pausa (servono Client ID + Secret).
+- Ogni modifica in preview richiede un nuovo DEPLOY per andare in produzione (docuanalytics.online).
