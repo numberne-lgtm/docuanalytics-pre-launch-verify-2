@@ -141,6 +141,176 @@ function I18nProvider({ children }) {
 }
 const useI18n = () => useContext(I18nContext);
 
+/* ---------------- Content translations (arrays) ---------------- */
+const CONTENT = {
+  it: {
+    docTypes: { fattura: "Fattura", contratto: "Contratto", visura: "Visura", f24: "F24", busta_paga: "Busta Paga" },
+    pipe: ["Parsing", "Classificazione", "Estrazione", "Validazione"],
+    services: [
+      { t: "F24 & Fatture Elettroniche", d: "Quadratura automatica Debito/Credito/Saldo, avviso visto conformità IVA sopra €5.000, controllo IBAN esteri e Prima Nota per Zucchetti/TeamSystem." },
+      { t: "Contratti & Visure Camerali", d: "Rilevamento clausole vessatorie (Art. 1341 c.c.), preavvisi recesso, verifica antiriciclaggio KYC/AML con estrazione REA, soci e amministratori." },
+      { t: "Buste Paga & HR", d: "Quadratura Lordo/INPS/IRPEF/Netto, TFR maturato, compliance GDPR & EU AI Act con server 100% in UE e crittografia AES 256-bit." },
+    ],
+    features: [
+      { tag: "AUDIT", t: "Rilevatore Red-Flag AI", d: "Un secondo cervello AI che controlla i tuoi documenti e segnala automaticamente i rischi prima che diventino un problema.", points: ["Quadratura automatica di F24, fatture e buste paga (Debito/Credito/Netto)", "Allerta clausole vessatorie nei contratti (Art. 1341 c.c.)", "Rilevamento IBAN esteri e anomalie antiriciclaggio (AML)", "Avviso visto di conformità IVA per crediti superiori a €5.000"] },
+      { tag: "COPILOT", t: "Copilot Interattivo", d: "Fai domande in linguaggio naturale sui tuoi documenti e ricevi risposte immediate, come un assistente esperto sempre disponibile.", points: ["Chiedi \"Qual è il totale da pagare?\" e ottieni la risposta all'istante", "Riepiloghi e spiegazioni di clausole complesse in italiano semplice", "Confronto tra documenti e verifica dei dati chiave", "Basato su AI Gemini, risposte contestuali solo sul tuo documento"] },
+    ],
+    tutorial: [
+      { t: "Carica il documento", d: "Trascina o seleziona una fattura, un F24, un contratto, una visura o una busta paga (PDF, JPG, PNG)." },
+      { t: "Scegli il tipo (opzionale)", d: "Seleziona la categoria del documento per un'estrazione ancora più precisa, oppure lascia che l'AI la rilevi da sola." },
+      { t: "Analizza con l'AI", d: "In circa 2 secondi ottieni tutti i dati strutturati (importi, date, P.IVA, IBAN, totali) e l'audit anti-errore." },
+      { t: "Chiedi al Copilot", d: "Fai domande sul documento in linguaggio naturale e ricevi risposte immediate e contestuali." },
+      { t: "Esporta i dati", d: "Scarica i risultati in CSV o JSON, pronti per il tuo gestionale (Zucchetti, TeamSystem, ecc.)." },
+    ],
+    testimonials: [
+      { n: "Avv. Alessandro Rossi", s: "Studio Legale Rossi & Associati • Milano", t: "Ha rivoluzionato il nostro studio. L'estrazione da contratti e visure è accurata al 99%. Risparmiamo 12 ore a settimana." },
+      { n: "Dott.ssa Elena Conti", s: "Conti & Partners • Roma", t: "La quadratura automatica dei saldi F24 e delle fatture ci ha azzerato gli errori di digitazione manuale." },
+      { n: "Dott. Marco Bianchi", s: "Studio Tributario Bianchi • Torino", t: "I 3 crediti gratuiti mi hanno convinto. Abbiamo acquistato il Pack Professional: assistenza ed export impeccabili." },
+      { n: "Chiara Ferrari", s: "HR Manager • Bologna", t: "Analizzare le buste paga ora richiede 2 secondi. Piattaforma affidabile ed intuitiva." },
+    ],
+    guide: [
+      { t: "F24 & Fatture Elettroniche", items: ["Estrazione automatica di codici tributo, importi, scadenze e saldi", "Quadratura Debito / Credito / Saldo finale con avviso in caso di squadratura", "Rilevamento visto di conformità per crediti IVA superiori a €5.000", "Controllo IBAN esteri e Prima Nota per Zucchetti / TeamSystem / Datev"] },
+      { t: "Contratti & Documenti Legali", items: ["Individuazione clausole vessatorie (Art. 1341 c.c.)", "Estrazione parti, oggetto, durata, corrispettivi e termini di recesso", "Segnalazione preavvisi e scadenze contrattuali critiche", "Riepilogo in linguaggio chiaro delle clausole complesse"] },
+      { t: "Visure Camerali", items: ["Estrazione numero REA, P.IVA, sede, capitale sociale e PEC", "Elenco soci, amministratori e poteri di firma", "Verifiche antiriciclaggio (KYC / AML) e titolare effettivo", "Stato attività e procedure in corso"] },
+      { t: "Buste Paga & HR", items: ["Quadratura Lordo / INPS / IRPEF / Netto in busta", "Calcolo e verifica TFR maturato", "Compliance GDPR ed EU AI Act con dati trattati 100% in UE", "Crittografia AES 256-bit dei documenti"] },
+    ],
+    demo: ["1. Carica il documento", "2. Analisi con l'Intelligenza Artificiale", "3. Dati estratti automaticamente", "4. AI Red-Flag Audit", "5. Chiedi all'AI Copilot"],
+  },
+  en: {
+    docTypes: { fattura: "Invoice", contratto: "Contract", visura: "Company Record", f24: "Tax Form", busta_paga: "Payslip" },
+    pipe: ["Parsing", "Classification", "Extraction", "Validation"],
+    services: [
+      { t: "Tax Forms & E-Invoices", d: "Automatic Debit/Credit/Balance reconciliation, VAT compliance alerts above €5,000, foreign IBAN checks and ledger export for accounting software." },
+      { t: "Contracts & Company Records", d: "Detection of unfair clauses, notice/withdrawal terms, AML/KYC checks with extraction of registration number, shareholders and directors." },
+      { t: "Payslips & HR", d: "Gross/Contributions/Tax/Net reconciliation, accrued severance, GDPR & EU AI Act compliance with 100% EU servers and AES 256-bit encryption." },
+    ],
+    features: [
+      { tag: "AUDIT", t: "AI Red-Flag Detector", d: "A second AI brain that checks your documents and automatically flags risks before they become a problem.", points: ["Automatic reconciliation of tax forms, invoices and payslips", "Unfair-clause alerts in contracts", "Foreign IBAN and anti-money-laundering (AML) anomaly detection", "VAT compliance alert for credits above €5,000"] },
+      { tag: "COPILOT", t: "Interactive Copilot", d: "Ask questions about your documents in natural language and get instant answers, like an expert assistant always available.", points: ["Ask \"What's the total to pay?\" and get the answer instantly", "Summaries and explanations of complex clauses in plain language", "Compare documents and verify key data", "Powered by Gemini AI, answers based only on your document"] },
+    ],
+    tutorial: [
+      { t: "Upload the document", d: "Drag or select an invoice, tax form, contract, company record or payslip (PDF, JPG, PNG)." },
+      { t: "Choose the type (optional)", d: "Select the document category for even more precise extraction, or let the AI detect it automatically." },
+      { t: "Analyze with AI", d: "In about 2 seconds get all structured data (amounts, dates, VAT numbers, IBAN, totals) and the error-check audit." },
+      { t: "Ask the Copilot", d: "Ask questions about the document in natural language and get instant, contextual answers." },
+      { t: "Export the data", d: "Download results as CSV or JSON, ready for your accounting software." },
+    ],
+    testimonials: [
+      { n: "Alessandro Rossi, Esq.", s: "Rossi & Partners Law Firm • Milan", t: "It transformed our firm. Extraction from contracts and records is 99% accurate. We save 12 hours a week." },
+      { n: "Elena Conti, CPA", s: "Conti & Partners • Rome", t: "Automatic reconciliation of tax and invoice balances eliminated our manual data-entry errors." },
+      { n: "Marco Bianchi, CPA", s: "Bianchi Tax Firm • Turin", t: "The 3 free credits won me over. We bought the Professional Pack: flawless support and export." },
+      { n: "Chiara Ferrari", s: "HR Manager • Bologna", t: "Analyzing payslips now takes 2 seconds. Reliable and intuitive platform." },
+    ],
+    guide: [
+      { t: "Tax Forms & E-Invoices", items: ["Automatic extraction of tax codes, amounts, due dates and balances", "Debit / Credit / Final balance reconciliation with mismatch alerts", "Compliance-visa detection for VAT credits above €5,000", "Foreign IBAN checks and ledger export for accounting software"] },
+      { t: "Contracts & Legal Documents", items: ["Detection of unfair clauses", "Extraction of parties, subject, duration, fees and withdrawal terms", "Alerts on critical notices and contract deadlines", "Plain-language summary of complex clauses"] },
+      { t: "Company Records", items: ["Extraction of registration number, VAT, office, share capital and certified email", "List of shareholders, directors and signing powers", "AML / KYC checks and beneficial owner", "Business status and ongoing proceedings"] },
+      { t: "Payslips & HR", items: ["Gross / Contributions / Tax / Net reconciliation", "Accrued severance calculation and check", "GDPR & EU AI Act compliance, data processed 100% in the EU", "AES 256-bit document encryption"] },
+    ],
+    demo: ["1. Upload the document", "2. Analysis with Artificial Intelligence", "3. Data extracted automatically", "4. AI Red-Flag Audit", "5. Ask the AI Copilot"],
+  },
+  es: {
+    docTypes: { fattura: "Factura", contratto: "Contrato", visura: "Registro Mercantil", f24: "Modelo Fiscal", busta_paga: "Nómina" },
+    pipe: ["Análisis", "Clasificación", "Extracción", "Validación"],
+    services: [
+      { t: "Modelos Fiscales y Facturas", d: "Cuadre automático Debe/Haber/Saldo, avisos de cumplimiento de IVA por encima de 5.000 €, control de IBAN extranjeros y exportación contable." },
+      { t: "Contratos y Registros Mercantiles", d: "Detección de cláusulas abusivas, plazos de preaviso/desistimiento, verificación AML/KYC con extracción de datos registrales, socios y administradores." },
+      { t: "Nóminas y RR. HH.", d: "Cuadre Bruto/Cotizaciones/IRPF/Neto, finiquito acumulado, cumplimiento RGPD y EU AI Act con servidores 100% en la UE y cifrado AES 256 bits." },
+    ],
+    features: [
+      { tag: "AUDIT", t: "Detector de Alertas con IA", d: "Un segundo cerebro de IA que revisa tus documentos y señala automáticamente los riesgos antes de que sean un problema.", points: ["Cuadre automático de modelos fiscales, facturas y nóminas", "Alerta de cláusulas abusivas en contratos", "Detección de IBAN extranjeros y anomalías antiblanqueo (AML)", "Aviso de cumplimiento de IVA para créditos superiores a 5.000 €"] },
+      { tag: "COPILOT", t: "Copilot Interactivo", d: "Haz preguntas sobre tus documentos en lenguaje natural y recibe respuestas al instante, como un asistente experto siempre disponible.", points: ["Pregunta \"¿Cuál es el total a pagar?\" y obtén la respuesta al instante", "Resúmenes y explicaciones de cláusulas complejas en lenguaje claro", "Comparación de documentos y verificación de datos clave", "Con IA Gemini, respuestas basadas solo en tu documento"] },
+    ],
+    tutorial: [
+      { t: "Sube el documento", d: "Arrastra o selecciona una factura, modelo fiscal, contrato, registro mercantil o nómina (PDF, JPG, PNG)." },
+      { t: "Elige el tipo (opcional)", d: "Selecciona la categoría del documento para una extracción aún más precisa, o deja que la IA la detecte sola." },
+      { t: "Analiza con IA", d: "En unos 2 segundos obtienes todos los datos estructurados (importes, fechas, NIF, IBAN, totales) y la auditoría antierrores." },
+      { t: "Pregunta al Copilot", d: "Haz preguntas sobre el documento en lenguaje natural y recibe respuestas inmediatas y contextuales." },
+      { t: "Exporta los datos", d: "Descarga los resultados en CSV o JSON, listos para tu software contable." },
+    ],
+    testimonials: [
+      { n: "Alessandro Rossi", s: "Bufete Rossi & Asociados • Milán", t: "Transformó nuestro despacho. La extracción de contratos y registros es 99% precisa. Ahorramos 12 horas a la semana." },
+      { n: "Elena Conti", s: "Conti & Partners • Roma", t: "El cuadre automático de saldos fiscales y facturas eliminó nuestros errores de introducción manual." },
+      { n: "Marco Bianchi", s: "Asesoría Tributaria Bianchi • Turín", t: "Los 3 créditos gratis me convencieron. Compramos el Pack Professional: soporte y exportación impecables." },
+      { n: "Chiara Ferrari", s: "Responsable de RR. HH. • Bolonia", t: "Analizar nóminas ahora tarda 2 segundos. Plataforma fiable e intuitiva." },
+    ],
+    guide: [
+      { t: "Modelos Fiscales y Facturas", items: ["Extracción automática de códigos, importes, vencimientos y saldos", "Cuadre Debe / Haber / Saldo final con aviso de descuadre", "Detección de visado de conformidad para créditos de IVA superiores a 5.000 €", "Control de IBAN extranjeros y exportación contable"] },
+      { t: "Contratos y Documentos Legales", items: ["Identificación de cláusulas abusivas", "Extracción de partes, objeto, duración, importes y desistimiento", "Avisos de preavisos y vencimientos contractuales críticos", "Resumen en lenguaje claro de cláusulas complejas"] },
+      { t: "Registros Mercantiles", items: ["Extracción de número registral, NIF, sede, capital social y email certificado", "Lista de socios, administradores y poderes de firma", "Verificaciones AML / KYC y titular real", "Estado de actividad y procedimientos en curso"] },
+      { t: "Nóminas y RR. HH.", items: ["Cuadre Bruto / Cotizaciones / IRPF / Neto", "Cálculo y verificación del finiquito acumulado", "Cumplimiento RGPD y EU AI Act, datos tratados 100% en la UE", "Cifrado AES 256 bits de los documentos"] },
+    ],
+    demo: ["1. Sube el documento", "2. Análisis con Inteligencia Artificial", "3. Datos extraídos automáticamente", "4. Auditoría de alertas con IA", "5. Pregunta al Copilot de IA"],
+  },
+  de: {
+    docTypes: { fattura: "Rechnung", contratto: "Vertrag", visura: "Handelsregister", f24: "Steuerformular", busta_paga: "Gehaltsabrechnung" },
+    pipe: ["Parsing", "Klassifizierung", "Extraktion", "Validierung"],
+    services: [
+      { t: "Steuerformulare & E-Rechnungen", d: "Automatischer Soll/Haben/Saldo-Abgleich, USt-Compliance-Hinweise über 5.000 €, Prüfung ausländischer IBAN und Buchungsexport." },
+      { t: "Verträge & Handelsregisterauszüge", d: "Erkennung unzulässiger Klauseln, Kündigungsfristen, AML/KYC-Prüfung mit Extraktion von Registernummer, Gesellschaftern und Geschäftsführern." },
+      { t: "Gehaltsabrechnungen & HR", d: "Brutto/Beiträge/Steuer/Netto-Abgleich, aufgelaufene Abfindung, DSGVO- & EU-AI-Act-Konformität mit 100% EU-Servern und AES-256-Bit-Verschlüsselung." },
+    ],
+    features: [
+      { tag: "AUDIT", t: "KI-Red-Flag-Detektor", d: "Ein zweites KI-Gehirn, das Ihre Dokumente prüft und Risiken automatisch meldet, bevor sie zum Problem werden.", points: ["Automatischer Abgleich von Steuerformularen, Rechnungen und Abrechnungen", "Warnung vor unzulässigen Klauseln in Verträgen", "Erkennung ausländischer IBAN und Geldwäsche-Anomalien (AML)", "USt-Compliance-Hinweis für Guthaben über 5.000 €"] },
+      { tag: "COPILOT", t: "Interaktiver Copilot", d: "Stellen Sie Fragen zu Ihren Dokumenten in natürlicher Sprache und erhalten Sie sofort Antworten – wie ein stets verfügbarer Experte.", points: ["Fragen Sie \"Wie hoch ist der zu zahlende Betrag?\" und erhalten Sie sofort die Antwort", "Zusammenfassungen und Erklärungen komplexer Klauseln in einfacher Sprache", "Dokumentenvergleich und Prüfung wichtiger Daten", "Basierend auf Gemini-KI, Antworten nur zu Ihrem Dokument"] },
+    ],
+    tutorial: [
+      { t: "Dokument hochladen", d: "Ziehen oder wählen Sie eine Rechnung, ein Steuerformular, einen Vertrag, einen Registerauszug oder eine Abrechnung (PDF, JPG, PNG)." },
+      { t: "Typ wählen (optional)", d: "Wählen Sie die Dokumentkategorie für eine noch präzisere Extraktion, oder lassen Sie die KI sie automatisch erkennen." },
+      { t: "Mit KI analysieren", d: "In etwa 2 Sekunden erhalten Sie alle strukturierten Daten (Beträge, Daten, USt-IdNr., IBAN, Summen) und das Fehler-Audit." },
+      { t: "Den Copilot fragen", d: "Stellen Sie Fragen zum Dokument in natürlicher Sprache und erhalten Sie sofortige, kontextbezogene Antworten." },
+      { t: "Daten exportieren", d: "Laden Sie die Ergebnisse als CSV oder JSON herunter, bereit für Ihre Buchhaltungssoftware." },
+    ],
+    testimonials: [
+      { n: "RA Alessandro Rossi", s: "Kanzlei Rossi & Partner • Mailand", t: "Es hat unsere Kanzlei revolutioniert. Die Extraktion aus Verträgen und Auszügen ist zu 99% genau. Wir sparen 12 Stunden pro Woche." },
+      { n: "StB Elena Conti", s: "Conti & Partner • Rom", t: "Der automatische Abgleich von Steuer- und Rechnungssalden hat unsere manuellen Eingabefehler eliminiert." },
+      { n: "StB Marco Bianchi", s: "Steuerkanzlei Bianchi • Turin", t: "Die 3 Gratis-Guthaben haben mich überzeugt. Wir haben das Professional-Paket gekauft: tadelloser Support und Export." },
+      { n: "Chiara Ferrari", s: "HR-Managerin • Bologna", t: "Die Analyse von Abrechnungen dauert jetzt 2 Sekunden. Zuverlässige und intuitive Plattform." },
+    ],
+    guide: [
+      { t: "Steuerformulare & E-Rechnungen", items: ["Automatische Extraktion von Steuercodes, Beträgen, Fristen und Salden", "Soll / Haben / Endsaldo-Abgleich mit Warnung bei Abweichung", "Erkennung des Konformitätsvermerks für USt-Guthaben über 5.000 €", "Prüfung ausländischer IBAN und Buchungsexport"] },
+      { t: "Verträge & Rechtsdokumente", items: ["Erkennung unzulässiger Klauseln", "Extraktion von Parteien, Gegenstand, Laufzeit, Entgelten und Kündigung", "Warnungen zu kritischen Fristen und Vertragsterminen", "Zusammenfassung komplexer Klauseln in einfacher Sprache"] },
+      { t: "Handelsregisterauszüge", items: ["Extraktion von Registernummer, USt-IdNr., Sitz, Stammkapital und zertifizierter E-Mail", "Liste der Gesellschafter, Geschäftsführer und Zeichnungsbefugnisse", "AML- / KYC-Prüfungen und wirtschaftlich Berechtigter", "Geschäftsstatus und laufende Verfahren"] },
+      { t: "Gehaltsabrechnungen & HR", items: ["Brutto / Beiträge / Steuer / Netto-Abgleich", "Berechnung und Prüfung der aufgelaufenen Abfindung", "DSGVO- & EU-AI-Act-Konformität, Daten zu 100% in der EU verarbeitet", "AES-256-Bit-Verschlüsselung der Dokumente"] },
+    ],
+    demo: ["1. Dokument hochladen", "2. Analyse mit Künstlicher Intelligenz", "3. Daten automatisch extrahiert", "4. KI-Red-Flag-Audit", "5. Den KI-Copilot fragen"],
+  },
+  fr: {
+    docTypes: { fattura: "Facture", contratto: "Contrat", visura: "Extrait Kbis", f24: "Formulaire Fiscal", busta_paga: "Bulletin de Paie" },
+    pipe: ["Analyse", "Classification", "Extraction", "Validation"],
+    services: [
+      { t: "Formulaires Fiscaux & Factures", d: "Rapprochement automatique Débit/Crédit/Solde, alertes de conformité TVA au-delà de 5 000 €, contrôle des IBAN étrangers et export comptable." },
+      { t: "Contrats & Extraits Kbis", d: "Détection des clauses abusives, préavis/rétractation, vérification AML/KYC avec extraction du numéro d'immatriculation, associés et dirigeants." },
+      { t: "Bulletins de Paie & RH", d: "Rapprochement Brut/Cotisations/Impôt/Net, indemnités acquises, conformité RGPD & EU AI Act avec serveurs 100% UE et chiffrement AES 256 bits." },
+    ],
+    features: [
+      { tag: "AUDIT", t: "Détecteur d'Alertes IA", d: "Un second cerveau IA qui vérifie vos documents et signale automatiquement les risques avant qu'ils ne deviennent un problème.", points: ["Rapprochement automatique des formulaires fiscaux, factures et bulletins", "Alerte des clauses abusives dans les contrats", "Détection des IBAN étrangers et anomalies anti-blanchiment (AML)", "Alerte de conformité TVA pour les crédits supérieurs à 5 000 €"] },
+      { tag: "COPILOT", t: "Copilot Interactif", d: "Posez des questions sur vos documents en langage naturel et obtenez des réponses immédiates, comme un expert toujours disponible.", points: ["Demandez « Quel est le total à payer ? » et obtenez la réponse instantanément", "Résumés et explications des clauses complexes en langage clair", "Comparaison de documents et vérification des données clés", "Propulsé par l'IA Gemini, réponses basées uniquement sur votre document"] },
+    ],
+    tutorial: [
+      { t: "Importez le document", d: "Glissez ou sélectionnez une facture, un formulaire fiscal, un contrat, un extrait Kbis ou un bulletin (PDF, JPG, PNG)." },
+      { t: "Choisissez le type (facultatif)", d: "Sélectionnez la catégorie du document pour une extraction encore plus précise, ou laissez l'IA la détecter seule." },
+      { t: "Analysez avec l'IA", d: "En environ 2 secondes, obtenez toutes les données structurées (montants, dates, n° TVA, IBAN, totaux) et l'audit anti-erreur." },
+      { t: "Interrogez le Copilot", d: "Posez des questions sur le document en langage naturel et obtenez des réponses immédiates et contextuelles." },
+      { t: "Exportez les données", d: "Téléchargez les résultats en CSV ou JSON, prêts pour votre logiciel comptable." },
+    ],
+    testimonials: [
+      { n: "Me Alessandro Rossi", s: "Cabinet Rossi & Associés • Milan", t: "Cela a révolutionné notre cabinet. L'extraction des contrats et extraits est précise à 99%. Nous gagnons 12 heures par semaine." },
+      { n: "Elena Conti, Expert-comptable", s: "Conti & Partners • Rome", t: "Le rapprochement automatique des soldes fiscaux et des factures a éliminé nos erreurs de saisie manuelle." },
+      { n: "Marco Bianchi, Expert-comptable", s: "Cabinet Fiscal Bianchi • Turin", t: "Les 3 crédits gratuits m'ont convaincu. Nous avons acheté le Pack Professional : support et export impeccables." },
+      { n: "Chiara Ferrari", s: "Responsable RH • Bologne", t: "Analyser les bulletins prend désormais 2 secondes. Plateforme fiable et intuitive." },
+    ],
+    guide: [
+      { t: "Formulaires Fiscaux & Factures", items: ["Extraction automatique des codes, montants, échéances et soldes", "Rapprochement Débit / Crédit / Solde final avec alerte en cas d'écart", "Détection du visa de conformité pour les crédits de TVA supérieurs à 5 000 €", "Contrôle des IBAN étrangers et export comptable"] },
+      { t: "Contrats & Documents Juridiques", items: ["Identification des clauses abusives", "Extraction des parties, objet, durée, honoraires et rétractation", "Alertes sur les préavis et échéances contractuelles critiques", "Résumé en langage clair des clauses complexes"] },
+      { t: "Extraits Kbis", items: ["Extraction du numéro d'immatriculation, TVA, siège, capital social et email certifié", "Liste des associés, dirigeants et pouvoirs de signature", "Vérifications AML / KYC et bénéficiaire effectif", "Statut de l'activité et procédures en cours"] },
+      { t: "Bulletins de Paie & RH", items: ["Rapprochement Brut / Cotisations / Impôt / Net", "Calcul et vérification des indemnités acquises", "Conformité RGPD & EU AI Act, données traitées 100% dans l'UE", "Chiffrement AES 256 bits des documents"] },
+    ],
+    demo: ["1. Importez le document", "2. Analyse avec l'Intelligence Artificielle", "3. Données extraites automatiquement", "4. Audit d'alertes IA", "5. Interrogez le Copilot IA"],
+  },
+};
+const useContent = () => CONTENT[useI18n().lang] || CONTENT.it;
+
 function LanguageSwitcher() {
   const { lang, change } = useI18n();
   const [open, setOpen] = useState(false);
