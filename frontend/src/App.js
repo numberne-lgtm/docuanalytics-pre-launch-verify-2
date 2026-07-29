@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useState, useRef, useCallback, createContext, useContext } from "react";
 import "@/App.css";
 import { BrowserRouter, Routes, Route, useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -6,10 +6,157 @@ import {
   Upload, Zap, CreditCard, FileText, ScrollText, Building2, Landmark, Wallet,
   Bot, ShieldAlert, MessageSquare, Star, CheckCircle2, X, Send, Loader2,
   Download, ChevronRight, Bitcoin, LogIn, LogOut, User, Gift, BookOpen,
-  Sparkles, Copy, Play, Lock, Facebook, Instagram, Linkedin, Youtube, Twitter, Send as Telegram
+  Sparkles, Copy, Play, Lock, Facebook, Instagram, Linkedin, Youtube, Twitter, Send as Telegram, Globe
 } from "lucide-react";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+
+/* ---------------- i18n ---------------- */
+const LANGS = [
+  { code: "it", label: "Italiano", flag: "🇮🇹" },
+  { code: "en", label: "English", flag: "🇬🇧" },
+  { code: "es", label: "Español", flag: "🇪🇸" },
+  { code: "de", label: "Deutsch", flag: "🇩🇪" },
+  { code: "fr", label: "Français", flag: "🇫🇷" },
+];
+const T = {
+  it: {
+    credits: "Crediti", topup: "Ricarica", login: "Accedi", invite: "Invita", logout: "Esci",
+    hero_kicker: "DOCUMENT INTELLIGENCE ENTERPRISE",
+    hero_t1: "Analisi Documenti con", hero_t2: "Intelligenza Artificiale",
+    hero_sub: "Carica fatture, contratti, visure ed F24. L'AI li classifica ed estrae automaticamente tutti i dati chiave in pochi secondi, con audit anti-errore integrato.",
+    up_title: "Carica Documento", up_sub: "Trascina un file o scegli il tipo di documento per l'analisi immediata",
+    up_drop: "Trascina qui il tuo documento", up_hint: "PDF, JPG, PNG — Max 10MB",
+    analyze: "Analizza Documento", analyzing: "Analisi in corso...",
+    results_title: "Risultati Analisi",
+    feat_title: "Nuove Funzionalità Avanzate", feat_sub: "Non solo estrazione dati: intelligenza che protegge il tuo studio",
+    serv_title: "Servizi AI Specialistici per il Tuo Settore", serv_sub: "Algoritmi addestrati per Commercialisti, Avvocati, Notai e CFO",
+    guide_btn: "Guida Completa ai Servizi Enterprise",
+    tut_title: "Come Funziona — Tutorial", tut_sub: "Guarda la demo animata: analizza il tuo primo documento in meno di un minuto",
+    ref_title: "Invita un collega, guadagnate entrambi", ref_sub_a: "Per ogni collega che si registra con il tuo link ricevete", ref_sub_b: "+5 crediti a testa", ref_sub_c: ". Senza limiti.",
+    ref_cta_in: "Ottieni il tuo link invito", ref_cta_out: "Accedi e invita",
+    testi_title: "Cosa dicono gli Studi Professionali", testi_sub: "4.9/5 — Basato su 482 recensioni verificate",
+    foot_desc: "Estrazione automatica ad alta precisione per studi legali, notai e commercialisti • Server UE • GDPR",
+    foot_guide: "Guida ai servizi", foot_topup: "Ricarica Crediti",
+    pric_title: "Ricarica Crediti", tab_card: "Carta / Stripe", tab_crypto: "Crypto (BTC/USDT)",
+    auth_login: "Accedi", auth_register: "Crea account", lang_label: "Lingua",
+  },
+  en: {
+    credits: "Credits", topup: "Top up", login: "Sign in", invite: "Invite", logout: "Log out",
+    hero_kicker: "ENTERPRISE DOCUMENT INTELLIGENCE",
+    hero_t1: "Document Analysis with", hero_t2: "Artificial Intelligence",
+    hero_sub: "Upload invoices, contracts, company records and tax forms. The AI classifies them and automatically extracts all key data in seconds, with a built-in error-check audit.",
+    up_title: "Upload Document", up_sub: "Drag a file or pick a document type for instant analysis",
+    up_drop: "Drag your document here", up_hint: "PDF, JPG, PNG — Max 10MB",
+    analyze: "Analyze Document", analyzing: "Analyzing...",
+    results_title: "Analysis Results",
+    feat_title: "Advanced New Features", feat_sub: "Beyond data extraction: intelligence that protects your practice",
+    serv_title: "Specialized AI Services for Your Sector", serv_sub: "Algorithms trained for Accountants, Lawyers, Notaries and CFOs",
+    guide_btn: "Full Guide to Enterprise Services",
+    tut_title: "How It Works — Tutorial", tut_sub: "Watch the animated demo: analyze your first document in under a minute",
+    ref_title: "Invite a colleague, you both earn", ref_sub_a: "For every colleague who signs up with your link you both get", ref_sub_b: "+5 credits each", ref_sub_c: ". No limits.",
+    ref_cta_in: "Get your invite link", ref_cta_out: "Sign in to invite",
+    testi_title: "What Professional Firms Say", testi_sub: "4.9/5 — Based on 482 verified reviews",
+    foot_desc: "High-precision automatic extraction for law firms, notaries and accountants • EU servers • GDPR",
+    foot_guide: "Services guide", foot_topup: "Buy Credits",
+    pric_title: "Buy Credits", tab_card: "Card / Stripe", tab_crypto: "Crypto (BTC/USDT)",
+    auth_login: "Sign in", auth_register: "Create account", lang_label: "Language",
+  },
+  es: {
+    credits: "Créditos", topup: "Recargar", login: "Acceder", invite: "Invitar", logout: "Salir",
+    hero_kicker: "INTELIGENCIA DOCUMENTAL EMPRESARIAL",
+    hero_t1: "Análisis de Documentos con", hero_t2: "Inteligencia Artificial",
+    hero_sub: "Sube facturas, contratos, registros mercantiles y modelos fiscales. La IA los clasifica y extrae automáticamente todos los datos clave en segundos, con auditoría antierrores integrada.",
+    up_title: "Subir Documento", up_sub: "Arrastra un archivo o elige el tipo de documento para un análisis inmediato",
+    up_drop: "Arrastra aquí tu documento", up_hint: "PDF, JPG, PNG — Máx 10MB",
+    analyze: "Analizar Documento", analyzing: "Analizando...",
+    results_title: "Resultados del Análisis",
+    feat_title: "Nuevas Funciones Avanzadas", feat_sub: "Más que extracción de datos: inteligencia que protege tu despacho",
+    serv_title: "Servicios de IA Especializados para tu Sector", serv_sub: "Algoritmos entrenados para Contables, Abogados, Notarios y directores financieros",
+    guide_btn: "Guía Completa de Servicios Enterprise",
+    tut_title: "Cómo Funciona — Tutorial", tut_sub: "Mira la demo animada: analiza tu primer documento en menos de un minuto",
+    ref_title: "Invita a un colega, ganáis los dos", ref_sub_a: "Por cada colega que se registre con tu enlace recibís", ref_sub_b: "+5 créditos cada uno", ref_sub_c: ". Sin límites.",
+    ref_cta_in: "Obtén tu enlace de invitación", ref_cta_out: "Accede e invita",
+    testi_title: "Lo que dicen los despachos profesionales", testi_sub: "4.9/5 — Basado en 482 reseñas verificadas",
+    foot_desc: "Extracción automática de alta precisión para bufetes, notarías y asesorías • Servidores UE • RGPD",
+    foot_guide: "Guía de servicios", foot_topup: "Comprar Créditos",
+    pric_title: "Comprar Créditos", tab_card: "Tarjeta / Stripe", tab_crypto: "Cripto (BTC/USDT)",
+    auth_login: "Acceder", auth_register: "Crear cuenta", lang_label: "Idioma",
+  },
+  de: {
+    credits: "Guthaben", topup: "Aufladen", login: "Anmelden", invite: "Einladen", logout: "Abmelden",
+    hero_kicker: "ENTERPRISE DOCUMENT INTELLIGENCE",
+    hero_t1: "Dokumentenanalyse mit", hero_t2: "Künstlicher Intelligenz",
+    hero_sub: "Laden Sie Rechnungen, Verträge, Handelsregisterauszüge und Steuerformulare hoch. Die KI klassifiziert sie und extrahiert automatisch alle wichtigen Daten in Sekunden – mit integriertem Fehler-Audit.",
+    up_title: "Dokument hochladen", up_sub: "Datei ziehen oder Dokumenttyp für die sofortige Analyse wählen",
+    up_drop: "Dokument hierher ziehen", up_hint: "PDF, JPG, PNG — max. 10 MB",
+    analyze: "Dokument analysieren", analyzing: "Analyse läuft...",
+    results_title: "Analyseergebnisse",
+    feat_title: "Neue erweiterte Funktionen", feat_sub: "Mehr als Datenextraktion: Intelligenz, die Ihre Kanzlei schützt",
+    serv_title: "Spezialisierte KI-Dienste für Ihre Branche", serv_sub: "Algorithmen für Steuerberater, Anwälte, Notare und CFOs",
+    guide_btn: "Vollständiger Leitfaden zu Enterprise-Diensten",
+    tut_title: "So funktioniert's — Tutorial", tut_sub: "Sehen Sie die animierte Demo: analysieren Sie Ihr erstes Dokument in unter einer Minute",
+    ref_title: "Laden Sie eine Kollegin ein – beide profitieren", ref_sub_a: "Für jede Person, die sich mit Ihrem Link registriert, erhalten Sie beide", ref_sub_b: "+5 Guthaben je", ref_sub_c: ". Ohne Limit.",
+    ref_cta_in: "Einladungslink erhalten", ref_cta_out: "Anmelden und einladen",
+    testi_title: "Was Fachkanzleien sagen", testi_sub: "4.9/5 — Basierend auf 482 verifizierten Bewertungen",
+    foot_desc: "Hochpräzise automatische Extraktion für Kanzleien, Notare und Steuerberater • EU-Server • DSGVO",
+    foot_guide: "Service-Leitfaden", foot_topup: "Guthaben kaufen",
+    pric_title: "Guthaben kaufen", tab_card: "Karte / Stripe", tab_crypto: "Krypto (BTC/USDT)",
+    auth_login: "Anmelden", auth_register: "Konto erstellen", lang_label: "Sprache",
+  },
+  fr: {
+    credits: "Crédits", topup: "Recharger", login: "Se connecter", invite: "Inviter", logout: "Déconnexion",
+    hero_kicker: "DOCUMENT INTELLIGENCE ENTREPRISE",
+    hero_t1: "Analyse de Documents avec", hero_t2: "Intelligence Artificielle",
+    hero_sub: "Importez factures, contrats, extraits Kbis et formulaires fiscaux. L'IA les classe et extrait automatiquement toutes les données clés en quelques secondes, avec audit anti-erreur intégré.",
+    up_title: "Importer un document", up_sub: "Glissez un fichier ou choisissez le type de document pour une analyse immédiate",
+    up_drop: "Glissez votre document ici", up_hint: "PDF, JPG, PNG — Max 10 Mo",
+    analyze: "Analyser le document", analyzing: "Analyse en cours...",
+    results_title: "Résultats de l'analyse",
+    feat_title: "Nouvelles fonctionnalités avancées", feat_sub: "Au-delà de l'extraction : une intelligence qui protège votre cabinet",
+    serv_title: "Services IA spécialisés pour votre secteur", serv_sub: "Algorithmes entraînés pour experts-comptables, avocats, notaires et directeurs financiers",
+    guide_btn: "Guide complet des services Enterprise",
+    tut_title: "Comment ça marche — Tutoriel", tut_sub: "Regardez la démo animée : analysez votre premier document en moins d'une minute",
+    ref_title: "Invitez un confrère, gagnez tous les deux", ref_sub_a: "Pour chaque confrère qui s'inscrit avec votre lien, vous recevez", ref_sub_b: "+5 crédits chacun", ref_sub_c: ". Sans limite.",
+    ref_cta_in: "Obtenez votre lien d'invitation", ref_cta_out: "Connectez-vous pour inviter",
+    testi_title: "Ce que disent les cabinets", testi_sub: "4.9/5 — Sur la base de 482 avis vérifiés",
+    foot_desc: "Extraction automatique haute précision pour cabinets d'avocats, notaires et experts-comptables • Serveurs UE • RGPD",
+    foot_guide: "Guide des services", foot_topup: "Acheter des crédits",
+    pric_title: "Acheter des crédits", tab_card: "Carte / Stripe", tab_crypto: "Crypto (BTC/USDT)",
+    auth_login: "Se connecter", auth_register: "Créer un compte", lang_label: "Langue",
+  },
+};
+const I18nContext = createContext({ lang: "it", t: (k) => k, change: () => {} });
+function I18nProvider({ children }) {
+  const [lang, setLang] = useState(localStorage.getItem("da_lang") || "it");
+  const t = useCallback((k) => (T[lang] && T[lang][k]) || T.it[k] || k, [lang]);
+  const change = useCallback((l) => { setLang(l); localStorage.setItem("da_lang", l); document.documentElement.lang = l; }, []);
+  return <I18nContext.Provider value={{ lang, t, change }}>{children}</I18nContext.Provider>;
+}
+const useI18n = () => useContext(I18nContext);
+
+function LanguageSwitcher() {
+  const { lang, change } = useI18n();
+  const [open, setOpen] = useState(false);
+  const cur = LANGS.find((l) => l.code === lang) || LANGS[0];
+  return (
+    <div className="lang-wrap" data-testid="lang-switcher">
+      <button className="btn btn-sm btn-ghost" data-testid="lang-toggle" onClick={() => setOpen((o) => !o)}>
+        <Globe size={15} /> {cur.flag} <span className="lang-code">{cur.code.toUpperCase()}</span>
+      </button>
+      {open && (
+        <div className="lang-menu" onMouseLeave={() => setOpen(false)}>
+          {LANGS.map((l) => (
+            <div key={l.code} className={`lang-item ${l.code === lang ? "on" : ""}`} data-testid={`lang-${l.code}`}
+              onClick={() => { change(l.code); setOpen(false); }}>
+              <span>{l.flag}</span> {l.label}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 // Social links — sostituisci gli URL con i tuoi profili reali quando li crei.
 const SOCIALS = [
@@ -92,6 +239,7 @@ function Toast({ msg }) {
 
 function Home() {
   const { user, setUser, refresh, authed, login, logout } = useUser();
+  const { t } = useI18n();
   const [docType, setDocType] = useState("auto");
   const [file, setFile] = useState(null);
   const [drag, setDrag] = useState(false);
@@ -177,9 +325,9 @@ function Home() {
       <main className="wrap">
         {/* Hero */}
         <section className="hero fade">
-          <div className="hero-badges mb1"><span className="badge badge-info">DOCUMENT INTELLIGENCE ENTERPRISE</span></div>
-          <h1>Analisi Documenti con<br /><span className="grad">Intelligenza Artificiale</span></h1>
-          <p>Carica fatture, contratti, visure ed F24. L'AI li classifica ed estrae automaticamente tutti i dati chiave in pochi secondi, con audit anti-errore integrato.</p>
+          <div className="hero-badges mb1"><span className="badge badge-info">{t("hero_kicker")}</span></div>
+          <h1>{t("hero_t1")}<br /><span className="grad">{t("hero_t2")}</span></h1>
+          <p>{t("hero_sub")}</p>
           <div className="hero-badges">
             {DOC_TYPES.map(({ id, label, Icon }) => (
               <span className="hero-badge flex aic gap" key={id}><Icon size={15} /> {label}</span>
@@ -190,8 +338,8 @@ function Home() {
         {/* Upload */}
         <section className="section" id="upload">
           <div className="accent-bar" />
-          <h2 className="section-title">Carica Documento</h2>
-          <p className="section-sub mb1">Trascina un file o scegli il tipo di documento per l'analisi immediata</p>
+          <h2 className="section-title">{t("up_title")}</h2>
+          <p className="section-sub mb1">{t("up_sub")}</p>
 
           <div className="chips mb1">
             {DOC_TYPES.map(({ id, label, Icon }) => (
@@ -208,15 +356,15 @@ function Home() {
             onDragLeave={() => setDrag(false)}
             onDrop={(e) => { e.preventDefault(); setDrag(false); onFile(e.dataTransfer.files[0]); }}>
             <Upload className="ic" />
-            <p style={{ fontWeight: 700, fontSize: "1.05rem" }}>{file ? file.name : "Trascina qui il tuo documento"}</p>
-            <p style={{ color: "var(--text-muted)", fontSize: ".85rem", marginTop: ".3rem" }}>PDF, JPG, PNG — Max 10MB</p>
+            <p style={{ fontWeight: 700, fontSize: "1.05rem" }}>{file ? file.name : t("up_drop")}</p>
+            <p style={{ color: "var(--text-muted)", fontSize: ".85rem", marginTop: ".3rem" }}>{t("up_hint")}</p>
             <input ref={inputRef} type="file" hidden accept=".pdf,.jpg,.jpeg,.png"
               data-testid="file-input" onChange={(e) => onFile(e.target.files[0])} />
           </div>
 
           <div className="center mt2">
             <button className="btn btn-primary btn-lg" data-testid="analyze-btn" disabled={!file || analyzing} onClick={analyze}>
-              {analyzing ? <><Loader2 className="spinner" /> Analisi in corso...</> : <><Bot size={18} /> Analizza Documento</>}
+              {analyzing ? <><Loader2 className="spinner" /> {t("analyzing")}</> : <><Bot size={18} /> {t("analyze")}</>}
             </button>
           </div>
 
@@ -254,21 +402,23 @@ function Home() {
 }
 
 function Header({ credits, authed, user, onTopup, onAuth, onReferral, onLogout }) {
+  const { t } = useI18n();
   return (
     <header className="header">
       <div className="header-inner">
         <div className="logo"><img src="/logo.png" alt="DocuAnalytics AI" className="logo-img" /> Docu<span className="grad">Analytics</span> AI</div>
         <nav className="nav">
-          <span className="credits-badge" data-testid="credits-badge"><Zap size={15} /> {credits} Crediti</span>
-          <button className="btn btn-primary btn-sm" data-testid="topup-btn" onClick={onTopup}><CreditCard size={15} /> Ricarica</button>
+          <LanguageSwitcher />
+          <span className="credits-badge" data-testid="credits-badge"><Zap size={15} /> {credits} {t("credits")}</span>
+          <button className="btn btn-primary btn-sm" data-testid="topup-btn" onClick={onTopup}><CreditCard size={15} /> {t("topup")}</button>
           {authed ? (
             <>
-              <button className="btn btn-sm" data-testid="referral-btn" onClick={onReferral}><Gift size={15} /> Invita</button>
+              <button className="btn btn-sm" data-testid="referral-btn" onClick={onReferral}><Gift size={15} /> {t("invite")}</button>
               <span className="btn btn-sm btn-ghost" data-testid="user-badge" title={user.email}><User size={15} /> {user.name || "Account"}</span>
               <button className="btn btn-sm" data-testid="logout-btn" onClick={onLogout}><LogOut size={15} /></button>
             </>
           ) : (
-            <button className="btn btn-accent btn-sm" data-testid="auth-btn" onClick={onAuth}><LogIn size={15} /> Accedi</button>
+            <button className="btn btn-accent btn-sm" data-testid="auth-btn" onClick={onAuth}><LogIn size={15} /> {t("login")}</button>
           )}
         </nav>
       </div>
@@ -277,6 +427,7 @@ function Header({ credits, authed, user, onTopup, onAuth, onReferral, onLogout }
 }
 
 function Results({ result, analysisId, notify }) {
+  const { t } = useI18n();
   const [q, setQ] = useState("");
   const [msgs, setMsgs] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -307,7 +458,7 @@ function Results({ result, analysisId, notify }) {
   return (
     <section className="section fade" id="results">
       <div className="accent-bar" />
-      <h2 className="section-title">Risultati Analisi</h2>
+      <h2 className="section-title">{t("results_title")}</h2>
       <p className="section-sub mb1">{result.doc_type} — {result.summary}</p>
 
       <div className="grid" style={{ gridTemplateColumns: "1.4fr 1fr" }}>
@@ -357,6 +508,7 @@ function Results({ result, analysisId, notify }) {
 }
 
 function Services({ onGuide }) {
+  const { t } = useI18n();
   const cards = [
     { Icon: Landmark, t: "F24 & Fatture Elettroniche", d: "Quadratura automatica Debito/Credito/Saldo, avviso visto conformità IVA sopra €5.000, controllo IBAN esteri e Prima Nota per Zucchetti/TeamSystem." },
     { Icon: ScrollText, t: "Contratti & Visure Camerali", d: "Rilevamento clausole vessatorie (Art. 1341 c.c.), preavvisi recesso, verifica antiriciclaggio KYC/AML con estrazione REA, soci e amministratori." },
@@ -365,8 +517,8 @@ function Services({ onGuide }) {
   return (
     <section className="section" id="servizi">
       <div className="accent-bar" />
-      <h2 className="section-title">Servizi AI Specialistici per il Tuo Settore</h2>
-      <p className="section-sub mb1">Algoritmi addestrati per Commercialisti, Avvocati, Notai e CFO</p>
+      <h2 className="section-title">{t("serv_title")}</h2>
+      <p className="section-sub mb1">{t("serv_sub")}</p>
       <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(280px,1fr))" }}>
         {cards.map((c) => (
           <div className="glass pad" key={c.t}>
@@ -377,7 +529,7 @@ function Services({ onGuide }) {
         ))}
       </div>
       <div className="center mt2">
-        <button className="btn btn-accent" data-testid="open-guide-btn" onClick={onGuide}><BookOpen size={16} /> Guida Completa ai Servizi Enterprise</button>
+        <button className="btn btn-accent" data-testid="open-guide-btn" onClick={onGuide}><BookOpen size={16} /> {t("guide_btn")}</button>
       </div>
     </section>
   );
@@ -407,11 +559,12 @@ const FEATURES = [
 ];
 
 function NewFeatures() {
+  const { t } = useI18n();
   return (
     <section className="section" id="funzionalita">
       <div className="accent-bar" />
-      <div className="flex aic gap mb1"><h2 className="section-title">Nuove Funzionalità Avanzate</h2><span className="badge badge-new">NEW</span></div>
-      <p className="section-sub mb1">Non solo estrazione dati: intelligenza che protegge il tuo studio</p>
+      <div className="flex aic gap mb1"><h2 className="section-title">{t("feat_title")}</h2><span className="badge badge-new">NEW</span></div>
+      <p className="section-sub mb1">{t("feat_sub")}</p>
       <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(320px,1fr))" }}>
         {FEATURES.map((f) => (
           <div className="glass pad" key={f.t}>
@@ -531,11 +684,12 @@ function DemoPlayer() {
 }
 
 function Tutorials() {
+  const { t } = useI18n();
   return (
     <section className="section" id="tutorial">
       <div className="accent-bar" />
-      <div className="flex aic gap mb1"><h2 className="section-title">Come Funziona — Tutorial</h2><Play size={20} color="var(--accent)" /></div>
-      <p className="section-sub mb1">Guarda la demo animata: analizza il tuo primo documento in meno di un minuto</p>
+      <div className="flex aic gap mb1"><h2 className="section-title">{t("tut_title")}</h2><Play size={20} color="var(--accent)" /></div>
+      <p className="section-sub mb1">{t("tut_sub")}</p>
 
       <DemoPlayer />
 
@@ -553,14 +707,15 @@ function Tutorials() {
 }
 
 function ReferralBanner({ authed, onInvite }) {
+  const { t } = useI18n();
   return (
     <section className="section">
       <div className="glass pad" style={{ textAlign: "center", border: "1px solid #00d2ff44" }}>
         <Gift size={34} color="var(--accent)" />
-        <h2 className="section-title mt1">Invita un collega, guadagnate entrambi</h2>
-        <p className="section-sub mb1">Per ogni collega che si registra con il tuo link ricevete <strong style={{ color: "var(--accent)" }}>+5 crediti a testa</strong>. Senza limiti.</p>
+        <h2 className="section-title mt1">{t("ref_title")}</h2>
+        <p className="section-sub mb1">{t("ref_sub_a")} <strong style={{ color: "var(--accent)" }}>{t("ref_sub_b")}</strong>{t("ref_sub_c")}</p>
         <button className="btn btn-primary" data-testid="referral-cta" onClick={onInvite}>
-          <Gift size={16} /> {authed ? "Ottieni il tuo link invito" : "Accedi e invita"}
+          <Gift size={16} /> {authed ? t("ref_cta_in") : t("ref_cta_out")}
         </button>
       </div>
     </section>
@@ -568,6 +723,7 @@ function ReferralBanner({ authed, onInvite }) {
 }
 
 function Testimonials() {
+  const { t } = useI18n();
   const revs = [
     { n: "Avv. Alessandro Rossi", s: "Studio Legale Rossi & Associati • Milano", t: "Ha rivoluzionato il nostro studio. L'estrazione da contratti e visure è accurata al 99%. Risparmiamo 12 ore a settimana." },
     { n: "Dott.ssa Elena Conti", s: "Conti & Partners • Roma", t: "La quadratura automatica dei saldi F24 e delle fatture ci ha azzerato gli errori di digitazione manuale." },
@@ -577,8 +733,8 @@ function Testimonials() {
   return (
     <section className="section">
       <div className="accent-bar" />
-      <h2 className="section-title">Cosa dicono gli Studi Professionali</h2>
-      <p className="section-sub mb1">⭐ 4.9/5 — Basato su 482 recensioni verificate</p>
+      <h2 className="section-title">{t("testi_title")}</h2>
+      <p className="section-sub mb1">⭐ {t("testi_sub")}</p>
       <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(240px,1fr))" }}>
         {revs.map((r, i) => (
           <div className="glass pad testi" key={i}>
@@ -596,6 +752,7 @@ function Testimonials() {
 }
 
 function PricingModal({ user, onClose, notify }) {
+  const { t } = useI18n();
   const [tab, setTab] = useState("stripe");
   const [info, setInfo] = useState(null);
   const [coin, setCoin] = useState("BTC");
@@ -654,13 +811,13 @@ function PricingModal({ user, onClose, notify }) {
     <div className="modal-bg" onClick={onClose}>
       <div className="modal glass pad fade" onClick={(e) => e.stopPropagation()} data-testid="pricing-modal">
         <div className="modal-head">
-          <h2 className="section-title">Ricarica Crediti</h2>
+          <h2 className="section-title">{t("pric_title")}</h2>
           <button className="close-x" data-testid="close-pricing" onClick={onClose}><X size={18} /></button>
         </div>
 
         <div className="tabs">
-          <div className={`tab ${tab === "stripe" ? "active" : ""}`} data-testid="tab-stripe" onClick={() => setTab("stripe")}><CreditCard size={15} style={{ display: "inline", marginRight: 6 }} /> Carta / Stripe</div>
-          <div className={`tab ${tab === "crypto" ? "active" : ""}`} data-testid="tab-crypto" onClick={() => setTab("crypto")}><Bitcoin size={15} style={{ display: "inline", marginRight: 6 }} /> Crypto (BTC/USDT)</div>
+          <div className={`tab ${tab === "stripe" ? "active" : ""}`} data-testid="tab-stripe" onClick={() => setTab("stripe")}><CreditCard size={15} style={{ display: "inline", marginRight: 6 }} /> {t("tab_card")}</div>
+          <div className={`tab ${tab === "crypto" ? "active" : ""}`} data-testid="tab-crypto" onClick={() => setTab("crypto")}><Bitcoin size={15} style={{ display: "inline", marginRight: 6 }} /> {t("tab_crypto")}</div>
         </div>
 
         {tab === "stripe" && (
@@ -719,6 +876,7 @@ function PricingModal({ user, onClose, notify }) {
 }
 
 function Footer({ onTopup, onGuide }) {
+  const { t } = useI18n();
   return (
     <footer className="footer">
       <div className="wrap">
@@ -726,7 +884,7 @@ function Footer({ onTopup, onGuide }) {
           <img src="/logo.png" alt="DocuAnalytics AI" className="logo-img" />
           <p style={{ fontWeight: 800 }}>DocuAnalytics Enterprise — AI Document Intelligence</p>
         </div>
-        <p style={{ color: "var(--text-muted)", fontSize: ".82rem", marginTop: ".3rem" }}>Estrazione automatica ad alta precisione per studi legali, notai e commercialisti • Server UE • GDPR</p>
+        <p style={{ color: "var(--text-muted)", fontSize: ".82rem", marginTop: ".3rem" }}>{t("foot_desc")}</p>
 
         <div className="socials" data-testid="social-links">
           {SOCIALS.map(({ name, Icon, url }) => (
@@ -738,8 +896,8 @@ function Footer({ onTopup, onGuide }) {
         </div>
 
         <div className="flex gap wrapf aic" style={{ justifyContent: "center", marginTop: "1rem" }}>
-          <button className="btn btn-sm btn-ghost" onClick={onGuide}><BookOpen size={14} /> Guida ai servizi</button>
-          <button className="btn btn-primary btn-sm" onClick={onTopup}><CreditCard size={14} /> Ricarica Crediti</button>
+          <button className="btn btn-sm btn-ghost" onClick={onGuide}><BookOpen size={14} /> {t("foot_guide")}</button>
+          <button className="btn btn-primary btn-sm" onClick={onTopup}><CreditCard size={14} /> {t("foot_topup")}</button>
         </div>
         <p style={{ color: "var(--text-muted)", fontSize: ".72rem", marginTop: "1.2rem" }}>© {new Date().getFullYear()} DocuAnalytics AI · Tutti i diritti riservati</p>
       </div>
@@ -748,6 +906,7 @@ function Footer({ onTopup, onGuide }) {
 }
 
 function AuthModal({ user, onClose, onAuthed, notify }) {
+  const { t } = useI18n();
   const [mode, setMode] = useState("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -778,12 +937,12 @@ function AuthModal({ user, onClose, onAuthed, notify }) {
     <div className="modal-bg" onClick={onClose}>
       <div className="modal glass pad fade" style={{ maxWidth: 440 }} onClick={(e) => e.stopPropagation()} data-testid="auth-modal">
         <div className="modal-head">
-          <h2 className="section-title flex aic gap"><Lock size={20} /> {mode === "login" ? "Accedi" : "Crea account"}</h2>
+          <h2 className="section-title flex aic gap"><Lock size={20} /> {mode === "login" ? t("auth_login") : t("auth_register")}</h2>
           <button className="close-x" data-testid="close-auth" onClick={onClose}><X size={18} /></button>
         </div>
         <div className="tabs">
-          <div className={`tab ${mode === "login" ? "active" : ""}`} data-testid="tab-login" onClick={() => setMode("login")}>Accedi</div>
-          <div className={`tab ${mode === "register" ? "active" : ""}`} data-testid="tab-register" onClick={() => setMode("register")}>Registrati</div>
+          <div className={`tab ${mode === "login" ? "active" : ""}`} data-testid="tab-login" onClick={() => setMode("login")}>{t("auth_login")}</div>
+          <div className={`tab ${mode === "register" ? "active" : ""}`} data-testid="tab-register" onClick={() => setMode("register")}>{t("auth_register")}</div>
         </div>
         {mode === "register" && (
           <input className="input mb1" data-testid="auth-name" placeholder="Nome (es. Studio Rossi)" value={name} onChange={(e) => setName(e.target.value)} />
@@ -890,11 +1049,13 @@ function ServicesGuideModal({ onClose }) {
 
 function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="*" element={<Home />} />
-      </Routes>
-    </BrowserRouter>
+    <I18nProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route path="*" element={<Home />} />
+        </Routes>
+      </BrowserRouter>
+    </I18nProvider>
   );
 }
 export default App;

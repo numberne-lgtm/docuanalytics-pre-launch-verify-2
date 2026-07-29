@@ -1,0 +1,30 @@
+{
+  "summary": "Frontend-only i18n language switcher testing on DocuAnalytics AI. Verified language toggle in header, all 5 languages (IT default, EN, ES, DE, FR) switching hero title / analyze button / upload title / header buttons / section titles. Verified localStorage persistence ('da_lang') across reload. Ran regression on pricing modal (6 buy buttons + crypto tab with wallet-address), auth modal (tab-login/tab-register present), and upload UI intact after switching. i18n switcher works correctly. Two minor issues surfaced.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "I18nProvider", "issue": "document.documentElement.lang is NOT updated on initial page load / reload. It is only set inside the change() callback (line 133 of App.js). After reload with localStorage.da_lang='en', the hero/UI renders in English but <html lang='...'> remains 'it' (initial SSR/HTML value). Missing useEffect to sync lang -> document.documentElement.lang on mount and on lang change. Affects a11y/SEO.", "selector": "document.documentElement.lang", "priority": "LOW"},
+      {"component": "AuthModal", "issue": "Auth submit button label 'auth-submit' still shows 'Accedi' (Italian) when interface language is EN/ES/DE/FR. Password placeholder 'Password (min 6 caratteri)' and helper text under the form also remain Italian. Tab labels ('Sign in'/'Create account') and title ARE translated. Minor inconsistency — per agent note, modal labels should be translated but some are missed. NOTE: deep content is intentionally IT per instructions, so this may be by design; flagging the submit button label since it's a primary interactive control.", "selector": "[data-testid=auth-submit]", "priority": "LOW"}
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Pricing modal — crypto tab select", "issues": ["Console hydration warning: <span> inside <option> (dev-tool wrapped span with x-excluded attr). Not user-facing but generates a React hydration error in dev overlay/console. Source: dev-instrumentation, may be safe to ignore in prod build."]}
+    ]
+  },
+  "test_report_links": [],
+  "action_items": [
+    "Add useEffect(() => { document.documentElement.lang = lang; }, [lang]) inside I18nProvider so <html lang> syncs on initial mount after reload (currently only updated inside change()).",
+    "OPTIONAL: Translate auth-submit button label + password placeholder + helper text (currently Italian even when EN/ES/DE/FR selected). If this is intentional per 'deep content stays IT' rule, ignore."
+  ],
+  "critical_code_review_comments": [
+    "App.js line 133: change() combines setState + localStorage + document.lang side-effect. Move document.documentElement.lang side effect into a useEffect on [lang] so it runs on mount too — cleaner and fixes reload bug.",
+    "App.js is very large (>1050 lines) — consider splitting I18nProvider, LanguageSwitcher, and translation dictionary T into separate files (e.g., src/i18n/)."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A (skipped per request)", "frontend": "95% (17/18 core assertions pass; the 4 hero-substring 'FAIL' results in first run were false negatives caused by <br>-separated <span> whitespace loss in text_content — screenshots confirm all 5 languages render correctly)"},
+  "seed_data_creation": "None",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "i18n switcher fully functional across IT/EN/ES/DE/FR. When asserting hero text, note that .hero h1 contains two <span> elements separated by <br>, so text_content() returns them concatenated WITHOUT a space (e.g. 'Document Analysis withArtificial Intelligence'). Use partial substring match on first span only, or check innerHTML. Toggle testid: lang-toggle; options: lang-it/en/es/de/fr. localStorage key: 'da_lang'. Known open issues: (1) document.documentElement.lang not synced on reload, (2) auth-submit button + password placeholder untranslated.",
+  "rca of the issue": "document.documentElement.lang not syncing on reload — RCA: In /app/frontend/src/App.js line 130-133, I18nProvider initializes lang state from localStorage but the code that sets document.documentElement.lang lives ONLY inside change() callback. On reload, useState reads 'en' from localStorage correctly (so UI translates), but change() is never invoked, so <html lang> keeps its SSR/initial 'it' value. Fix: add `useEffect(() => { document.documentElement.lang = lang; }, [lang]);` inside I18nProvider. Reproduction: switch to EN → reload → run document.documentElement.lang in devtools → returns 'it' while UI is in English."
+}

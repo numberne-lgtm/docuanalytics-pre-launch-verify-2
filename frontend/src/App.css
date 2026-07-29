@@ -30,6 +30,12 @@ body{background:var(--bg-color);color:var(--text-primary);font-family:'Inter',sa
 .logo .grad{background:var(--gradient-primary);-webkit-background-clip:text;background-clip:text;color:transparent}
 .nav{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap}
 .credits-badge{display:inline-flex;align-items:center;gap:.35rem;background:#00d2ff14;border:1px solid #00d2ff44;color:var(--accent);padding:.3rem .7rem;border-radius:20px;font-weight:700;font-size:.82rem}
+.lang-wrap{position:relative}
+.lang-code{font-weight:800;font-size:.72rem}
+.lang-menu{position:absolute;top:110%;right:0;z-index:60;background:var(--surface-elevated);border:1px solid var(--border-color);border-radius:12px;padding:.4rem;min-width:160px;box-shadow:0 12px 32px #000a}
+.lang-item{display:flex;align-items:center;gap:.5rem;padding:.5rem .6rem;border-radius:8px;cursor:pointer;font-size:.85rem;transition:background-color .15s}
+.lang-item:hover{background:#ffffff12}
+.lang-item.on{background:#00d2ff1a;color:var(--accent);font-weight:700}
 
 /* Buttons */
 .btn{display:inline-flex;align-items:center;gap:.5rem;border:1px solid var(--border-color);background:#ffffff0d;color:var(--text-primary);
