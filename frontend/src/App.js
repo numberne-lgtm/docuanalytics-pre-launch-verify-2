@@ -169,7 +169,11 @@ const T = {
 };
 const I18nContext = createContext({ lang: "it", t: (k) => k, change: () => {} });
 function I18nProvider({ children }) {
-  const [lang, setLang] = useState(localStorage.getItem("da_lang") || "it");
+  const [lang, setLang] = useState(() => {
+    const q = new URLSearchParams(window.location.search).get("lang");
+    if (q && ["it", "en", "es", "de", "fr"].includes(q)) { localStorage.setItem("da_lang", q); return q; }
+    return localStorage.getItem("da_lang") || "it";
+  });
   const t = useCallback((k) => (T[lang] && T[lang][k]) || T.it[k] || k, [lang]);
   const change = useCallback((l) => { setLang(l); localStorage.setItem("da_lang", l); }, []);
   useEffect(() => { document.documentElement.lang = lang; }, [lang]);
@@ -472,6 +476,15 @@ function Home() {
   const inputRef = useRef();
 
   const notify = (m) => { setToast(m); setTimeout(() => setToast(""), 6000); };
+
+  useEffect(() => {
+    const langs = ["it", "en", "es", "de", "fr"];
+    const links = [];
+    const add = (hl, href) => { const l = document.createElement("link"); l.rel = "alternate"; l.hreflang = hl; l.href = href; l.setAttribute("data-hl", "1"); document.head.appendChild(l); links.push(l); };
+    langs.forEach((l) => add(l, l === "it" ? "https://docuanalytics.online/" : `https://docuanalytics.online/?lang=${l}`));
+    add("x-default", "https://docuanalytics.online/");
+    return () => links.forEach((l) => l.remove());
+  }, []);
 
   useEffect(() => {
     // handle payment return
