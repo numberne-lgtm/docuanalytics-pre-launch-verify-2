@@ -71,9 +71,13 @@ IMPLEMENTATO E TESTATO (19/19 backend + frontend E2E, 100%):
 - Auth JWT (register/login/me, Bearer) + Referral +5/+5.
 - **i18n multilingua** (IT/EN/ES/DE/FR): I18nProvider + t() + LanguageSwitcher in header, persistenza localStorage 'da_lang', <html lang> sincronizzato. Tradotti: header, hero, upload, titoli/sottotitoli sezioni, footer, modali pricing/auth. I testi lunghi (descrizioni servizi, recensioni, step tutorial) restano in IT (traduzione profonda opzionale futura). Verificato dal testing agent (iteration_6): 5 lingue OK + persistenza.
 
+## Aggiornamento (2026-06) — Sessione 5 (fork): i18n COMPLETO
+- **ROOT CAUSE traduzione incompleta**: il dizionario `CONTENT` (services/features/tutorial/testimonials/guide/demo/docTypes/pipe) esisteva già tradotto in 5 lingue, MA i componenti (Services, NewFeatures, Tutorials, DemoPlayer, Testimonials, chips/hero, PricingModal, ReferralModal, ServicesGuideModal, Footer) usavano array Italiani HARDCODED e non leggevano mai `CONTENT`.
+- **FIX**: cablati tutti i componenti a `useContent()`; aggiunte ~55 chiavi UI/notifiche in `T` per 5 lingue (results, pricing modal completo, crypto tab, referral modal, guide modal, footer, toast/notifiche pagamento/auth). Rimossi i costanti obsoleti (FEATURES, TUTORIAL_STEPS, DEMO_SCENES, GUIDE_SECTIONS, PIPE, label docType).
+- **Verificato dal testing agent (iteration_7): 100% (7/7 item)** — tutte le sezioni cambiano lingua in IT/EN/ES/DE/FR, persistenza `da_lang` + `<html lang>` su reload OK (bug iteration_6 risolto), 0 errori console.
+
 ## Promemoria aperto
-- BLOG SEO + landing per settore (richiesto/rinviato).
-- PayPal in pausa (servono Client ID + Secret).
-- Social URL reali da fornire (tranne Facebook già impostato).
-- Traduzione profonda contenuti lunghi (opzionale).
-- Ogni modifica richiede DEPLOY per andare in produzione.
+- BLOG SEO + landing per settore (richiesto/rinviato) — NON avviato, non richiede input utente.
+- PayPal: IN ATTESA dei valori concreti dall'utente (Client ID + Secret + modalità Sandbox/Live + pacchetti). L'utente ha ri-selezionato le etichette ma non ha ancora incollato le credenziali reali.
+- Social URL reali: IN ATTESA (LinkedIn/Instagram/X/YouTube). Facebook già impostato; gli altri sono placeholder in `SOCIALS` (App.js).
+- Ogni modifica richiede DEPLOY per andare in produzione (docuanalytics.online).
