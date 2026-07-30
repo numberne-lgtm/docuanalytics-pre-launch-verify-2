@@ -156,3 +156,7 @@ body{background:var(--bg-color);color:var(--text-primary);font-family:'Inter',sa
 .demo-progress{display:flex;justify-content:center;gap:.5rem;padding:.9rem;border-top:1px solid var(--border-color)}
 .demo-dot{width:26px;height:5px;border-radius:4px;background:#ffffff26;cursor:pointer;transition:background-color .3s}
 .demo-dot.on{background:var(--gradient-primary)}
+.blog-card{transition:transform .25s ease,border-color .25s ease,box-shadow .25s ease}
+.blog-card:hover{transform:translateY(-4px);border-color:#00d2ff66;box-shadow:0 10px 30px rgba(0,0,0,.35)}
+.article-body h2{color:var(--text-primary)}
+.article-body a{color:inherit}

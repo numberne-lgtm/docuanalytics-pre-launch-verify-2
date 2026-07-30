@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef, useCallback, createContext, useContext } from "react";
 import "@/App.css";
-import { BrowserRouter, Routes, Route, useNavigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useNavigate, Link } from "react-router-dom";
 import axios from "axios";
 import {
   Upload, Zap, CreditCard, FileText, ScrollText, Building2, Landmark, Wallet,
@@ -8,6 +8,7 @@ import {
   Download, ChevronRight, Bitcoin, LogIn, LogOut, User, Gift, BookOpen,
   Sparkles, Copy, Play, Lock, Facebook, Instagram, Linkedin, Youtube, Twitter, Send as Telegram, Globe
 } from "lucide-react";
+import { BlogIndex, BlogPost } from "./Blog";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -45,7 +46,7 @@ const T = {
     pop: "POPOLARE", buy: "Acquista", per_month: "/mese", unlim_cr: "Crediti illimitati", cr: "crediti", your_subs: "I tuoi abbonamenti", cancelling: "in cancellazione", cancel: "Annulla", packs_ttl: "Pacchetti Crediti (pagamento singolo)", subs_ttl: "Abbonamenti Studio (rinnovo mensile automatico dei crediti)", stripe_note: "Pagamenti sicuri via Stripe (Managed Payments, IVA gestita da Stripe).", cr_step1: "1. Scegli pacchetto", cr_step2: "2. Scegli valuta", cr_order: "Registra ordine", copy_addr: "Copia indirizzo", unlim: "illimitati", cr_short: "cr",
     ref_ttl: "Invita e guadagna", ref_desc_a: "Condividi il tuo link: tu e il tuo collega ricevete", ref_desc_b: "+5 crediti", ref_desc_c: "quando lui si registra.", copy_link: "Copia link", invited_lbl: "Colleghi invitati", earned_lbl: "Crediti guadagnati", ref_share: "Analizza i tuoi documenti con l'AI, provalo gratis:",
     guide_ttl: "Guida Completa ai Servizi Enterprise", guide_sub: "Tutto ciò che DocuAnalytics AI estrae e verifica per te, categoria per categoria.", guide_foot: "Ogni analisi include l'AI Red-Flag Audit e il Copilot interattivo.", start_now: "Inizia ora",
-    rights: "Tutti i diritti riservati",
+    rights: "Tutti i diritti riservati", blog_link: "Guide",
     n_credits_out: "Crediti esauriti. Ricarica per continuare.", n_pay_cancel: "Pagamento annullato.", n_disconnected: "Disconnesso.", n_pay_verify: "Verifica pagamento in corso...", n_analyze_fail: "Analisi non riuscita.", n_copilot_err: "Errore nel copilot.", n_addr_copied: "Indirizzo copiato", n_link_copied: "Link copiato!", n_pay_start_err: "Errore nell'avvio del pagamento.", n_crypto_err: "Errore ordine crypto.", n_cancel_ok: "Abbonamento in cancellazione.", n_cancel_err: "Errore annullamento abbonamento.", n_welcome: "Benvenuto", n_login_ok: "Accesso effettuato ✅",
     n_pay_ok: "✅ Pagamento riuscito! Crediti aggiunti:", n_sub_ok: "✅ Abbonamento attivo! Crediti/mese:", n_renew: "Rinnovo automatico.", n_pay_pending: "Verifica in corso, i crediti appariranno a breve.", n_pay_fail: "Pagamento non completato.", auth_err: "Errore. Riprova.",
   },
@@ -74,7 +75,7 @@ const T = {
     pop: "POPULAR", buy: "Buy", per_month: "/month", unlim_cr: "Unlimited credits", cr: "credits", your_subs: "Your subscriptions", cancelling: "cancelling", cancel: "Cancel", packs_ttl: "Credit Packs (one-time payment)", subs_ttl: "Firm Subscriptions (automatic monthly credit renewal)", stripe_note: "Secure payments via Stripe (Managed Payments, VAT handled by Stripe).", cr_step1: "1. Choose package", cr_step2: "2. Choose currency", cr_order: "Place order", copy_addr: "Copy address", unlim: "unlimited", cr_short: "cr",
     ref_ttl: "Invite and earn", ref_desc_a: "Share your link: you and your colleague both get", ref_desc_b: "+5 credits", ref_desc_c: "when they sign up.", copy_link: "Copy link", invited_lbl: "Colleagues invited", earned_lbl: "Credits earned", ref_share: "Analyze your documents with AI, try it free:",
     guide_ttl: "Full Guide to Enterprise Services", guide_sub: "Everything DocuAnalytics AI extracts and verifies for you, category by category.", guide_foot: "Every analysis includes the AI Red-Flag Audit and the interactive Copilot.", start_now: "Start now",
-    rights: "All rights reserved",
+    rights: "All rights reserved", blog_link: "Guides",
     n_credits_out: "Out of credits. Top up to continue.", n_pay_cancel: "Payment cancelled.", n_disconnected: "Logged out.", n_pay_verify: "Verifying payment...", n_analyze_fail: "Analysis failed.", n_copilot_err: "Copilot error.", n_addr_copied: "Address copied", n_link_copied: "Link copied!", n_pay_start_err: "Error starting payment.", n_crypto_err: "Crypto order error.", n_cancel_ok: "Subscription cancelling.", n_cancel_err: "Subscription cancel error.", n_welcome: "Welcome", n_login_ok: "Signed in ✅",
     n_pay_ok: "✅ Payment successful! Credits added:", n_sub_ok: "✅ Subscription active! Credits/month:", n_renew: "Automatic renewal.", n_pay_pending: "Verification in progress, credits will appear shortly.", n_pay_fail: "Payment not completed.", auth_err: "Error. Please try again.",
   },
@@ -103,7 +104,7 @@ const T = {
     pop: "POPULAR", buy: "Comprar", per_month: "/mes", unlim_cr: "Créditos ilimitados", cr: "créditos", your_subs: "Tus suscripciones", cancelling: "cancelando", cancel: "Cancelar", packs_ttl: "Packs de Créditos (pago único)", subs_ttl: "Suscripciones de Despacho (renovación mensual automática de créditos)", stripe_note: "Pagos seguros vía Stripe (Managed Payments, IVA gestionado por Stripe).", cr_step1: "1. Elige el paquete", cr_step2: "2. Elige la moneda", cr_order: "Registrar pedido", copy_addr: "Copiar dirección", unlim: "ilimitados", cr_short: "cr",
     ref_ttl: "Invita y gana", ref_desc_a: "Comparte tu enlace: tú y tu colega recibís", ref_desc_b: "+5 créditos", ref_desc_c: "cuando él se registra.", copy_link: "Copiar enlace", invited_lbl: "Colegas invitados", earned_lbl: "Créditos ganados", ref_share: "Analiza tus documentos con IA, pruébalo gratis:",
     guide_ttl: "Guía Completa de Servicios Enterprise", guide_sub: "Todo lo que DocuAnalytics AI extrae y verifica por ti, categoría por categoría.", guide_foot: "Cada análisis incluye la Auditoría de Alertas con IA y el Copilot interactivo.", start_now: "Empezar ahora",
-    rights: "Todos los derechos reservados",
+    rights: "Todos los derechos reservados", blog_link: "Guías",
     n_credits_out: "Créditos agotados. Recarga para continuar.", n_pay_cancel: "Pago cancelado.", n_disconnected: "Sesión cerrada.", n_pay_verify: "Verificando el pago...", n_analyze_fail: "El análisis ha fallado.", n_copilot_err: "Error en el copilot.", n_addr_copied: "Dirección copiada", n_link_copied: "¡Enlace copiado!", n_pay_start_err: "Error al iniciar el pago.", n_crypto_err: "Error en el pedido cripto.", n_cancel_ok: "Suscripción en cancelación.", n_cancel_err: "Error al cancelar la suscripción.", n_welcome: "Bienvenido", n_login_ok: "Sesión iniciada ✅",
     n_pay_ok: "✅ ¡Pago realizado! Créditos añadidos:", n_sub_ok: "✅ ¡Suscripción activa! Créditos/mes:", n_renew: "Renovación automática.", n_pay_pending: "Verificación en curso, los créditos aparecerán pronto.", n_pay_fail: "Pago no completado.", auth_err: "Error. Inténtalo de nuevo.",
   },
@@ -132,7 +133,7 @@ const T = {
     pop: "BELIEBT", buy: "Kaufen", per_month: "/Monat", unlim_cr: "Unbegrenztes Guthaben", cr: "Guthaben", your_subs: "Ihre Abonnements", cancelling: "wird gekündigt", cancel: "Kündigen", packs_ttl: "Guthaben-Pakete (Einmalzahlung)", subs_ttl: "Kanzlei-Abos (automatische monatliche Guthaben-Verlängerung)", stripe_note: "Sichere Zahlungen über Stripe (Managed Payments, USt. von Stripe verwaltet).", cr_step1: "1. Paket wählen", cr_step2: "2. Währung wählen", cr_order: "Bestellung erfassen", copy_addr: "Adresse kopieren", unlim: "unbegrenzt", cr_short: "Gh",
     ref_ttl: "Einladen und verdienen", ref_desc_a: "Teilen Sie Ihren Link: Sie und Ihr Kollege erhalten beide", ref_desc_b: "+5 Guthaben", ref_desc_c: "wenn er sich registriert.", copy_link: "Link kopieren", invited_lbl: "Eingeladene Kollegen", earned_lbl: "Verdientes Guthaben", ref_share: "Analysieren Sie Ihre Dokumente mit KI, kostenlos testen:",
     guide_ttl: "Vollständiger Leitfaden zu Enterprise-Diensten", guide_sub: "Alles, was DocuAnalytics AI für Sie extrahiert und prüft, Kategorie für Kategorie.", guide_foot: "Jede Analyse umfasst das KI-Red-Flag-Audit und den interaktiven Copilot.", start_now: "Jetzt starten",
-    rights: "Alle Rechte vorbehalten",
+    rights: "Alle Rechte vorbehalten", blog_link: "Ratgeber",
     n_credits_out: "Guthaben aufgebraucht. Bitte aufladen.", n_pay_cancel: "Zahlung abgebrochen.", n_disconnected: "Abgemeldet.", n_pay_verify: "Zahlung wird überprüft...", n_analyze_fail: "Analyse fehlgeschlagen.", n_copilot_err: "Copilot-Fehler.", n_addr_copied: "Adresse kopiert", n_link_copied: "Link kopiert!", n_pay_start_err: "Fehler beim Starten der Zahlung.", n_crypto_err: "Fehler bei Krypto-Bestellung.", n_cancel_ok: "Abonnement wird gekündigt.", n_cancel_err: "Fehler bei Abo-Kündigung.", n_welcome: "Willkommen", n_login_ok: "Angemeldet ✅",
     n_pay_ok: "✅ Zahlung erfolgreich! Guthaben gutgeschrieben:", n_sub_ok: "✅ Abo aktiv! Guthaben/Monat:", n_renew: "Automatische Verlängerung.", n_pay_pending: "Überprüfung läuft, das Guthaben erscheint in Kürze.", n_pay_fail: "Zahlung nicht abgeschlossen.", auth_err: "Fehler. Bitte erneut versuchen.",
   },
@@ -161,7 +162,7 @@ const T = {
     pop: "POPULAIRE", buy: "Acheter", per_month: "/mois", unlim_cr: "Crédits illimités", cr: "crédits", your_subs: "Vos abonnements", cancelling: "en cours de résiliation", cancel: "Résilier", packs_ttl: "Packs de Crédits (paiement unique)", subs_ttl: "Abonnements Cabinet (renouvellement mensuel automatique des crédits)", stripe_note: "Paiements sécurisés via Stripe (Managed Payments, TVA gérée par Stripe).", cr_step1: "1. Choisissez le pack", cr_step2: "2. Choisissez la devise", cr_order: "Enregistrer la commande", copy_addr: "Copier l'adresse", unlim: "illimités", cr_short: "cr",
     ref_ttl: "Invitez et gagnez", ref_desc_a: "Partagez votre lien : vous et votre confrère recevez", ref_desc_b: "+5 crédits", ref_desc_c: "lorsqu'il s'inscrit.", copy_link: "Copier le lien", invited_lbl: "Confrères invités", earned_lbl: "Crédits gagnés", ref_share: "Analysez vos documents avec l'IA, essayez gratuitement :",
     guide_ttl: "Guide complet des services Enterprise", guide_sub: "Tout ce que DocuAnalytics AI extrait et vérifie pour vous, catégorie par catégorie.", guide_foot: "Chaque analyse inclut l'audit d'alertes IA et le Copilot interactif.", start_now: "Commencer",
-    rights: "Tous droits réservés",
+    rights: "Tous droits réservés", blog_link: "Guides",
     n_credits_out: "Crédits épuisés. Rechargez pour continuer.", n_pay_cancel: "Paiement annulé.", n_disconnected: "Déconnecté.", n_pay_verify: "Vérification du paiement...", n_analyze_fail: "Échec de l'analyse.", n_copilot_err: "Erreur du copilot.", n_addr_copied: "Adresse copiée", n_link_copied: "Lien copié !", n_pay_start_err: "Erreur au démarrage du paiement.", n_crypto_err: "Erreur de commande crypto.", n_cancel_ok: "Abonnement en cours de résiliation.", n_cancel_err: "Erreur de résiliation de l'abonnement.", n_welcome: "Bienvenue", n_login_ok: "Connexion réussie ✅",
     n_pay_ok: "✅ Paiement réussi ! Crédits ajoutés :", n_sub_ok: "✅ Abonnement actif ! Crédits/mois :", n_renew: "Renouvellement automatique.", n_pay_pending: "Vérification en cours, les crédits apparaîtront bientôt.", n_pay_fail: "Paiement non terminé.", auth_err: "Erreur. Réessayez.",
   },
@@ -624,6 +625,7 @@ function Header({ credits, authed, user, onTopup, onAuth, onReferral, onLogout }
       <div className="header-inner">
         <div className="logo"><img src="/logo.png" alt="DocuAnalytics AI" className="logo-img" /> Docu<span className="grad">Analytics</span> AI</div>
         <nav className="nav">
+          <Link to="/blog" className="btn btn-sm btn-ghost" data-testid="nav-blog"><BookOpen size={15} /> {t("blog_link")}</Link>
           <LanguageSwitcher />
           <span className="credits-badge" data-testid="credits-badge"><Zap size={15} /> {credits} {t("credits")}</span>
           <button className="btn btn-primary btn-sm" data-testid="topup-btn" onClick={onTopup}><CreditCard size={15} /> {t("topup")}</button>
@@ -1070,6 +1072,7 @@ function Footer({ onTopup, onGuide }) {
         </div>
 
         <div className="flex gap wrapf aic" style={{ justifyContent: "center", marginTop: "1rem" }}>
+          <Link to="/blog" className="btn btn-sm btn-ghost" data-testid="footer-blog"><BookOpen size={14} /> {t("blog_link")}</Link>
           <button className="btn btn-sm btn-ghost" onClick={onGuide}><BookOpen size={14} /> {t("foot_guide")}</button>
           <button className="btn btn-primary btn-sm" onClick={onTopup}><CreditCard size={14} /> {t("foot_topup")}</button>
         </div>
@@ -1207,6 +1210,8 @@ function App() {
     <I18nProvider>
       <BrowserRouter>
         <Routes>
+          <Route path="/blog" element={<BlogIndex />} />
+          <Route path="/blog/:slug" element={<BlogPost />} />
           <Route path="*" element={<Home />} />
         </Routes>
       </BrowserRouter>

@@ -77,7 +77,8 @@ IMPLEMENTATO E TESTATO (19/19 backend + frontend E2E, 100%):
 - **Verificato dal testing agent (iteration_7): 100% (7/7 item)** — tutte le sezioni cambiano lingua in IT/EN/ES/DE/FR, persistenza `da_lang` + `<html lang>` su reload OK (bug iteration_6 risolto), 0 errori console.
 
 ## Promemoria aperto
-- BLOG SEO + landing per settore (richiesto/rinviato) — NON avviato, non richiede input utente.
-- PayPal: IN ATTESA dei valori concreti dall'utente (Client ID + Secret + modalità Sandbox/Live + pacchetti). L'utente ha ri-selezionato le etichette ma non ha ancora incollato le credenziali reali.
-- Social URL reali: IN ATTESA (LinkedIn/Instagram/X/YouTube). Facebook già impostato; gli altri sono placeholder in `SOCIALS` (App.js).
+- **Blog/Guida SEO — FATTO** (Sessione 5): hub contenuti su rotte reali `/blog` e `/blog/:slug` (4 guide IT: fatture elettroniche, F24, clausole vessatorie, visure/antiriciclaggio). Ogni articolo ha `<title>`/meta description/canonical/JSON-LD BlogPosting dinamici + CTA all'app. Link "Guide" in header e footer (tradotto in 5 lingue: blog_link). sitemap.xml aggiornato con le 5 nuove URL. File nuovo: `/app/frontend/src/Blog.js`; rotte in `App.js`. Verificato con screenshot (index + articolo + regressione home). NOTA: contenuti articoli in Italiano (mercato SEO target); la chrome del blog è IT.
+- PayPal: IN ATTESA dei valori concreti dall'utente (Client ID + Secret + modalità Sandbox/Live + pacchetti).
+- Social URL reali: IN ATTESA (LinkedIn/Instagram/X/YouTube). Facebook già impostato; gli altri placeholder in `SOCIALS` (App.js).
+- hreflang: suggerito (meta hreflang IT/EN/ES/DE/FR) — non ancora implementato.
 - Ogni modifica richiede DEPLOY per andare in produzione (docuanalytics.online).
