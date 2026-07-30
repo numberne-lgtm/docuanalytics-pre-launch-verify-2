@@ -41,6 +41,13 @@ const T = {
     pric_title: "Ricarica Crediti", tab_card: "Carta / Stripe", tab_crypto: "Crypto (BTC/USDT)",
     auth_login: "Accedi", auth_register: "Crea account", lang_label: "Lingua",
     auth_submit_reg: "Registrati (+3 crediti gratis)", auth_pw_ph: "Password (min 6 caratteri)", auth_name_ph: "Nome (es. Studio Rossi)", auth_helper: "Registrandoti salvi i tuoi crediti e puoi accedere da qualsiasi dispositivo.", auth_bonus: "🎁 Invito valido: riceverai +5 crediti bonus!",
+    ex_data: "Dati Estratti", no_fields: "Nessun campo strutturato rilevato.", no_anom: "Nessuna anomalia rilevata.", chat_empty: "Chiedi qualsiasi cosa sul documento, es. \"Qual è il totale da pagare?\"", chat_ph: "Fai una domanda...", exported: "Esportato", verified: "Verificato",
+    pop: "POPOLARE", buy: "Acquista", per_month: "/mese", unlim_cr: "Crediti illimitati", cr: "crediti", your_subs: "I tuoi abbonamenti", cancelling: "in cancellazione", cancel: "Annulla", packs_ttl: "Pacchetti Crediti (pagamento singolo)", subs_ttl: "Abbonamenti Studio (rinnovo mensile automatico dei crediti)", stripe_note: "Pagamenti sicuri via Stripe (Managed Payments, IVA gestita da Stripe).", cr_step1: "1. Scegli pacchetto", cr_step2: "2. Scegli valuta", cr_order: "Registra ordine", copy_addr: "Copia indirizzo", unlim: "illimitati", cr_short: "cr",
+    ref_ttl: "Invita e guadagna", ref_desc_a: "Condividi il tuo link: tu e il tuo collega ricevete", ref_desc_b: "+5 crediti", ref_desc_c: "quando lui si registra.", copy_link: "Copia link", invited_lbl: "Colleghi invitati", earned_lbl: "Crediti guadagnati", ref_share: "Analizza i tuoi documenti con l'AI, provalo gratis:",
+    guide_ttl: "Guida Completa ai Servizi Enterprise", guide_sub: "Tutto ciò che DocuAnalytics AI estrae e verifica per te, categoria per categoria.", guide_foot: "Ogni analisi include l'AI Red-Flag Audit e il Copilot interattivo.", start_now: "Inizia ora",
+    rights: "Tutti i diritti riservati",
+    n_credits_out: "Crediti esauriti. Ricarica per continuare.", n_pay_cancel: "Pagamento annullato.", n_disconnected: "Disconnesso.", n_pay_verify: "Verifica pagamento in corso...", n_analyze_fail: "Analisi non riuscita.", n_copilot_err: "Errore nel copilot.", n_addr_copied: "Indirizzo copiato", n_link_copied: "Link copiato!", n_pay_start_err: "Errore nell'avvio del pagamento.", n_crypto_err: "Errore ordine crypto.", n_cancel_ok: "Abbonamento in cancellazione.", n_cancel_err: "Errore annullamento abbonamento.", n_welcome: "Benvenuto", n_login_ok: "Accesso effettuato ✅",
+    n_pay_ok: "✅ Pagamento riuscito! Crediti aggiunti:", n_sub_ok: "✅ Abbonamento attivo! Crediti/mese:", n_renew: "Rinnovo automatico.", n_pay_pending: "Verifica in corso, i crediti appariranno a breve.", n_pay_fail: "Pagamento non completato.", auth_err: "Errore. Riprova.",
   },
   en: {
     credits: "Credits", topup: "Top up", login: "Sign in", invite: "Invite", logout: "Log out",
@@ -63,6 +70,13 @@ const T = {
     pric_title: "Buy Credits", tab_card: "Card / Stripe", tab_crypto: "Crypto (BTC/USDT)",
     auth_login: "Sign in", auth_register: "Create account", lang_label: "Language",
     auth_submit_reg: "Sign up (+3 free credits)", auth_pw_ph: "Password (min 6 characters)", auth_name_ph: "Name (e.g. Rossi Firm)", auth_helper: "By signing up you keep your credits and can log in from any device.", auth_bonus: "🎁 Valid invite: you will get +5 bonus credits!",
+    ex_data: "Extracted Data", no_fields: "No structured field detected.", no_anom: "No anomalies detected.", chat_empty: "Ask anything about the document, e.g. \"What's the total to pay?\"", chat_ph: "Ask a question...", exported: "Exported", verified: "Verified",
+    pop: "POPULAR", buy: "Buy", per_month: "/month", unlim_cr: "Unlimited credits", cr: "credits", your_subs: "Your subscriptions", cancelling: "cancelling", cancel: "Cancel", packs_ttl: "Credit Packs (one-time payment)", subs_ttl: "Firm Subscriptions (automatic monthly credit renewal)", stripe_note: "Secure payments via Stripe (Managed Payments, VAT handled by Stripe).", cr_step1: "1. Choose package", cr_step2: "2. Choose currency", cr_order: "Place order", copy_addr: "Copy address", unlim: "unlimited", cr_short: "cr",
+    ref_ttl: "Invite and earn", ref_desc_a: "Share your link: you and your colleague both get", ref_desc_b: "+5 credits", ref_desc_c: "when they sign up.", copy_link: "Copy link", invited_lbl: "Colleagues invited", earned_lbl: "Credits earned", ref_share: "Analyze your documents with AI, try it free:",
+    guide_ttl: "Full Guide to Enterprise Services", guide_sub: "Everything DocuAnalytics AI extracts and verifies for you, category by category.", guide_foot: "Every analysis includes the AI Red-Flag Audit and the interactive Copilot.", start_now: "Start now",
+    rights: "All rights reserved",
+    n_credits_out: "Out of credits. Top up to continue.", n_pay_cancel: "Payment cancelled.", n_disconnected: "Logged out.", n_pay_verify: "Verifying payment...", n_analyze_fail: "Analysis failed.", n_copilot_err: "Copilot error.", n_addr_copied: "Address copied", n_link_copied: "Link copied!", n_pay_start_err: "Error starting payment.", n_crypto_err: "Crypto order error.", n_cancel_ok: "Subscription cancelling.", n_cancel_err: "Subscription cancel error.", n_welcome: "Welcome", n_login_ok: "Signed in ✅",
+    n_pay_ok: "✅ Payment successful! Credits added:", n_sub_ok: "✅ Subscription active! Credits/month:", n_renew: "Automatic renewal.", n_pay_pending: "Verification in progress, credits will appear shortly.", n_pay_fail: "Payment not completed.", auth_err: "Error. Please try again.",
   },
   es: {
     credits: "Créditos", topup: "Recargar", login: "Acceder", invite: "Invitar", logout: "Salir",
@@ -85,6 +99,13 @@ const T = {
     pric_title: "Comprar Créditos", tab_card: "Tarjeta / Stripe", tab_crypto: "Cripto (BTC/USDT)",
     auth_login: "Acceder", auth_register: "Crear cuenta", lang_label: "Idioma",
     auth_submit_reg: "Registrarse (+3 créditos gratis)", auth_pw_ph: "Contraseña (mín 6 caracteres)", auth_name_ph: "Nombre (p. ej. Despacho Rossi)", auth_helper: "Al registrarte conservas tus créditos y puedes acceder desde cualquier dispositivo.", auth_bonus: "🎁 Invitación válida: recibirás +5 créditos de bonificación!",
+    ex_data: "Datos Extraídos", no_fields: "No se detectó ningún campo estructurado.", no_anom: "No se detectaron anomalías.", chat_empty: "Pregunta lo que quieras sobre el documento, p. ej. \"¿Cuál es el total a pagar?\"", chat_ph: "Haz una pregunta...", exported: "Exportado", verified: "Verificado",
+    pop: "POPULAR", buy: "Comprar", per_month: "/mes", unlim_cr: "Créditos ilimitados", cr: "créditos", your_subs: "Tus suscripciones", cancelling: "cancelando", cancel: "Cancelar", packs_ttl: "Packs de Créditos (pago único)", subs_ttl: "Suscripciones de Despacho (renovación mensual automática de créditos)", stripe_note: "Pagos seguros vía Stripe (Managed Payments, IVA gestionado por Stripe).", cr_step1: "1. Elige el paquete", cr_step2: "2. Elige la moneda", cr_order: "Registrar pedido", copy_addr: "Copiar dirección", unlim: "ilimitados", cr_short: "cr",
+    ref_ttl: "Invita y gana", ref_desc_a: "Comparte tu enlace: tú y tu colega recibís", ref_desc_b: "+5 créditos", ref_desc_c: "cuando él se registra.", copy_link: "Copiar enlace", invited_lbl: "Colegas invitados", earned_lbl: "Créditos ganados", ref_share: "Analiza tus documentos con IA, pruébalo gratis:",
+    guide_ttl: "Guía Completa de Servicios Enterprise", guide_sub: "Todo lo que DocuAnalytics AI extrae y verifica por ti, categoría por categoría.", guide_foot: "Cada análisis incluye la Auditoría de Alertas con IA y el Copilot interactivo.", start_now: "Empezar ahora",
+    rights: "Todos los derechos reservados",
+    n_credits_out: "Créditos agotados. Recarga para continuar.", n_pay_cancel: "Pago cancelado.", n_disconnected: "Sesión cerrada.", n_pay_verify: "Verificando el pago...", n_analyze_fail: "El análisis ha fallado.", n_copilot_err: "Error en el copilot.", n_addr_copied: "Dirección copiada", n_link_copied: "¡Enlace copiado!", n_pay_start_err: "Error al iniciar el pago.", n_crypto_err: "Error en el pedido cripto.", n_cancel_ok: "Suscripción en cancelación.", n_cancel_err: "Error al cancelar la suscripción.", n_welcome: "Bienvenido", n_login_ok: "Sesión iniciada ✅",
+    n_pay_ok: "✅ ¡Pago realizado! Créditos añadidos:", n_sub_ok: "✅ ¡Suscripción activa! Créditos/mes:", n_renew: "Renovación automática.", n_pay_pending: "Verificación en curso, los créditos aparecerán pronto.", n_pay_fail: "Pago no completado.", auth_err: "Error. Inténtalo de nuevo.",
   },
   de: {
     credits: "Guthaben", topup: "Aufladen", login: "Anmelden", invite: "Einladen", logout: "Abmelden",
@@ -107,6 +128,13 @@ const T = {
     pric_title: "Guthaben kaufen", tab_card: "Karte / Stripe", tab_crypto: "Krypto (BTC/USDT)",
     auth_login: "Anmelden", auth_register: "Konto erstellen", lang_label: "Sprache",
     auth_submit_reg: "Registrieren (+3 Gratis-Guthaben)", auth_pw_ph: "Passwort (min. 6 Zeichen)", auth_name_ph: "Name (z. B. Kanzlei Rossi)", auth_helper: "Mit der Registrierung behalten Sie Ihr Guthaben und können sich von jedem Gerät anmelden.", auth_bonus: "🎁 Gültige Einladung: Sie erhalten +5 Bonus-Guthaben!",
+    ex_data: "Extrahierte Daten", no_fields: "Kein strukturiertes Feld erkannt.", no_anom: "Keine Anomalien erkannt.", chat_empty: "Fragen Sie alles zum Dokument, z. B. \"Wie hoch ist der zu zahlende Betrag?\"", chat_ph: "Stellen Sie eine Frage...", exported: "Exportiert", verified: "Verifiziert",
+    pop: "BELIEBT", buy: "Kaufen", per_month: "/Monat", unlim_cr: "Unbegrenztes Guthaben", cr: "Guthaben", your_subs: "Ihre Abonnements", cancelling: "wird gekündigt", cancel: "Kündigen", packs_ttl: "Guthaben-Pakete (Einmalzahlung)", subs_ttl: "Kanzlei-Abos (automatische monatliche Guthaben-Verlängerung)", stripe_note: "Sichere Zahlungen über Stripe (Managed Payments, USt. von Stripe verwaltet).", cr_step1: "1. Paket wählen", cr_step2: "2. Währung wählen", cr_order: "Bestellung erfassen", copy_addr: "Adresse kopieren", unlim: "unbegrenzt", cr_short: "Gh",
+    ref_ttl: "Einladen und verdienen", ref_desc_a: "Teilen Sie Ihren Link: Sie und Ihr Kollege erhalten beide", ref_desc_b: "+5 Guthaben", ref_desc_c: "wenn er sich registriert.", copy_link: "Link kopieren", invited_lbl: "Eingeladene Kollegen", earned_lbl: "Verdientes Guthaben", ref_share: "Analysieren Sie Ihre Dokumente mit KI, kostenlos testen:",
+    guide_ttl: "Vollständiger Leitfaden zu Enterprise-Diensten", guide_sub: "Alles, was DocuAnalytics AI für Sie extrahiert und prüft, Kategorie für Kategorie.", guide_foot: "Jede Analyse umfasst das KI-Red-Flag-Audit und den interaktiven Copilot.", start_now: "Jetzt starten",
+    rights: "Alle Rechte vorbehalten",
+    n_credits_out: "Guthaben aufgebraucht. Bitte aufladen.", n_pay_cancel: "Zahlung abgebrochen.", n_disconnected: "Abgemeldet.", n_pay_verify: "Zahlung wird überprüft...", n_analyze_fail: "Analyse fehlgeschlagen.", n_copilot_err: "Copilot-Fehler.", n_addr_copied: "Adresse kopiert", n_link_copied: "Link kopiert!", n_pay_start_err: "Fehler beim Starten der Zahlung.", n_crypto_err: "Fehler bei Krypto-Bestellung.", n_cancel_ok: "Abonnement wird gekündigt.", n_cancel_err: "Fehler bei Abo-Kündigung.", n_welcome: "Willkommen", n_login_ok: "Angemeldet ✅",
+    n_pay_ok: "✅ Zahlung erfolgreich! Guthaben gutgeschrieben:", n_sub_ok: "✅ Abo aktiv! Guthaben/Monat:", n_renew: "Automatische Verlängerung.", n_pay_pending: "Überprüfung läuft, das Guthaben erscheint in Kürze.", n_pay_fail: "Zahlung nicht abgeschlossen.", auth_err: "Fehler. Bitte erneut versuchen.",
   },
   fr: {
     credits: "Crédits", topup: "Recharger", login: "Se connecter", invite: "Inviter", logout: "Déconnexion",
@@ -129,6 +157,13 @@ const T = {
     pric_title: "Acheter des crédits", tab_card: "Carte / Stripe", tab_crypto: "Crypto (BTC/USDT)",
     auth_login: "Se connecter", auth_register: "Créer un compte", lang_label: "Langue",
     auth_submit_reg: "S'inscrire (+3 crédits gratuits)", auth_pw_ph: "Mot de passe (min 6 caractères)", auth_name_ph: "Nom (ex. Cabinet Rossi)", auth_helper: "En vous inscrivant, vous conservez vos crédits et pouvez vous connecter depuis n'importe quel appareil.", auth_bonus: "🎁 Invitation valide : vous recevrez +5 crédits bonus !",
+    ex_data: "Données Extraites", no_fields: "Aucun champ structuré détecté.", no_anom: "Aucune anomalie détectée.", chat_empty: "Posez n'importe quelle question sur le document, ex. « Quel est le total à payer ? »", chat_ph: "Posez une question...", exported: "Exporté", verified: "Vérifié",
+    pop: "POPULAIRE", buy: "Acheter", per_month: "/mois", unlim_cr: "Crédits illimités", cr: "crédits", your_subs: "Vos abonnements", cancelling: "en cours de résiliation", cancel: "Résilier", packs_ttl: "Packs de Crédits (paiement unique)", subs_ttl: "Abonnements Cabinet (renouvellement mensuel automatique des crédits)", stripe_note: "Paiements sécurisés via Stripe (Managed Payments, TVA gérée par Stripe).", cr_step1: "1. Choisissez le pack", cr_step2: "2. Choisissez la devise", cr_order: "Enregistrer la commande", copy_addr: "Copier l'adresse", unlim: "illimités", cr_short: "cr",
+    ref_ttl: "Invitez et gagnez", ref_desc_a: "Partagez votre lien : vous et votre confrère recevez", ref_desc_b: "+5 crédits", ref_desc_c: "lorsqu'il s'inscrit.", copy_link: "Copier le lien", invited_lbl: "Confrères invités", earned_lbl: "Crédits gagnés", ref_share: "Analysez vos documents avec l'IA, essayez gratuitement :",
+    guide_ttl: "Guide complet des services Enterprise", guide_sub: "Tout ce que DocuAnalytics AI extrait et vérifie pour vous, catégorie par catégorie.", guide_foot: "Chaque analyse inclut l'audit d'alertes IA et le Copilot interactif.", start_now: "Commencer",
+    rights: "Tous droits réservés",
+    n_credits_out: "Crédits épuisés. Rechargez pour continuer.", n_pay_cancel: "Paiement annulé.", n_disconnected: "Déconnecté.", n_pay_verify: "Vérification du paiement...", n_analyze_fail: "Échec de l'analyse.", n_copilot_err: "Erreur du copilot.", n_addr_copied: "Adresse copiée", n_link_copied: "Lien copié !", n_pay_start_err: "Erreur au démarrage du paiement.", n_crypto_err: "Erreur de commande crypto.", n_cancel_ok: "Abonnement en cours de résiliation.", n_cancel_err: "Erreur de résiliation de l'abonnement.", n_welcome: "Bienvenue", n_login_ok: "Connexion réussie ✅",
+    n_pay_ok: "✅ Paiement réussi ! Crédits ajoutés :", n_sub_ok: "✅ Abonnement actif ! Crédits/mois :", n_renew: "Renouvellement automatique.", n_pay_pending: "Vérification en cours, les crédits apparaîtront bientôt.", n_pay_fail: "Paiement non terminé.", auth_err: "Erreur. Réessayez.",
   },
 };
 const I18nContext = createContext({ lang: "it", t: (k) => k, change: () => {} });
@@ -175,6 +210,7 @@ const CONTENT = {
       { t: "Buste Paga & HR", items: ["Quadratura Lordo / INPS / IRPEF / Netto in busta", "Calcolo e verifica TFR maturato", "Compliance GDPR ed EU AI Act con dati trattati 100% in UE", "Crittografia AES 256-bit dei documenti"] },
     ],
     demo: ["1. Carica il documento", "2. Analisi con l'Intelligenza Artificiale", "3. Dati estratti automaticamente", "4. AI Red-Flag Audit", "5. Chiedi all'AI Copilot"],
+    demoData: { file: "Fattura_128_2026.pdf", up: "caricato · 214 KB", f: [["Numero", "128/2026"], ["Imponibile", "1.000,00 €"], ["IVA 22%", "220,00 €"], ["Totale", "1.220,00 €"], ["IBAN", "IT60X0542811101…"]], a: ["Quadratura IVA corretta (1.000 + 220 = 1.220 €)", "IBAN italiano valido", "Scadenza pagamento tra 15 giorni"], q: "Qual è il totale da pagare?", ans: ["Il totale da pagare è ", "1.220,00 €", ", con scadenza 30/04/2026."] },
   },
   en: {
     docTypes: { fattura: "Invoice", contratto: "Contract", visura: "Company Record", f24: "Tax Form", busta_paga: "Payslip" },
@@ -208,6 +244,7 @@ const CONTENT = {
       { t: "Payslips & HR", items: ["Gross / Contributions / Tax / Net reconciliation", "Accrued severance calculation and check", "GDPR & EU AI Act compliance, data processed 100% in the EU", "AES 256-bit document encryption"] },
     ],
     demo: ["1. Upload the document", "2. Analysis with Artificial Intelligence", "3. Data extracted automatically", "4. AI Red-Flag Audit", "5. Ask the AI Copilot"],
+    demoData: { file: "Invoice_128_2026.pdf", up: "uploaded · 214 KB", f: [["Number", "128/2026"], ["Taxable", "€1,000.00"], ["VAT 22%", "€220.00"], ["Total", "€1,220.00"], ["IBAN", "IT60X0542811101…"]], a: ["VAT reconciliation correct (1,000 + 220 = 1,220 €)", "Valid Italian IBAN", "Payment due in 15 days"], q: "What's the total to pay?", ans: ["The total to pay is ", "€1,220.00", ", due on 30/04/2026."] },
   },
   es: {
     docTypes: { fattura: "Factura", contratto: "Contrato", visura: "Registro Mercantil", f24: "Modelo Fiscal", busta_paga: "Nómina" },
@@ -241,6 +278,7 @@ const CONTENT = {
       { t: "Nóminas y RR. HH.", items: ["Cuadre Bruto / Cotizaciones / IRPF / Neto", "Cálculo y verificación del finiquito acumulado", "Cumplimiento RGPD y EU AI Act, datos tratados 100% en la UE", "Cifrado AES 256 bits de los documentos"] },
     ],
     demo: ["1. Sube el documento", "2. Análisis con Inteligencia Artificial", "3. Datos extraídos automáticamente", "4. Auditoría de alertas con IA", "5. Pregunta al Copilot de IA"],
+    demoData: { file: "Factura_128_2026.pdf", up: "subido · 214 KB", f: [["Número", "128/2026"], ["Base", "1.000,00 €"], ["IVA 22%", "220,00 €"], ["Total", "1.220,00 €"], ["IBAN", "IT60X0542811101…"]], a: ["Cuadre de IVA correcto (1.000 + 220 = 1.220 €)", "IBAN italiano válido", "Vencimiento del pago en 15 días"], q: "¿Cuál es el total a pagar?", ans: ["El total a pagar es ", "1.220,00 €", ", con vencimiento 30/04/2026."] },
   },
   de: {
     docTypes: { fattura: "Rechnung", contratto: "Vertrag", visura: "Handelsregister", f24: "Steuerformular", busta_paga: "Gehaltsabrechnung" },
@@ -274,6 +312,7 @@ const CONTENT = {
       { t: "Gehaltsabrechnungen & HR", items: ["Brutto / Beiträge / Steuer / Netto-Abgleich", "Berechnung und Prüfung der aufgelaufenen Abfindung", "DSGVO- & EU-AI-Act-Konformität, Daten zu 100% in der EU verarbeitet", "AES-256-Bit-Verschlüsselung der Dokumente"] },
     ],
     demo: ["1. Dokument hochladen", "2. Analyse mit Künstlicher Intelligenz", "3. Daten automatisch extrahiert", "4. KI-Red-Flag-Audit", "5. Den KI-Copilot fragen"],
+    demoData: { file: "Rechnung_128_2026.pdf", up: "hochgeladen · 214 KB", f: [["Nummer", "128/2026"], ["Netto", "1.000,00 €"], ["USt. 22%", "220,00 €"], ["Summe", "1.220,00 €"], ["IBAN", "IT60X0542811101…"]], a: ["USt.-Abgleich korrekt (1.000 + 220 = 1.220 €)", "Gültige italienische IBAN", "Zahlung fällig in 15 Tagen"], q: "Wie hoch ist der zu zahlende Betrag?", ans: ["Der zu zahlende Betrag ist ", "1.220,00 €", ", fällig am 30.04.2026."] },
   },
   fr: {
     docTypes: { fattura: "Facture", contratto: "Contrat", visura: "Extrait Kbis", f24: "Formulaire Fiscal", busta_paga: "Bulletin de Paie" },
@@ -307,6 +346,7 @@ const CONTENT = {
       { t: "Bulletins de Paie & RH", items: ["Rapprochement Brut / Cotisations / Impôt / Net", "Calcul et vérification des indemnités acquises", "Conformité RGPD & EU AI Act, données traitées 100% dans l'UE", "Chiffrement AES 256 bits des documents"] },
     ],
     demo: ["1. Importez le document", "2. Analyse avec l'Intelligence Artificielle", "3. Données extraites automatiquement", "4. Audit d'alertes IA", "5. Interrogez le Copilot IA"],
+    demoData: { file: "Facture_128_2026.pdf", up: "importé · 214 KB", f: [["Numéro", "128/2026"], ["Base HT", "1 000,00 €"], ["TVA 22%", "220,00 €"], ["Total", "1 220,00 €"], ["IBAN", "IT60X0542811101…"]], a: ["Rapprochement TVA correct (1 000 + 220 = 1 220 €)", "IBAN italien valide", "Paiement dû dans 15 jours"], q: "Quel est le total à payer ?", ans: ["Le total à payer est ", "1 220,00 €", ", échéance le 30/04/2026."] },
   },
 };
 const useContent = () => CONTENT[useI18n().lang] || CONTENT.it;
@@ -345,13 +385,12 @@ const SOCIALS = [
 ];
 
 const DOC_TYPES = [
-  { id: "fattura", label: "Fattura", Icon: FileText },
-  { id: "contratto", label: "Contratto", Icon: ScrollText },
-  { id: "visura", label: "Visura", Icon: Building2 },
-  { id: "f24", label: "F24", Icon: Landmark },
-  { id: "busta_paga", label: "Busta Paga", Icon: Wallet },
+  { id: "fattura", Icon: FileText },
+  { id: "contratto", Icon: ScrollText },
+  { id: "visura", Icon: Building2 },
+  { id: "f24", Icon: Landmark },
+  { id: "busta_paga", Icon: Wallet },
 ];
-const PIPE = ["Parsing", "Classificazione", "Estrazione", "Validazione"];
 
 function useUser() {
   const [user, setUser] = useState({ user_id: null, credits: 0, email: null });
@@ -416,6 +455,7 @@ function Toast({ msg }) {
 function Home() {
   const { user, setUser, refresh, authed, login, logout } = useUser();
   const { t } = useI18n();
+  const content = useContent();
   const [docType, setDocType] = useState("auto");
   const [file, setFile] = useState(null);
   const [drag, setDrag] = useState(false);
@@ -438,29 +478,29 @@ function Home() {
     if (window.location.pathname === "/payment/success" && p.get("session_id")) {
       pollPayment(p.get("session_id"));
     } else if (window.location.pathname === "/payment/cancel") {
-      notify("Pagamento annullato.");
+      notify(t("n_pay_cancel"));
       window.history.replaceState({}, "", "/");
     }
   }, []);
 
   const pollPayment = async (sid, tries = 0) => {
-    notify("Verifica pagamento in corso...");
+    notify(t("n_pay_verify"));
     try {
       const { data } = await axios.get(`${API}/payments/status/${sid}`);
       if (data.payment_status === "paid") {
         refresh();
         notify(data.is_subscription
-          ? `✅ Abbonamento attivo! +${data.credits_added} crediti/mese. Rinnovo automatico.`
-          : `✅ Pagamento riuscito! +${data.credits_added} crediti aggiunti.`);
+          ? `${t("n_sub_ok")} +${data.credits_added}. ${t("n_renew")}`
+          : `${t("n_pay_ok")} +${data.credits_added}`);
         window.history.replaceState({}, "", "/");
         return;
       }
       if (data.payment_status === "expired" || data.payment_status === "failed") {
-        notify("Pagamento non completato."); window.history.replaceState({}, "", "/"); return;
+        notify(t("n_pay_fail")); window.history.replaceState({}, "", "/"); return;
       }
     } catch (e) { console.error("payment status poll error", e); }
     if (tries < 6) setTimeout(() => pollPayment(sid, tries + 1), 2000);
-    else { notify("Verifica in corso, i crediti appariranno a breve."); window.history.replaceState({}, "", "/"); }
+    else { notify(t("n_pay_pending")); window.history.replaceState({}, "", "/"); }
   };
 
   const onFile = (f) => { if (f) { setFile(f); setResult(null); } };
@@ -470,7 +510,7 @@ function Home() {
 
   const analyze = async () => {
     if (!file) return;
-    if (user.credits <= 0) { notify("Crediti esauriti. Ricarica per continuare."); setPricingOpen(true); return; }
+    if (user.credits <= 0) { notify(t("n_credits_out")); setPricingOpen(true); return; }
     setAnalyzing(true); setResult(null); setStage(0);
     const timers = [0, 1, 2, 3].map((i) => setTimeout(() => setStage(i), i * 700));
     try {
@@ -484,7 +524,7 @@ function Home() {
       setStage(3);
       setTimeout(() => document.getElementById("results")?.scrollIntoView({ behavior: "smooth" }), 200);
     } catch (e) {
-      const msg = e?.response?.data?.detail || "Analisi non riuscita.";
+      const msg = e?.response?.data?.detail || t("n_analyze_fail");
       notify(msg);
       if (e?.response?.status === 402) setPricingOpen(true);
     } finally {
@@ -496,7 +536,7 @@ function Home() {
     <div className="App">
       <Header credits={user.credits} authed={authed} user={user}
         onTopup={() => setPricingOpen(true)} onAuth={() => setAuthOpen(true)}
-        onReferral={() => setRefOpen(true)} onLogout={() => { logout(); notify("Disconnesso."); }} />
+        onReferral={() => setRefOpen(true)} onLogout={() => { logout(); notify(t("n_disconnected")); }} />
 
       <main className="wrap">
         {/* Hero */}
@@ -505,8 +545,8 @@ function Home() {
           <h1>{t("hero_t1")}<br /><span className="grad">{t("hero_t2")}</span></h1>
           <p>{t("hero_sub")}</p>
           <div className="hero-badges">
-            {DOC_TYPES.map(({ id, label, Icon }) => (
-              <span className="hero-badge flex aic gap" key={id}><Icon size={15} /> {label}</span>
+            {DOC_TYPES.map(({ id, Icon }) => (
+              <span className="hero-badge flex aic gap" key={id}><Icon size={15} /> {content.docTypes[id]}</span>
             ))}
           </div>
         </section>
@@ -518,10 +558,10 @@ function Home() {
           <p className="section-sub mb1">{t("up_sub")}</p>
 
           <div className="chips mb1">
-            {DOC_TYPES.map(({ id, label, Icon }) => (
+            {DOC_TYPES.map(({ id, Icon }) => (
               <div key={id} className={`chip flex aic gap ${docType === id ? "active" : ""}`}
                 data-testid={`chip-${id}`} onClick={() => setDocType(docType === id ? "auto" : id)}>
-                <Icon size={15} /> {label}
+                <Icon size={15} /> {content.docTypes[id]}
               </div>
             ))}
           </div>
@@ -547,7 +587,7 @@ function Home() {
           {(analyzing || result) && (
             <div className="glass pad mt2">
               <div className="pipe">
-                {PIPE.map((s, i) => (
+                {content.pipe.map((s, i) => (
                   <div className={`pstep ${stage >= i ? "on" : ""}`} key={s}>
                     <div className="pcircle">{stage > i || (result && i <= 3) ? <CheckCircle2 color="var(--success)" /> : i + 1}</div>
                     <div style={{ fontWeight: 700, fontSize: ".85rem" }}>{s}</div>
@@ -614,7 +654,7 @@ function Results({ result, analysisId, notify }) {
     try {
       const { data } = await axios.post(`${API}/chat`, { user_id: localStorage.getItem("da_uid"), analysis_id: analysisId, question });
       setMsgs((m) => [...m, { r: "a", t: data.answer }]);
-    } catch { setMsgs((m) => [...m, { r: "a", t: "Errore nel copilot." }]); }
+    } catch { setMsgs((m) => [...m, { r: "a", t: t("n_copilot_err") }]); }
     finally { setLoading(false); }
   };
 
@@ -628,7 +668,7 @@ function Results({ result, analysisId, notify }) {
     }
     const url = URL.createObjectURL(new Blob([content], { type: mime }));
     const a = document.createElement("a"); a.href = url; a.download = name; a.click(); URL.revokeObjectURL(url);
-    notify(`Esportato ${fmt.toUpperCase()}`);
+    notify(`${t("exported")} ${fmt.toUpperCase()}`);
   };
 
   return (
@@ -640,7 +680,7 @@ function Results({ result, analysisId, notify }) {
       <div className="grid" style={{ gridTemplateColumns: "1.4fr 1fr" }}>
         <div className="glass pad">
           <div className="flex between aic mb1">
-            <strong style={{ fontSize: ".95rem" }}>Dati Estratti</strong>
+            <strong style={{ fontSize: ".95rem" }}>{t("ex_data")}</strong>
             <div className="flex gap">
               <button className="btn btn-sm" data-testid="export-csv" onClick={() => exportData("csv")}><Download size={14} /> CSV</button>
               <button className="btn btn-sm" data-testid="export-json" onClick={() => exportData("json")}><Download size={14} /> JSON</button>
@@ -649,7 +689,7 @@ function Results({ result, analysisId, notify }) {
           {(result.fields || []).map((f, i) => (
             <div className="field-row" key={i}><span className="k">{f.label}</span><span className="v">{String(f.value)}</span></div>
           ))}
-          {(!result.fields || result.fields.length === 0) && <p style={{ color: "var(--text-muted)" }}>Nessun campo strutturato rilevato.</p>}
+          {(!result.fields || result.fields.length === 0) && <p style={{ color: "var(--text-muted)" }}>{t("no_fields")}</p>}
         </div>
 
         <div>
@@ -661,18 +701,18 @@ function Results({ result, analysisId, notify }) {
                 <span>{a.message}</span>
               </div>
             ))}
-            {(!result.audit || result.audit.length === 0) && <p style={{ color: "var(--text-muted)", fontSize: ".85rem" }}>Nessuna anomalia rilevata.</p>}
+            {(!result.audit || result.audit.length === 0) && <p style={{ color: "var(--text-muted)", fontSize: ".85rem" }}>{t("no_anom")}</p>}
           </div>
 
           <div className="glass pad">
             <div className="flex aic gap mb1"><MessageSquare size={18} color="#E100FF" /><strong>AI Copilot</strong><span className="badge badge-new">CHAT</span></div>
             <div className="chat-box" data-testid="chat-box">
-              {msgs.length === 0 && <p style={{ color: "var(--text-muted)", fontSize: ".82rem" }}>Chiedi qualsiasi cosa sul documento, es. "Qual è il totale da pagare?"</p>}
+              {msgs.length === 0 && <p style={{ color: "var(--text-muted)", fontSize: ".82rem" }}>{t("chat_empty")}</p>}
               {msgs.map((m, i) => <div className={`msg ${m.r}`} key={i}>{m.t}</div>)}
               {loading && <div className="msg a"><Loader2 className="spinner" /></div>}
             </div>
             <div className="flex gap">
-              <input className="input" data-testid="chat-input" placeholder="Fai una domanda..." value={q}
+              <input className="input" data-testid="chat-input" placeholder={t("chat_ph")} value={q}
                 onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => e.key === "Enter" && ask()} />
               <button className="btn btn-primary btn-sm" data-testid="chat-send" onClick={ask}><Send size={15} /></button>
             </div>
@@ -685,24 +725,24 @@ function Results({ result, analysisId, notify }) {
 
 function Services({ onGuide }) {
   const { t } = useI18n();
-  const cards = [
-    { Icon: Landmark, t: "F24 & Fatture Elettroniche", d: "Quadratura automatica Debito/Credito/Saldo, avviso visto conformità IVA sopra €5.000, controllo IBAN esteri e Prima Nota per Zucchetti/TeamSystem." },
-    { Icon: ScrollText, t: "Contratti & Visure Camerali", d: "Rilevamento clausole vessatorie (Art. 1341 c.c.), preavvisi recesso, verifica antiriciclaggio KYC/AML con estrazione REA, soci e amministratori." },
-    { Icon: Wallet, t: "Buste Paga & HR", d: "Quadratura Lordo/INPS/IRPEF/Netto, TFR maturato, compliance GDPR & EU AI Act con server 100% in UE e crittografia AES 256-bit." },
-  ];
+  const content = useContent();
+  const icons = [Landmark, ScrollText, Wallet];
   return (
     <section className="section" id="servizi">
       <div className="accent-bar" />
       <h2 className="section-title">{t("serv_title")}</h2>
       <p className="section-sub mb1">{t("serv_sub")}</p>
       <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(280px,1fr))" }}>
-        {cards.map((c) => (
-          <div className="glass pad" key={c.t}>
-            <c.Icon size={28} color="var(--accent)" />
-            <h3 style={{ fontSize: "1.05rem", fontWeight: 800, margin: ".6rem 0 .4rem" }}>{c.t}</h3>
-            <p style={{ color: "var(--text-secondary)", fontSize: ".85rem", lineHeight: 1.55 }}>{c.d}</p>
-          </div>
-        ))}
+        {content.services.map((c, i) => {
+          const Icon = icons[i] || Landmark;
+          return (
+            <div className="glass pad" key={c.t}>
+              <Icon size={28} color="var(--accent)" />
+              <h3 style={{ fontSize: "1.05rem", fontWeight: 800, margin: ".6rem 0 .4rem" }}>{c.t}</h3>
+              <p style={{ color: "var(--text-secondary)", fontSize: ".85rem", lineHeight: 1.55 }}>{c.d}</p>
+            </div>
+          );
+        })}
       </div>
       <div className="center mt2">
         <button className="btn btn-accent" data-testid="open-guide-btn" onClick={onGuide}><BookOpen size={16} /> {t("guide_btn")}</button>
@@ -711,132 +751,93 @@ function Services({ onGuide }) {
   );
 }
 
-const FEATURES = [
-  {
-    Icon: ShieldAlert, tag: "AUDIT", t: "Rilevatore Red-Flag AI",
-    d: "Un secondo cervello AI che controlla i tuoi documenti e segnala automaticamente i rischi prima che diventino un problema.",
-    points: [
-      "Quadratura automatica di F24, fatture e buste paga (Debito/Credito/Netto)",
-      "Allerta clausole vessatorie nei contratti (Art. 1341 c.c.)",
-      "Rilevamento IBAN esteri e anomalie antiriciclaggio (AML)",
-      "Avviso visto di conformità IVA per crediti superiori a €5.000",
-    ],
-  },
-  {
-    Icon: MessageSquare, tag: "COPILOT", t: "Copilot Interattivo",
-    d: "Fai domande in linguaggio naturale sui tuoi documenti e ricevi risposte immediate, come un assistente esperto sempre disponibile.",
-    points: [
-      "Chiedi \"Qual è il totale da pagare?\" e ottieni la risposta all'istante",
-      "Riepiloghi e spiegazioni di clausole complesse in italiano semplice",
-      "Confronto tra documenti e verifica dei dati chiave",
-      "Basato su AI Gemini, risposte contestuali solo sul tuo documento",
-    ],
-  },
-];
+const FEATURE_ICONS = { AUDIT: ShieldAlert, COPILOT: MessageSquare };
 
 function NewFeatures() {
   const { t } = useI18n();
+  const content = useContent();
   return (
     <section className="section" id="funzionalita">
       <div className="accent-bar" />
       <div className="flex aic gap mb1"><h2 className="section-title">{t("feat_title")}</h2><span className="badge badge-new">NEW</span></div>
       <p className="section-sub mb1">{t("feat_sub")}</p>
       <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(320px,1fr))" }}>
-        {FEATURES.map((f) => (
-          <div className="glass pad" key={f.t}>
-            <div className="flex aic gap mb1"><f.Icon size={26} color="var(--accent)" /><span className="badge badge-info">{f.tag}</span></div>
-            <h3 style={{ fontSize: "1.15rem", fontWeight: 800, margin: ".4rem 0" }}>{f.t}</h3>
-            <p style={{ color: "var(--text-secondary)", fontSize: ".88rem", lineHeight: 1.55, marginBottom: ".6rem" }}>{f.d}</p>
-            {f.points.map((p) => (
-              <div className="flex gap" key={p} style={{ alignItems: "flex-start", marginBottom: ".4rem" }}>
-                <CheckCircle2 size={16} color="var(--success)" style={{ flexShrink: 0, marginTop: 2 }} />
-                <span style={{ fontSize: ".84rem", color: "var(--text-secondary)" }}>{p}</span>
-              </div>
-            ))}
-          </div>
-        ))}
+        {content.features.map((f) => {
+          const Icon = FEATURE_ICONS[f.tag] || ShieldAlert;
+          return (
+            <div className="glass pad" key={f.t}>
+              <div className="flex aic gap mb1"><Icon size={26} color="var(--accent)" /><span className="badge badge-info">{f.tag}</span></div>
+              <h3 style={{ fontSize: "1.15rem", fontWeight: 800, margin: ".4rem 0" }}>{f.t}</h3>
+              <p style={{ color: "var(--text-secondary)", fontSize: ".88rem", lineHeight: 1.55, marginBottom: ".6rem" }}>{f.d}</p>
+              {f.points.map((p) => (
+                <div className="flex gap" key={p} style={{ alignItems: "flex-start", marginBottom: ".4rem" }}>
+                  <CheckCircle2 size={16} color="var(--success)" style={{ flexShrink: 0, marginTop: 2 }} />
+                  <span style={{ fontSize: ".84rem", color: "var(--text-secondary)" }}>{p}</span>
+                </div>
+              ))}
+            </div>
+          );
+        })}
       </div>
     </section>
   );
 }
 
-const TUTORIAL_STEPS = [
-  { n: 1, t: "Carica il documento", d: "Trascina o seleziona una fattura, un F24, un contratto, una visura o una busta paga (PDF, JPG, PNG)." },
-  { n: 2, t: "Scegli il tipo (opzionale)", d: "Seleziona la categoria del documento per un'estrazione ancora più precisa, oppure lascia che l'AI la rilevi da sola." },
-  { n: 3, t: "Analizza con l'AI", d: "In circa 2 secondi ottieni tutti i dati strutturati (importi, date, P.IVA, IBAN, totali) e l'audit anti-errore." },
-  { n: 4, t: "Chiedi al Copilot", d: "Fai domande sul documento in linguaggio naturale e ricevi risposte immediate e contestuali." },
-  { n: 5, t: "Esporta i dati", d: "Scarica i risultati in CSV o JSON, pronti per il tuo gestionale (Zucchetti, TeamSystem, ecc.)." },
-];
-
-const DEMO_SCENES = [
-  {
-    title: "1. Carica il documento",
-    render: () => (
+function DemoPlayer() {
+  const c = useContent();
+  const d = c.demoData;
+  const SCENES = [
+    { title: c.demo[0], render: () => (
       <div className="demo-doc fade">
         <FileText size={30} color="var(--accent)" />
         <div>
-          <div style={{ fontWeight: 700 }}>Fattura_128_2026.pdf</div>
-          <div style={{ color: "var(--text-muted)", fontSize: ".78rem" }}>caricato · 214 KB</div>
+          <div style={{ fontWeight: 700 }}>{d.file}</div>
+          <div style={{ color: "var(--text-muted)", fontSize: ".78rem" }}>{d.up}</div>
         </div>
         <span className="badge badge-ok" style={{ marginLeft: "auto" }}>OK</span>
       </div>
-    ),
-  },
-  {
-    title: "2. Analisi con l'Intelligenza Artificiale",
-    render: () => (
+    ) },
+    { title: c.demo[1], render: () => (
       <div className="demo-pipe">
-        {["Parsing", "Classificazione", "Estrazione", "Validazione"].map((s, i) => (
+        {c.pipe.map((s, i) => (
           <div className="demo-pstep" key={s} style={{ animationDelay: `${i * 0.4}s` }}>
             <div className="demo-pcircle"><CheckCircle2 size={16} color="var(--success)" /></div>
             <span>{s}</span>
           </div>
         ))}
       </div>
-    ),
-  },
-  {
-    title: "3. Dati estratti automaticamente",
-    render: () => (
+    ) },
+    { title: c.demo[2], render: () => (
       <div style={{ width: "100%" }}>
-        {[["Numero", "128/2026"], ["Imponibile", "1.000,00 €"], ["IVA 22%", "220,00 €"], ["Totale", "1.220,00 €"], ["IBAN", "IT60X0542811101…"]].map(([k, v], i) => (
+        {d.f.map(([k, v], i) => (
           <div className="demo-field fade" key={k} style={{ animationDelay: `${i * 0.18}s` }}>
             <span style={{ color: "var(--text-muted)" }}>{k}</span><strong>{v}</strong>
           </div>
         ))}
       </div>
-    ),
-  },
-  {
-    title: "4. AI Red-Flag Audit",
-    render: () => (
+    ) },
+    { title: c.demo[3], render: () => (
       <div style={{ width: "100%" }}>
-        <div className="demo-audit audit-ok fade"><CheckCircle2 size={15} /> Quadratura IVA corretta (1.000 + 220 = 1.220 €)</div>
-        <div className="demo-audit audit-ok fade" style={{ animationDelay: ".2s" }}><CheckCircle2 size={15} /> IBAN italiano valido</div>
-        <div className="demo-audit audit-warning fade" style={{ animationDelay: ".4s" }}><ShieldAlert size={15} /> Scadenza pagamento tra 15 giorni</div>
+        <div className="demo-audit audit-ok fade"><CheckCircle2 size={15} /> {d.a[0]}</div>
+        <div className="demo-audit audit-ok fade" style={{ animationDelay: ".2s" }}><CheckCircle2 size={15} /> {d.a[1]}</div>
+        <div className="demo-audit audit-warning fade" style={{ animationDelay: ".4s" }}><ShieldAlert size={15} /> {d.a[2]}</div>
       </div>
-    ),
-  },
-  {
-    title: "5. Chiedi all'AI Copilot",
-    render: () => (
+    ) },
+    { title: c.demo[4], render: () => (
       <div className="demo-chat">
-        <div className="msg u fade">Qual è il totale da pagare?</div>
-        <div className="msg a fade" style={{ animationDelay: ".5s" }}>Il totale da pagare è <strong>1.220,00 €</strong>, con scadenza 30/04/2026.</div>
+        <div className="msg u fade">{d.q}</div>
+        <div className="msg a fade" style={{ animationDelay: ".5s" }}>{d.ans[0]}<strong>{d.ans[1]}</strong>{d.ans[2]}</div>
       </div>
-    ),
-  },
-];
-
-function DemoPlayer() {
+    ) },
+  ];
   const [scene, setScene] = useState(0);
   const [playing, setPlaying] = useState(true);
   useEffect(() => {
     if (!playing) return;
-    const t = setTimeout(() => setScene((s) => (s + 1) % DEMO_SCENES.length), 3000);
-    return () => clearTimeout(t);
-  }, [scene, playing]);
-  const cur = DEMO_SCENES[scene];
+    const tm = setTimeout(() => setScene((s) => (s + 1) % SCENES.length), 3000);
+    return () => clearTimeout(tm);
+  }, [scene, playing, SCENES.length]);
+  const cur = SCENES[scene];
   return (
     <div className="glass demo-player" data-testid="tutorial-video">
       <div className="demo-chrome">
@@ -851,7 +852,7 @@ function DemoPlayer() {
         <div className="demo-scene-body">{cur.render()}</div>
       </div>
       <div className="demo-progress">
-        {DEMO_SCENES.map((_, i) => (
+        {SCENES.map((_, i) => (
           <span key={i} className={`demo-dot ${i === scene ? "on" : ""}`} onClick={() => setScene(i)} data-testid={`demo-dot-${i}`} />
         ))}
       </div>
@@ -861,6 +862,7 @@ function DemoPlayer() {
 
 function Tutorials() {
   const { t } = useI18n();
+  const content = useContent();
   return (
     <section className="section" id="tutorial">
       <div className="accent-bar" />
@@ -870,9 +872,9 @@ function Tutorials() {
       <DemoPlayer />
 
       <div className="grid mt2" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))" }}>
-        {TUTORIAL_STEPS.map((s) => (
-          <div className="glass pad" key={s.n}>
-            <div className="pcircle" style={{ margin: "0 0 .6rem", width: 40, height: 40, borderColor: "var(--accent)" }}>{s.n}</div>
+        {content.tutorial.map((s, i) => (
+          <div className="glass pad" key={s.t}>
+            <div className="pcircle" style={{ margin: "0 0 .6rem", width: 40, height: 40, borderColor: "var(--accent)" }}>{i + 1}</div>
             <h4 style={{ fontWeight: 800, fontSize: ".98rem", marginBottom: ".3rem" }}>{s.t}</h4>
             <p style={{ color: "var(--text-secondary)", fontSize: ".84rem", lineHeight: 1.5 }}>{s.d}</p>
           </div>
@@ -900,12 +902,8 @@ function ReferralBanner({ authed, onInvite }) {
 
 function Testimonials() {
   const { t } = useI18n();
-  const revs = [
-    { n: "Avv. Alessandro Rossi", s: "Studio Legale Rossi & Associati • Milano", t: "Ha rivoluzionato il nostro studio. L'estrazione da contratti e visure è accurata al 99%. Risparmiamo 12 ore a settimana." },
-    { n: "Dott.ssa Elena Conti", s: "Conti & Partners • Roma", t: "La quadratura automatica dei saldi F24 e delle fatture ci ha azzerato gli errori di digitazione manuale." },
-    { n: "Dott. Marco Bianchi", s: "Studio Tributario Bianchi • Torino", t: "I 3 crediti gratuiti mi hanno convinto. Abbiamo acquistato il Pack Professional: assistenza ed export impeccabili." },
-    { n: "Chiara Ferrari", s: "HR Manager • Bologna", t: "Analizzare le buste paga ora richiede 2 secondi. Piattaforma affidabile ed intuitiva." },
-  ];
+  const content = useContent();
+  const revs = content.testimonials;
   return (
     <section className="section">
       <div className="accent-bar" />
@@ -918,7 +916,7 @@ function Testimonials() {
               <p style={{ fontStyle: "italic", fontSize: ".85rem", lineHeight: 1.5 }}>"{r.t}"</p></div>
             <div className="divider flex between aic wrapf">
               <div><div style={{ fontWeight: 700, fontSize: ".82rem" }}>{r.n}</div><div style={{ color: "var(--text-muted)", fontSize: ".74rem" }}>{r.s}</div></div>
-              <span className="badge badge-ok">Verificato</span>
+              <span className="badge badge-ok">{t("verified")}</span>
             </div>
           </div>
         ))}
@@ -945,8 +943,8 @@ function PricingModal({ user, onClose, notify }) {
   const cancelSub = async (id) => {
     try {
       const { data } = await axios.post(`${API}/subscriptions/cancel`, { user_id: user.user_id, subscription_id: id });
-      notify(data.message || "Abbonamento in cancellazione."); loadSubs();
-    } catch { notify("Errore annullamento abbonamento."); }
+      notify(data.message || t("n_cancel_ok")); loadSubs();
+    } catch { notify(t("n_cancel_err")); }
   };
 
   const packPkgs = info?.packages?.filter((p) => p.type === "pack") || [];
@@ -959,24 +957,24 @@ function PricingModal({ user, onClose, notify }) {
         package_id: id, origin_url: window.location.origin, user_id: user.user_id,
       });
       window.location.href = data.checkout_url;
-    } catch { notify("Errore nell'avvio del pagamento."); setLoading(""); }
+    } catch { notify(t("n_pay_start_err")); setLoading(""); }
   };
 
   const orderCrypto = async () => {
     try {
       const { data } = await axios.post(`${API}/crypto/order`, { user_id: user.user_id, package_id: selPkg, coin });
-      notify(`Ordine ${data.order_id} registrato. ${data.message}`);
-    } catch { notify("Errore ordine crypto."); }
+      notify(`${data.order_id} — ${data.message}`);
+    } catch { notify(t("n_crypto_err")); }
   };
 
   const Card = (p, pop) => (
     <div className={`glass pad price-card ${pop ? "pop" : ""}`} key={p.id}>
-      {pop && <span className="badge badge-info" style={{ position: "absolute", top: 12, right: 12 }}>POPOLARE</span>}
+      {pop && <span className="badge badge-info" style={{ position: "absolute", top: 12, right: 12 }}>{t("pop")}</span>}
       <div style={{ fontWeight: 800 }}>{p.name}</div>
-      <div className="price-amt">€{p.amount.toFixed(0)}{p.type === "sub" && <span>/mese</span>}</div>
-      <div className="price-cr">{p.credits >= 99999 ? "Crediti illimitati" : `${p.credits} crediti`}</div>
+      <div className="price-amt">€{p.amount.toFixed(0)}{p.type === "sub" && <span>{t("per_month")}</span>}</div>
+      <div className="price-cr">{p.credits >= 99999 ? t("unlim_cr") : `${p.credits} ${t("cr")}`}</div>
       <button className="btn btn-primary mt1" data-testid={`buy-${p.id}`} disabled={loading === p.id} onClick={() => buyStripe(p.id)}>
-        {loading === p.id ? <Loader2 className="spinner" /> : <><CreditCard size={15} /> Acquista</>}
+        {loading === p.id ? <Loader2 className="spinner" /> : <><CreditCard size={15} /> {t("buy")}</>}
       </button>
     </div>
   );
@@ -1000,49 +998,49 @@ function PricingModal({ user, onClose, notify }) {
           <>
             {subs.length > 0 && (
               <div className="glass pad mb1" data-testid="active-subs" style={{ border: "1px solid #00e67644" }}>
-                <strong style={{ fontSize: ".9rem" }}>I tuoi abbonamenti</strong>
+                <strong style={{ fontSize: ".9rem" }}>{t("your_subs")}</strong>
                 {subs.map((s) => (
                   <div className="flex between aic wrapf" key={s.subscription_id} style={{ marginTop: ".5rem", gap: ".5rem" }}>
                     <span style={{ fontSize: ".82rem" }}>
-                      {s.package_name} — €{s.amount}/mese
+                      {s.package_name} — €{s.amount}{t("per_month")}
                       <span className={`badge ${s.status === "active" ? "badge-ok" : "badge-info"}`} style={{ marginLeft: 8 }}>
-                        {s.cancel_at_period_end ? "in cancellazione" : s.status}
+                        {s.cancel_at_period_end ? t("cancelling") : s.status}
                       </span>
                     </span>
                     {!s.cancel_at_period_end && s.status === "active" && (
-                      <button className="btn btn-sm" data-testid={`cancel-sub-${s.subscription_id}`} onClick={() => cancelSub(s.subscription_id)}>Annulla</button>
+                      <button className="btn btn-sm" data-testid={`cancel-sub-${s.subscription_id}`} onClick={() => cancelSub(s.subscription_id)}>{t("cancel")}</button>
                     )}
                   </div>
                 ))}
               </div>
             )}
-            <p className="section-sub mb1">Pacchetti Crediti (pagamento singolo)</p>
+            <p className="section-sub mb1">{t("packs_ttl")}</p>
             <div className="price-grid mb1">{packPkgs.map((p) => Card(p, p.id === "pro"))}</div>
-            <p className="section-sub mb1 mt2">Abbonamenti Studio (rinnovo mensile automatico dei crediti)</p>
+            <p className="section-sub mb1 mt2">{t("subs_ttl")}</p>
             <div className="price-grid">{subPkgs.map((p) => Card(p, p.id === "sub_pro"))}</div>
-            <p style={{ color: "var(--text-muted)", fontSize: ".74rem", marginTop: "1rem" }}>Pagamenti sicuri via Stripe (Managed Payments, IVA gestita da Stripe). Test: carta 4242 4242 4242 4242, data futura, CVC qualsiasi.</p>
+            <p style={{ color: "var(--text-muted)", fontSize: ".74rem", marginTop: "1rem" }}>{t("stripe_note")}</p>
           </>
         )}
 
         {tab === "crypto" && info && (
           <div className="grid" style={{ gridTemplateColumns: "1fr 1fr" }}>
             <div>
-              <p className="section-sub mb1">1. Scegli pacchetto</p>
+              <p className="section-sub mb1">{t("cr_step1")}</p>
               <select className="input mb1" data-testid="crypto-pkg" value={selPkg} onChange={(e) => setSelPkg(e.target.value)}>
-                {info.packages.map((p) => <option key={p.id} value={p.id}>{p.name} — €{p.amount} ({p.credits >= 99999 ? "illimitati" : p.credits + " cr"})</option>)}
+                {info.packages.map((p) => <option key={p.id} value={p.id}>{p.name} — €{p.amount} ({p.credits >= 99999 ? t("unlim") : p.credits + " " + t("cr_short")})</option>)}
               </select>
-              <p className="section-sub mb1">2. Scegli valuta</p>
+              <p className="section-sub mb1">{t("cr_step2")}</p>
               <div className="tabs">
                 <div className={`tab ${coin === "BTC" ? "active" : ""}`} data-testid="coin-btc" onClick={() => setCoin("BTC")}>BTC</div>
                 <div className={`tab ${coin === "USDT" ? "active" : ""}`} data-testid="coin-usdt" onClick={() => setCoin("USDT")}>USDT TRC20</div>
               </div>
-              <button className="btn btn-accent mt1" data-testid="crypto-order-btn" onClick={orderCrypto}>Registra ordine <ChevronRight size={15} /></button>
+              <button className="btn btn-accent mt1" data-testid="crypto-order-btn" onClick={orderCrypto}>{t("cr_order")} <ChevronRight size={15} /></button>
             </div>
             <div className="wallet-box">
               <img src={w?.qr} alt="QR" width={200} height={200} />
               <div style={{ fontWeight: 700, marginTop: ".5rem" }}>{w?.label} <span style={{ color: "var(--text-muted)", fontSize: ".75rem" }}>({w?.network})</span></div>
               <div className="addr" data-testid="wallet-address">{w?.address}</div>
-              <button className="btn btn-sm" onClick={() => { navigator.clipboard.writeText(w?.address); notify("Indirizzo copiato"); }}>Copia indirizzo</button>
+              <button className="btn btn-sm" onClick={() => { navigator.clipboard.writeText(w?.address); notify(t("n_addr_copied")); }}>{t("copy_addr")}</button>
             </div>
           </div>
         )}
@@ -1075,7 +1073,7 @@ function Footer({ onTopup, onGuide }) {
           <button className="btn btn-sm btn-ghost" onClick={onGuide}><BookOpen size={14} /> {t("foot_guide")}</button>
           <button className="btn btn-primary btn-sm" onClick={onTopup}><CreditCard size={14} /> {t("foot_topup")}</button>
         </div>
-        <p style={{ color: "var(--text-muted)", fontSize: ".72rem", marginTop: "1.2rem" }}>© {new Date().getFullYear()} DocuAnalytics AI · Tutti i diritti riservati</p>
+        <p style={{ color: "var(--text-muted)", fontSize: ".72rem", marginTop: "1.2rem" }}>© {new Date().getFullYear()} DocuAnalytics AI · {t("rights")}</p>
       </div>
     </footer>
   );
@@ -1090,7 +1088,7 @@ function AuthModal({ user, onClose, onAuthed, notify }) {
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState("");
 
-  const fmtErr = (d) => (typeof d === "string" ? d : Array.isArray(d) ? d.map((e) => e.msg || "").join(" ") : "Errore. Riprova.");
+  const fmtErr = (d) => (typeof d === "string" ? d : Array.isArray(d) ? d.map((e) => e.msg || "").join(" ") : t("auth_err"));
 
   const submit = async () => {
     setErr(""); setLoading(true);
@@ -1099,13 +1097,13 @@ function AuthModal({ user, onClose, onAuthed, notify }) {
         const { data } = await axios.post(`${API}/auth/register`, {
           email, password, name, user_id: user.user_id, ref: localStorage.getItem("da_ref") || undefined,
         });
-        onAuthed(data.token, data.user); notify(`Benvenuto, ${data.user.name}! 🎉`); onClose();
+        onAuthed(data.token, data.user); notify(`${t("n_welcome")}, ${data.user.name}! 🎉`); onClose();
       } else {
         const { data } = await axios.post(`${API}/auth/login`, { email, password });
-        onAuthed(data.token, data.user); notify("Accesso effettuato ✅"); onClose();
+        onAuthed(data.token, data.user); notify(t("n_login_ok")); onClose();
       }
     } catch (e) {
-      setErr(fmtErr(e?.response?.data?.detail) || "Errore. Riprova.");
+      setErr(fmtErr(e?.response?.data?.detail) || t("auth_err"));
     } finally { setLoading(false); }
   };
 
@@ -1142,6 +1140,7 @@ function AuthModal({ user, onClose, onAuthed, notify }) {
 }
 
 function ReferralModal({ user, onClose, notify }) {
+  const { t } = useI18n();
   const [info, setInfo] = useState(null);
   useEffect(() => { axios.get(`${API}/referral/${user.user_id}`).then(({ data }) => setInfo(data)).catch(() => {}); }, [user.user_id]);
   const link = info ? `${window.location.origin}/?ref=${info.referral_code}` : "";
@@ -1149,74 +1148,54 @@ function ReferralModal({ user, onClose, notify }) {
     <div className="modal-bg" onClick={onClose}>
       <div className="modal glass pad fade" style={{ maxWidth: 480 }} onClick={(e) => e.stopPropagation()} data-testid="referral-modal">
         <div className="modal-head">
-          <h2 className="section-title flex aic gap"><Gift size={20} /> Invita e guadagna</h2>
+          <h2 className="section-title flex aic gap"><Gift size={20} /> {t("ref_ttl")}</h2>
           <button className="close-x" data-testid="close-referral" onClick={onClose}><X size={18} /></button>
         </div>
-        <p className="section-sub mb1">Condividi il tuo link: tu e il tuo collega ricevete <strong style={{ color: "var(--accent)" }}>+5 crediti</strong> quando lui si registra.</p>
+        <p className="section-sub mb1">{t("ref_desc_a")} <strong style={{ color: "var(--accent)" }}>{t("ref_desc_b")}</strong> {t("ref_desc_c")}</p>
         <div className="addr" data-testid="referral-link">{link || "..."}</div>
         <div className="flex gap wrapf">
-          <button className="btn btn-primary btn-sm" data-testid="copy-referral" onClick={() => { navigator.clipboard.writeText(link); notify("Link copiato!"); }}><Copy size={14} /> Copia link</button>
-          <a className="btn btn-sm" href={`https://wa.me/?text=${encodeURIComponent("Analizza i tuoi documenti con l'AI, provalo gratis: " + link)}`} target="_blank" rel="noreferrer">WhatsApp</a>
+          <button className="btn btn-primary btn-sm" data-testid="copy-referral" onClick={() => { navigator.clipboard.writeText(link); notify(t("n_link_copied")); }}><Copy size={14} /> {t("copy_link")}</button>
+          <a className="btn btn-sm" href={`https://wa.me/?text=${encodeURIComponent(t("ref_share") + " " + link)}`} target="_blank" rel="noreferrer">WhatsApp</a>
           <a className="btn btn-sm" href={`https://t.me/share/url?url=${encodeURIComponent(link)}`} target="_blank" rel="noreferrer">Telegram</a>
         </div>
-        {info && <p className="mt2" style={{ fontSize: ".85rem" }}>Colleghi invitati: <strong style={{ color: "var(--accent)" }} data-testid="invited-count">{info.invited_count}</strong> · Crediti guadagnati: <strong>{info.invited_count * info.bonus_per_invite}</strong></p>}
+        {info && <p className="mt2" style={{ fontSize: ".85rem" }}>{t("invited_lbl")}: <strong style={{ color: "var(--accent)" }} data-testid="invited-count">{info.invited_count}</strong> · {t("earned_lbl")}: <strong>{info.invited_count * info.bonus_per_invite}</strong></p>}
       </div>
     </div>
   );
 }
 
-const GUIDE_SECTIONS = [
-  { Icon: Landmark, t: "F24 & Fatture Elettroniche", items: [
-    "Estrazione automatica di codici tributo, importi, scadenze e saldi",
-    "Quadratura Debito / Credito / Saldo finale con avviso in caso di squadratura",
-    "Rilevamento visto di conformità per crediti IVA superiori a €5.000",
-    "Controllo IBAN esteri e generazione Prima Nota per Zucchetti / TeamSystem / Datev",
-  ]},
-  { Icon: ScrollText, t: "Contratti & Documenti Legali", items: [
-    "Individuazione clausole vessatorie ai sensi dell'Art. 1341 c.c.",
-    "Estrazione parti, oggetto, durata, corrispettivi e termini di recesso",
-    "Segnalazione preavvisi e scadenze contrattuali critiche",
-    "Riepilogo in linguaggio chiaro delle clausole complesse",
-  ]},
-  { Icon: Building2, t: "Visure Camerali", items: [
-    "Estrazione numero REA, P.IVA, sede, capitale sociale e PEC",
-    "Elenco soci, amministratori e poteri di firma",
-    "Verifiche antiriciclaggio (KYC / AML) e titolare effettivo",
-    "Stato attività e procedure in corso",
-  ]},
-  { Icon: Wallet, t: "Buste Paga & HR", items: [
-    "Quadratura Lordo / Contributi INPS / IRPEF / Netto in busta",
-    "Calcolo e verifica TFR maturato",
-    "Compliance GDPR ed EU AI Act con dati trattati 100% in UE",
-    "Crittografia AES 256-bit dei documenti",
-  ]},
-];
+const GUIDE_ICONS = [Landmark, ScrollText, Building2, Wallet];
 
 function ServicesGuideModal({ onClose }) {
+  const { t } = useI18n();
+  const content = useContent();
   return (
     <div className="modal-bg" onClick={onClose}>
       <div className="modal glass pad fade" onClick={(e) => e.stopPropagation()} data-testid="guide-modal">
         <div className="modal-head">
-          <h2 className="section-title flex aic gap"><BookOpen size={20} /> Guida Completa ai Servizi Enterprise</h2>
+          <h2 className="section-title flex aic gap"><BookOpen size={20} /> {t("guide_ttl")}</h2>
           <button className="close-x" data-testid="close-guide" onClick={onClose}><X size={18} /></button>
         </div>
-        <p className="section-sub mb1">Tutto ciò che DocuAnalytics AI estrae e verifica per te, categoria per categoria.</p>
+        <p className="section-sub mb1">{t("guide_sub")}</p>
         <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(300px,1fr))" }}>
-          {GUIDE_SECTIONS.map((g) => (
-            <div className="glass pad" key={g.t}>
-              <div className="flex aic gap mb1"><g.Icon size={24} color="var(--accent)" /><strong>{g.t}</strong></div>
-              {g.items.map((it) => (
-                <div className="flex gap" key={it} style={{ alignItems: "flex-start", marginBottom: ".4rem" }}>
-                  <CheckCircle2 size={15} color="var(--success)" style={{ flexShrink: 0, marginTop: 2 }} />
-                  <span style={{ fontSize: ".84rem", color: "var(--text-secondary)" }}>{it}</span>
-                </div>
-              ))}
-            </div>
-          ))}
+          {content.guide.map((g, i) => {
+            const Icon = GUIDE_ICONS[i] || Landmark;
+            return (
+              <div className="glass pad" key={g.t}>
+                <div className="flex aic gap mb1"><Icon size={24} color="var(--accent)" /><strong>{g.t}</strong></div>
+                {g.items.map((it) => (
+                  <div className="flex gap" key={it} style={{ alignItems: "flex-start", marginBottom: ".4rem" }}>
+                    <CheckCircle2 size={15} color="var(--success)" style={{ flexShrink: 0, marginTop: 2 }} />
+                    <span style={{ fontSize: ".84rem", color: "var(--text-secondary)" }}>{it}</span>
+                  </div>
+                ))}
+              </div>
+            );
+          })}
         </div>
         <div className="glass pad mt2 flex aic gap wrapf" style={{ justifyContent: "space-between" }}>
-          <span className="flex aic gap"><Sparkles size={18} color="var(--accent)" /> Ogni analisi include l'AI Red-Flag Audit e il Copilot interattivo.</span>
-          <button className="btn btn-primary btn-sm" data-testid="guide-close-cta" onClick={onClose}>Inizia ora <ChevronRight size={14} /></button>
+          <span className="flex aic gap"><Sparkles size={18} color="var(--accent)" /> {t("guide_foot")}</span>
+          <button className="btn btn-primary btn-sm" data-testid="guide-close-cta" onClick={onClose}>{t("start_now")} <ChevronRight size={14} /></button>
         </div>
       </div>
     </div>
