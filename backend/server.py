@@ -14,6 +14,7 @@ from fastapi import FastAPI, APIRouter, HTTPException, Request
 from dotenv import load_dotenv, dotenv_values
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
+import httpx
 from pydantic import BaseModel, Field
 
 ROOT_DIR = Path(__file__).parent
@@ -35,6 +36,12 @@ EMERGENT_LLM_KEY = os.environ.get('EMERGENT_LLM_KEY')
 STRIPE_API_KEY = _ENV_FILE.get('STRIPE_API_KEY') or os.environ.get('STRIPE_API_KEY')
 BTC_ADDRESS = os.environ.get('BTC_ADDRESS', '')
 USDT_TRC20_ADDRESS = os.environ.get('USDT_TRC20_ADDRESS', '')
+
+# PayPal (REST v2). Credentials live only in backend .env.
+PAYPAL_MODE = (_ENV_FILE.get('PAYPAL_MODE') or os.environ.get('PAYPAL_MODE') or 'live').strip().lower()
+PAYPAL_CLIENT_ID = _ENV_FILE.get('PAYPAL_CLIENT_ID') or os.environ.get('PAYPAL_CLIENT_ID')
+PAYPAL_SECRET = _ENV_FILE.get('PAYPAL_SECRET') or os.environ.get('PAYPAL_SECRET')
+PAYPAL_BASE = "https://api-m.paypal.com" if PAYPAL_MODE == "live" else "https://api-m.sandbox.paypal.com"
 
 FREE_CREDITS = 3
 
@@ -503,6 +510,93 @@ async def crypto_order(req: CryptoOrderReq):
     })
     return {"order_id": order_id, "status": "awaiting_payment",
             "message": "Ordine registrato. Invia l'importo all'indirizzo indicato e conserva la ricevuta: i crediti verranno accreditati dopo la conferma della transazione on-chain."}
+
+
+class PaypalOrderReq(BaseModel):
+    user_id: str
+    package_id: str
+
+
+class PaypalCaptureReq(BaseModel):
+    order_id: str
+
+
+async def _paypal_token():
+    if not (PAYPAL_CLIENT_ID and PAYPAL_SECRET):
+        raise HTTPException(500, "PayPal non configurato")
+    async with httpx.AsyncClient(timeout=30) as c:
+        r = await c.post(f"{PAYPAL_BASE}/v1/oauth2/token",
+                         auth=(PAYPAL_CLIENT_ID, PAYPAL_SECRET),
+                         data={"grant_type": "client_credentials"},
+                         headers={"Accept": "application/json"})
+    if r.status_code != 200:
+        logger.error(f"paypal token error {r.status_code}: {r.text}")
+        raise HTTPException(502, "PayPal auth fallita (verifica credenziali/modalità Sandbox-Live)")
+    return r.json()["access_token"]
+
+
+@api.get("/paypal/config")
+async def paypal_config():
+    return {"enabled": bool(PAYPAL_CLIENT_ID and PAYPAL_SECRET),
+            "client_id": PAYPAL_CLIENT_ID or "", "mode": PAYPAL_MODE, "currency": "EUR"}
+
+
+@api.post("/paypal/order")
+async def paypal_order(req: PaypalOrderReq):
+    pkg = PACKAGES.get(req.package_id)
+    if not pkg:
+        raise HTTPException(400, "Pacchetto non valido")
+    if pkg["type"] != "pack":
+        raise HTTPException(400, "PayPal è disponibile solo per i pacchetti a pagamento singolo")
+    token = await _paypal_token()
+    body = {"intent": "CAPTURE", "purchase_units": [{
+        "reference_id": req.package_id, "description": pkg["name"],
+        "amount": {"currency_code": "EUR", "value": f'{pkg["amount"]:.2f}'}}]}
+    async with httpx.AsyncClient(timeout=30) as c:
+        r = await c.post(f"{PAYPAL_BASE}/v2/checkout/orders", json=body,
+                         headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"})
+    if r.status_code not in (200, 201):
+        logger.error(f"paypal order error {r.status_code}: {r.text}")
+        raise HTTPException(502, "Errore nella creazione dell'ordine PayPal")
+    order_id = r.json()["id"]
+    now = datetime.now(timezone.utc).isoformat()
+    await db.payment_transactions.insert_one({
+        "session_id": order_id, "provider": "paypal", "user_id": req.user_id,
+        "package_id": req.package_id, "credits": pkg["credits"], "amount": pkg["amount"],
+        "currency": "eur", "is_subscription": False, "status": "initiated",
+        "payment_status": "pending", "credited": False, "created_at": now, "updated_at": now})
+    return {"order_id": order_id}
+
+
+@api.post("/paypal/capture")
+async def paypal_capture(req: PaypalCaptureReq):
+    record = await db.payment_transactions.find_one({"session_id": req.order_id, "provider": "paypal"}, {"_id": 0})
+    if not record:
+        raise HTTPException(404, "Ordine non trovato")
+    if record.get("payment_status") == "paid":
+        u = await db.users.find_one({"user_id": record["user_id"]}, {"_id": 0})
+        return {"status": "paid", "credits_added": 0, "user_credits": u["credits"] if u else None}
+    token = await _paypal_token()
+    async with httpx.AsyncClient(timeout=30) as c:
+        r = await c.post(f"{PAYPAL_BASE}/v2/checkout/orders/{req.order_id}/capture",
+                         headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"})
+    try:
+        data = r.json()
+    except Exception:
+        data = {}
+    status = data.get("status")
+    if r.status_code in (200, 201) and status == "COMPLETED":
+        await db.payment_transactions.update_one(
+            {"session_id": req.order_id, "payment_status": {"$ne": "paid"}},
+            {"$set": {"status": "completed", "payment_status": "paid",
+                      "paypal_capture": data.get("id"),
+                      "updated_at": datetime.now(timezone.utc).isoformat()}})
+        record = await db.payment_transactions.find_one({"session_id": req.order_id}, {"_id": 0})
+        await _credit_if_paid(record)
+        u = await db.users.find_one({"user_id": record["user_id"]}, {"_id": 0})
+        return {"status": "paid", "credits_added": record["credits"], "user_credits": u["credits"] if u else None}
+    logger.error(f"paypal capture not completed {r.status_code}: {r.text}")
+    return {"status": status or "pending", "credits_added": 0}
 
 
 @api.get("/packages")

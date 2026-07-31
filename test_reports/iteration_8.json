@@ -1,0 +1,29 @@
+{
+  "summary": "PayPal sandbox integration verified end-to-end. Backend: 7/7 pytest tests pass (config, order create for starter/pro, subscription rejection 400, invalid pkg 400, capture-unapproved graceful non-paid, capture-not-found 404). Frontend: pricing modal opens via topup-btn, 3 tabs present, tab-paypal shows paypal-panel with 3-pack select, Sandbox warning, and PayPal Buttons SDK iframe rendered inside data-testid='paypal-buttons' (visible yellow PayPal button + Debit/Credit Card button). Regressions OK: Stripe tab shows buy-starter/pro/enterprise; Crypto tab shows wallet-address; language switcher (lang-toggle -> lang-en) works; /blog shows blog-list with 4 cards and blog-article opens and renders with ?lang=en.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "PricingModal > PayPal tab", "issues": ["React dev warning: '<span> cannot be a child of <option>' hydration warning. Caused by the visual-editor auto-wrapping dynamic text in <span> inside <option> tags in paypal-pkg select. Harmless at runtime but noisy in console; consider disabling wrapper for <option> children."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_paypal.py",
+    "/app/test_reports/pytest/paypal_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "server.py PayPal endpoints correctly reuse _credit_if_paid for idempotent crediting and exclude _id from Mongo reads.",
+    "paypal_capture returns 200 with status='pending'/other and credits_added=0 on non-COMPLETED responses – graceful as required.",
+    "Consider persisting user_id association on capture-created records so downstream reporting is consistent; currently fine because user_id is stored at order creation.",
+    "Minor: server.py defaults PAYPAL_MODE to 'live' when unset – acceptable but a safer default might be 'sandbox' during dev."
+  ],
+  "updated_files": ["/app/backend/tests/test_paypal.py"],
+  "success_rate": {"backend": "100%", "frontend": "100%"},
+  "seed_data_creation": "None. Test orders created via PayPal sandbox with user_id='qa-uid-1' (not captured, remain in payment_transactions as pending).",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "PayPal sandbox works via public ingress. Real buyer approval cannot be automated; capture endpoint is verified only for graceful handling. If PayPal upstream returns 502 transiently, retest_paypal.py retries once.",
+  "rca of the issue": "No blocking issues."
+}

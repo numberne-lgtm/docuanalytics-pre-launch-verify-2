@@ -937,6 +937,64 @@ function Testimonials() {
   );
 }
 
+function PaypalCheckout({ user, packs, notify, onClose }) {
+  const { t } = useI18n();
+  const { refresh } = useUser();
+  const [cfg, setCfg] = useState(null);
+  const [sel, setSel] = useState("pro");
+  const [ready, setReady] = useState(false);
+  const containerRef = useRef(null);
+  const selRef = useRef(sel);
+  selRef.current = sel;
+
+  useEffect(() => { axios.get(`${API}/paypal/config`).then(({ data }) => setCfg(data)).catch(() => setCfg({ enabled: false })); }, []);
+
+  useEffect(() => {
+    if (!cfg?.enabled || !cfg.client_id) return;
+    if (window.paypal) { setReady(true); return; }
+    const s = document.createElement("script");
+    s.src = `https://www.paypal.com/sdk/js?client-id=${cfg.client_id}&currency=EUR&intent=capture&components=buttons`;
+    s.onload = () => setReady(true);
+    s.onerror = () => notify(t("n_pay_start_err"));
+    document.body.appendChild(s);
+  }, [cfg]); // eslint-disable-line
+
+  useEffect(() => {
+    if (!ready || !window.paypal || !containerRef.current) return;
+    containerRef.current.innerHTML = "";
+    const btns = window.paypal.Buttons({
+      style: { color: "gold", shape: "pill", label: "paypal", height: 45 },
+      createOrder: async () => {
+        const { data } = await axios.post(`${API}/paypal/order`, { user_id: user.user_id, package_id: selRef.current });
+        return data.order_id;
+      },
+      onApprove: async (data) => {
+        try {
+          const { data: res } = await axios.post(`${API}/paypal/capture`, { order_id: data.orderID });
+          if (res.status === "paid") { notify(`${t("n_pay_ok")} +${res.credits_added}`); refresh(); onClose(); }
+          else notify(t("n_pay_fail"));
+        } catch { notify(t("n_pay_fail")); }
+      },
+      onError: () => notify(t("n_pay_start_err")),
+    });
+    if (btns.isEligible && !btns.isEligible()) return;
+    btns.render(containerRef.current).catch(() => {});
+    return () => { try { btns.close(); } catch (e) { /* noop */ } };
+  }, [ready]); // eslint-disable-line
+
+  if (cfg && !cfg.enabled) return <p className="section-sub" data-testid="paypal-disabled">PayPal non disponibile al momento.</p>;
+  return (
+    <div data-testid="paypal-panel">
+      <p className="section-sub mb1">{t("cr_step1")}</p>
+      <select className="input mb1" data-testid="paypal-pkg" value={sel} onChange={(e) => setSel(e.target.value)}>
+        {packs.map((p) => <option key={p.id} value={p.id}>{p.name} — €{p.amount} ({p.credits} {t("cr_short")})</option>)}
+      </select>
+      {cfg?.mode === "sandbox" && <p style={{ color: "#ffb020", fontSize: ".74rem", marginBottom: ".4rem" }}>⚠️ Modalità test PayPal (Sandbox) — nessun pagamento reale.</p>}
+      <div ref={containerRef} data-testid="paypal-buttons" style={{ marginTop: ".6rem", minHeight: 50 }} />
+    </div>
+  );
+}
+
 function PricingModal({ user, onClose, notify }) {
   const { t } = useI18n();
   const [tab, setTab] = useState("stripe");
@@ -1004,6 +1062,7 @@ function PricingModal({ user, onClose, notify }) {
         <div className="tabs">
           <div className={`tab ${tab === "stripe" ? "active" : ""}`} data-testid="tab-stripe" onClick={() => setTab("stripe")}><CreditCard size={15} style={{ display: "inline", marginRight: 6 }} /> {t("tab_card")}</div>
           <div className={`tab ${tab === "crypto" ? "active" : ""}`} data-testid="tab-crypto" onClick={() => setTab("crypto")}><Bitcoin size={15} style={{ display: "inline", marginRight: 6 }} /> {t("tab_crypto")}</div>
+          <div className={`tab ${tab === "paypal" ? "active" : ""}`} data-testid="tab-paypal" onClick={() => setTab("paypal")}><Wallet size={15} style={{ display: "inline", marginRight: 6 }} /> PayPal</div>
         </div>
 
         {tab === "stripe" && (
@@ -1055,6 +1114,10 @@ function PricingModal({ user, onClose, notify }) {
               <button className="btn btn-sm" onClick={() => { navigator.clipboard.writeText(w?.address); notify(t("n_addr_copied")); }}>{t("copy_addr")}</button>
             </div>
           </div>
+        )}
+
+        {tab === "paypal" && (
+          <PaypalCheckout user={user} packs={packPkgs} notify={notify} onClose={onClose} />
         )}
       </div>
     </div>
