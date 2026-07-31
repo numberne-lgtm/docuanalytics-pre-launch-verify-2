@@ -1,32 +1,68 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
     <loc>https://docuanalytics.online/</loc>
+    <xhtml:link rel="alternate" hreflang="it" href="https://docuanalytics.online/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://docuanalytics.online/?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://docuanalytics.online/?lang=es"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://docuanalytics.online/?lang=de"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://docuanalytics.online/?lang=fr"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://docuanalytics.online/"/>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
     <loc>https://docuanalytics.online/blog</loc>
+    <xhtml:link rel="alternate" hreflang="it" href="https://docuanalytics.online/blog"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://docuanalytics.online/blog?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://docuanalytics.online/blog?lang=es"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://docuanalytics.online/blog?lang=de"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://docuanalytics.online/blog?lang=fr"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://docuanalytics.online/blog"/>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docuanalytics.online/blog/analisi-fatture-elettroniche-ai</loc>
+    <xhtml:link rel="alternate" hreflang="it" href="https://docuanalytics.online/blog/analisi-fatture-elettroniche-ai"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://docuanalytics.online/blog/analisi-fatture-elettroniche-ai?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://docuanalytics.online/blog/analisi-fatture-elettroniche-ai?lang=es"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://docuanalytics.online/blog/analisi-fatture-elettroniche-ai?lang=de"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://docuanalytics.online/blog/analisi-fatture-elettroniche-ai?lang=fr"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://docuanalytics.online/blog/analisi-fatture-elettroniche-ai"/>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://docuanalytics.online/blog/controllo-quadratura-f24</loc>
+    <xhtml:link rel="alternate" hreflang="it" href="https://docuanalytics.online/blog/controllo-quadratura-f24"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://docuanalytics.online/blog/controllo-quadratura-f24?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://docuanalytics.online/blog/controllo-quadratura-f24?lang=es"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://docuanalytics.online/blog/controllo-quadratura-f24?lang=de"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://docuanalytics.online/blog/controllo-quadratura-f24?lang=fr"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://docuanalytics.online/blog/controllo-quadratura-f24"/>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://docuanalytics.online/blog/clausole-vessatorie-contratti-ai</loc>
+    <xhtml:link rel="alternate" hreflang="it" href="https://docuanalytics.online/blog/clausole-vessatorie-contratti-ai"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://docuanalytics.online/blog/clausole-vessatorie-contratti-ai?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://docuanalytics.online/blog/clausole-vessatorie-contratti-ai?lang=es"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://docuanalytics.online/blog/clausole-vessatorie-contratti-ai?lang=de"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://docuanalytics.online/blog/clausole-vessatorie-contratti-ai?lang=fr"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://docuanalytics.online/blog/clausole-vessatorie-contratti-ai"/>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://docuanalytics.online/blog/visure-camerali-antiriciclaggio-kyc-aml</loc>
+    <xhtml:link rel="alternate" hreflang="it" href="https://docuanalytics.online/blog/visure-camerali-antiriciclaggio-kyc-aml"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://docuanalytics.online/blog/visure-camerali-antiriciclaggio-kyc-aml?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://docuanalytics.online/blog/visure-camerali-antiriciclaggio-kyc-aml?lang=es"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://docuanalytics.online/blog/visure-camerali-antiriciclaggio-kyc-aml?lang=de"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://docuanalytics.online/blog/visure-camerali-antiriciclaggio-kyc-aml?lang=fr"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://docuanalytics.online/blog/visure-camerali-antiriciclaggio-kyc-aml"/>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
