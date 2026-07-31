@@ -81,9 +81,14 @@ IMPLEMENTATO E TESTATO (19/19 backend + frontend E2E, 100%):
 - **hreflang SEO**: tag `<link rel=alternate hreflang>` iniettati via JS per IT/EN/ES/DE/FR + x-default, sia sulla homepage (useEffect in `Home`, App.js) sia su ogni pagina blog (`useSeo` in Blog.js). Canonical self-referencing per variante lingua. `I18nProvider` ora legge `?lang=` all'avvio → le URL per-lingua sono crawlabili.
 - Verificato con screenshot: articolo EN (`/blog/controllo-quadratura-f24?lang=en`) renderizzato in inglese, index/articolo IT ok, regressione home ok. Compila senza errori (solo warning preesistente exhaustive-deps).
 
+## Aggiornamento (2026-06) — Sessione 5c: PayPal + Social reali
+- **Social footer** aggiornati con URL reali: Facebook (facebook.com/FrancescoEllee), LinkedIn (in/francesco-e-l-l-e-...), YouTube (@MisteriSvelatix). Instagram e X rimossi (non forniti) per evitare link morti. `SOCIALS` in App.js.
+- **PayPal (REST v2)** — integrato come metodo alternativo a Stripe, SOLO per i pacchetti a pagamento singolo (starter/pro/enterprise). Endpoint backend: `GET /api/paypal/config`, `POST /api/paypal/order`, `POST /api/paypal/capture` (accredito idempotente via `_credit_if_paid`). Frontend: componente `PaypalCheckout` + tab "PayPal" nel PricingModal (carica PayPal JS SDK dinamicamente).
+- **MODALITÀ SANDBOX (TEST)**: le credenziali fornite dall'utente sono di tipo Sandbox (sandbox OAuth 200 / live 401). `PAYPAL_MODE=sandbox`, `PAYPAL_CLIENT_ID`, `PAYPAL_SECRET` in backend/.env. NESSUN pagamento reale finché non si passa a credenziali LIVE + `PAYPAL_MODE=live`.
+- Verificato da testing agent (iteration_8): backend 100% (7/7), frontend 100% (pulsanti PayPal renderizzati, regressioni Stripe/crypto/i18n/blog OK). Warning dev innocuo `<span> in <option>` (tooling).
+
 ## Promemoria aperto
-- **Blog/Guida SEO — FATTO** (multilingua + hreflang, Sessione 5/5b). File: `frontend/src/Blog.js`; rotte in `App.js`; sitemap.xml con 5 URL.
-- PayPal: IN ATTESA valori concreti (Client ID + Secret + modalità + pacchetti).
-- Social URL reali: IN ATTESA (LinkedIn/Instagram/X/YouTube). Facebook già impostato; altri placeholder in `SOCIALS` (App.js).
-- OPZIONALE: aggiungere le URL con `?lang=` al sitemap.xml (ora lista solo le canonical IT).
+- PayPal: passare a credenziali **LIVE** per pagamenti reali (creare app Live su developer.paypal.com → aggiornare le 2 chiavi + `PAYPAL_MODE=live`). Abbonamenti PayPal (billing plans) = step futuro; ora PayPal solo per pack one-time.
+- Social: Instagram/X non forniti → assenti dal footer (riaggiungibili con URL reali).
+- OPZIONALE: aggiungere URL `?lang=` al sitemap.xml.
 - Ogni modifica richiede DEPLOY per andare in produzione (docuanalytics.online).
