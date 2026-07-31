@@ -6,7 +6,7 @@ import {
   Upload, Zap, CreditCard, FileText, ScrollText, Building2, Landmark, Wallet,
   Bot, ShieldAlert, MessageSquare, Star, CheckCircle2, X, Send, Loader2,
   Download, ChevronRight, Bitcoin, LogIn, LogOut, User, Gift, BookOpen,
-  Sparkles, Copy, Play, Lock, Facebook, Instagram, Linkedin, Youtube, Twitter, Send as Telegram, Globe
+  Sparkles, Copy, Play, Lock, Facebook, Linkedin, Youtube, Globe
 } from "lucide-react";
 import { BlogIndex, BlogPost } from "./Blog";
 
@@ -379,14 +379,11 @@ function LanguageSwitcher() {
   );
 }
 
-// Social links — sostituisci gli URL con i tuoi profili reali quando li crei.
+// Social links reali dell'utente. Instagram/X rimossi finché non forniti (niente link morti).
 const SOCIALS = [
-  { name: "LinkedIn", Icon: Linkedin, url: "https://www.linkedin.com/company/docuanalytics-ai" },
-  { name: "Facebook", Icon: Facebook, url: "https://www.facebook.com/lampone.francesco" },
-  { name: "Instagram", Icon: Instagram, url: "https://www.instagram.com/docuanalytics.ai" },
-  { name: "X (Twitter)", Icon: Twitter, url: "https://x.com/docuanalytics_ai" },
-  { name: "YouTube", Icon: Youtube, url: "https://www.youtube.com/@docuanalytics-ai" },
-  { name: "Telegram", Icon: Telegram, url: "https://t.me/docuanalytics_ai" },
+  { name: "Facebook", Icon: Facebook, url: "https://www.facebook.com/FrancescoEllee" },
+  { name: "LinkedIn", Icon: Linkedin, url: "https://www.linkedin.com/in/francesco-e-l-l-e-20058920b/" },
+  { name: "YouTube", Icon: Youtube, url: "https://www.youtube.com/@MisteriSvelatix" },
 ];
 
 const DOC_TYPES = [
