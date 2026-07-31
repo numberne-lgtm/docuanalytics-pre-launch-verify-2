@@ -84,11 +84,11 @@ IMPLEMENTATO E TESTATO (19/19 backend + frontend E2E, 100%):
 ## Aggiornamento (2026-06) — Sessione 5c: PayPal + Social reali
 - **Social footer** aggiornati con URL reali: Facebook (facebook.com/FrancescoEllee), LinkedIn (in/francesco-e-l-l-e-...), YouTube (@MisteriSvelatix). Instagram e X rimossi (non forniti) per evitare link morti. `SOCIALS` in App.js.
 - **PayPal (REST v2)** — integrato come metodo alternativo a Stripe, SOLO per i pacchetti a pagamento singolo (starter/pro/enterprise). Endpoint backend: `GET /api/paypal/config`, `POST /api/paypal/order`, `POST /api/paypal/capture` (accredito idempotente via `_credit_if_paid`). Frontend: componente `PaypalCheckout` + tab "PayPal" nel PricingModal (carica PayPal JS SDK dinamicamente).
-- **MODALITÀ SANDBOX (TEST)**: le credenziali fornite dall'utente sono di tipo Sandbox (sandbox OAuth 200 / live 401). `PAYPAL_MODE=sandbox`, `PAYPAL_CLIENT_ID`, `PAYPAL_SECRET` in backend/.env. NESSUN pagamento reale finché non si passa a credenziali LIVE + `PAYPAL_MODE=live`.
+- **MODALITÀ LIVE (REALE)**: dal 2026-06 le credenziali Live dell'utente sono attive. `PAYPAL_MODE=live`, `PAYPAL_CLIENT_ID` (AS_hnt…), `PAYPAL_SECRET` in backend/.env. Verificato: OAuth live 200 e creazione ordine live OK (order_id reale). Le credenziali Sandbox precedenti sono state sostituite.
 - Verificato da testing agent (iteration_8): backend 100% (7/7), frontend 100% (pulsanti PayPal renderizzati, regressioni Stripe/crypto/i18n/blog OK). Warning dev innocuo `<span> in <option>` (tooling).
 
 ## Promemoria aperto
-- PayPal: passare a credenziali **LIVE** per pagamenti reali (creare app Live su developer.paypal.com → aggiornare le 2 chiavi + `PAYPAL_MODE=live`). Abbonamenti PayPal (billing plans) = step futuro; ora PayPal solo per pack one-time.
+- PayPal: **LIVE attivo** ✅. Abbonamenti PayPal (billing plans) = step futuro; ora PayPal solo per pack one-time (starter/pro/enterprise).
 - Social: Instagram/X non forniti → assenti dal footer (riaggiungibili con URL reali).
-- OPZIONALE: aggiungere URL `?lang=` al sitemap.xml.
+- Sitemap multilingua con `?lang=` = FATTO.
 - Ogni modifica richiede DEPLOY per andare in produzione (docuanalytics.online).
