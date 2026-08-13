@@ -10,7 +10,7 @@ from pathlib import Path
 from datetime import datetime, timezone, timedelta
 from typing import Optional
 
-from fastapi import FastAPI, APIRouter, HTTPException, Request
+from fastapi import FastAPI, APIRouter, HTTPException, Request, Header
 from dotenv import load_dotenv, dotenv_values
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -43,6 +43,9 @@ PAYPAL_CLIENT_ID = _ENV_FILE.get('PAYPAL_CLIENT_ID') or os.environ.get('PAYPAL_C
 PAYPAL_SECRET = _ENV_FILE.get('PAYPAL_SECRET') or os.environ.get('PAYPAL_SECRET')
 PAYPAL_WEBHOOK_ID = _ENV_FILE.get('PAYPAL_WEBHOOK_ID') or os.environ.get('PAYPAL_WEBHOOK_ID')
 PAYPAL_BASE = "https://api-m.paypal.com" if PAYPAL_MODE == "live" else "https://api-m.sandbox.paypal.com"
+
+# Admin token for manual credit grants (test/support). Set ADMIN_TOKEN in .env.
+ADMIN_TOKEN = _ENV_FILE.get('ADMIN_TOKEN') or os.environ.get('ADMIN_TOKEN')
 
 FREE_CREDITS = 3
 
@@ -745,9 +748,37 @@ async def paypal_webhook(request: Request):
     return {"status": "ok"}
 
 
+class AdminGrantReq(BaseModel):
+    email: str
+    credits: int
+
+
+@api.post("/admin/grant-credits")
+async def admin_grant_credits(req: AdminGrantReq, x_admin_token: str = Header(None)):
+    if not ADMIN_TOKEN:
+        raise HTTPException(503, "Admin non configurato")
+    if x_admin_token != ADMIN_TOKEN:
+        raise HTTPException(401, "Token admin non valido")
+    if req.credits <= 0 or req.credits > 100000:
+        raise HTTPException(400, "Numero di crediti non valido")
+    email = req.email.strip().lower()
+    u = await db.users.find_one({"email": email}, {"_id": 0})
+    if not u:
+        raise HTTPException(404, "Utente non trovato")
+    await add_credits(u["user_id"], int(req.credits))
+    now = datetime.now(timezone.utc).isoformat()
+    await db.payment_transactions.insert_one({
+        "session_id": f"admin_{uuid.uuid4().hex}", "provider": "admin", "user_id": u["user_id"],
+        "credits": req.credits, "amount": 0, "is_subscription": False, "kind": "admin_grant",
+        "status": "completed", "payment_status": "paid", "credited": True, "created_at": now, "updated_at": now})
+    nu = await db.users.find_one({"user_id": u["user_id"]}, {"_id": 0})
+    return {"email": email, "credits_added": req.credits, "new_balance": nu["credits"]}
+
+
 @api.get("/packages")
 async def packages():
     return {"packages": [{"id": k, **v} for k, v in PACKAGES.items()]}
+
 
 # ---------------- Auth (JWT email/password) + Referral ----------------
 import bcrypt
