@@ -1,0 +1,30 @@
+{
+  "summary": "PayPal LIVE subscription flow verified end-to-end. Backend: 6/6 pytest pass (plans for sub_single/sub_pro/sub_unlimited return real 'P-*' plan_ids from PayPal LIVE; starter one-time pack correctly rejected with 400; activate with fake sub_id gracefully returns 502 with detail 'Impossibile verificare l'abbonamento PayPal' (verified via localhost; Cloudflare ingress replaces 502 body with HTML — expected); /api/webhook/paypal PING returns {status:'ok'}). Frontend: home shows data-testid=privacy-banner, trust-badges with exactly 5 .trust-badge items, all 4 faq-item-0..3; clicking faq-q-1 opens faq-a-1 (213 chars). Pricing modal opens via topup-btn, tab-paypal shows paypal-panel with pp-mode-packs (default, PayPal button iframe rendered) and pp-mode-subs (paypal-sub-pkg with 3 options, PayPal Subscribe + PayPal Credit Subscribe iframes rendered inside paypal-sub-buttons). Regression OK: tab-stripe → buy-starter, tab-crypto → wallet-address, lang-toggle → lang-en translates banner ('Your documents are never stored...') + FAQ ('Are my documents safe?') + preserves 5 trust badges, /blog renders blog-list with 4 cards.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "PricingModal > PayPal tab", "issues": ["Persistent React hydration warning: '<span> cannot be a child of <option>' from visual-editor auto-wrapping dynamic text inside <option> in paypal-pkg/paypal-sub-pkg selects. Harmless at runtime but noisy in dev console."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_paypal_sub.py",
+    "/app/test_reports/pytest/paypal_sub_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "server.py _paypal_ensure_plan properly caches product_id and plan_id per PAYPAL_MODE in db.paypal_plans, avoiding duplicate LIVE plan creation on repeated calls.",
+    "activate endpoint returns 502 with clear Italian detail when PayPal sub cannot be fetched (fake id) and short-circuits ACTIVE/APPROVED before crediting — good.",
+    "webhook uses idempotency guard via session_id=pp_sale_{sale_id} and prior-sale counter to avoid double-crediting the first billing cycle (already covered by activation) — correct.",
+    "Note: Cloudflare ingress strips JSON body on upstream 502; frontend receiving 502 will show generic error. Consider mapping the PayPal upstream failure to HTTP 400/422 with JSON to preserve the detail through the edge.",
+    "Minor: default PAYPAL_MODE is 'live'; consider explicit env-required to prevent accidental live plan creation in dev."
+  ],
+  "updated_files": ["/app/backend/tests/test_paypal_sub.py"],
+  "success_rate": {"backend": "100%", "frontend": "100%"},
+  "seed_data_creation": "Real (but harmless, deactivatable) LIVE PayPal Billing Plans were created via test calls for sub_single/sub_pro/sub_unlimited under product 'DocuAnalytics AI'; ids cached in db.paypal_plans (plan_live_*). No real subscription/payment was completed.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "PayPal is LIVE. Subscription plans P-* are already cached in db.paypal_plans so subsequent /paypal/subscription/plan calls are cheap DB reads. Do NOT attempt real subscribe approval. Frontend loads TWO PayPal SDKs; allow ~7-8s after clicking pp-mode-subs for the second SDK (window.paypalSub via data-namespace) to render inside data-testid='paypal-sub-buttons'.",
+  "rca of the issue": "No blocking issues. Only cosmetic: Cloudflare 502 pages hide backend JSON detail (network layer), and a dev-only React hydration warning about <span> inside <option> from a visual-editor wrapper."
+}

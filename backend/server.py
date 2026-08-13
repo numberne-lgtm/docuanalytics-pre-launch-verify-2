@@ -41,6 +41,7 @@ USDT_TRC20_ADDRESS = os.environ.get('USDT_TRC20_ADDRESS', '')
 PAYPAL_MODE = (_ENV_FILE.get('PAYPAL_MODE') or os.environ.get('PAYPAL_MODE') or 'live').strip().lower()
 PAYPAL_CLIENT_ID = _ENV_FILE.get('PAYPAL_CLIENT_ID') or os.environ.get('PAYPAL_CLIENT_ID')
 PAYPAL_SECRET = _ENV_FILE.get('PAYPAL_SECRET') or os.environ.get('PAYPAL_SECRET')
+PAYPAL_WEBHOOK_ID = _ENV_FILE.get('PAYPAL_WEBHOOK_ID') or os.environ.get('PAYPAL_WEBHOOK_ID')
 PAYPAL_BASE = "https://api-m.paypal.com" if PAYPAL_MODE == "live" else "https://api-m.sandbox.paypal.com"
 
 FREE_CREDITS = 3
@@ -450,7 +451,11 @@ async def list_subscriptions(user_id: str):
 
     def _enrich(sdoc):
         item = {"subscription_id": sdoc["subscription_id"], "package_name": sdoc.get("package_name"),
-                "credits": sdoc.get("credits"), "amount": sdoc.get("amount"), "status": sdoc.get("status")}
+                "credits": sdoc.get("credits"), "amount": sdoc.get("amount"), "status": sdoc.get("status"),
+                "provider": sdoc.get("provider", "stripe"),
+                "cancel_at_period_end": sdoc.get("cancel_at_period_end", False)}
+        if sdoc.get("provider") == "paypal":
+            return item
         try:
             live = stripe.Subscription.retrieve(sdoc["subscription_id"])
             item["status"] = live.get("status", sdoc.get("status"))
@@ -472,6 +477,18 @@ async def cancel_subscription(req: SubCancelReq):
         raise HTTPException(404, "Abbonamento non trovato")
     if sdoc.get("user_id") != req.user_id:
         raise HTTPException(403, "Accesso negato")
+    if sdoc.get("provider") == "paypal":
+        try:
+            token = await _paypal_token()
+            async with httpx.AsyncClient(timeout=30) as c:
+                await c.post(f"{PAYPAL_BASE}/v1/billing/subscriptions/{req.subscription_id}/cancel",
+                             json={"reason": "User requested cancellation"}, headers=_pp_headers(token))
+        except Exception as e:
+            logger.warning(f"paypal cancel error: {e}")
+        await db.subscriptions.update_one(
+            {"subscription_id": req.subscription_id},
+            {"$set": {"status": "canceled", "cancel_at_period_end": True, "updated_at": datetime.now(timezone.utc).isoformat()}})
+        return {"status": "canceled", "message": "Abbonamento PayPal annullato."}
     try:
         stripe.Subscription.modify(req.subscription_id, cancel_at_period_end=True)
     except Exception as e:
@@ -531,7 +548,7 @@ async def _paypal_token():
                          headers={"Accept": "application/json"})
     if r.status_code != 200:
         logger.error(f"paypal token error {r.status_code}: {r.text}")
-        raise HTTPException(502, "PayPal auth fallita (verifica credenziali/modalità Sandbox-Live)")
+        raise HTTPException(400, "PayPal auth fallita (verifica credenziali/modalità Sandbox-Live)")
     return r.json()["access_token"]
 
 
@@ -557,7 +574,7 @@ async def paypal_order(req: PaypalOrderReq):
                          headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"})
     if r.status_code not in (200, 201):
         logger.error(f"paypal order error {r.status_code}: {r.text}")
-        raise HTTPException(502, "Errore nella creazione dell'ordine PayPal")
+        raise HTTPException(400, "Errore nella creazione dell'ordine PayPal")
     order_id = r.json()["id"]
     now = datetime.now(timezone.utc).isoformat()
     await db.payment_transactions.insert_one({
@@ -597,6 +614,135 @@ async def paypal_capture(req: PaypalCaptureReq):
         return {"status": "paid", "credits_added": record["credits"], "user_credits": u["credits"] if u else None}
     logger.error(f"paypal capture not completed {r.status_code}: {r.text}")
     return {"status": status or "pending", "credits_added": 0}
+
+
+class PaypalSubReq(BaseModel):
+    package_id: str
+
+
+class PaypalSubActivateReq(BaseModel):
+    user_id: str
+    package_id: str
+    subscription_id: str
+
+
+def _pp_headers(token):
+    return {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+
+
+async def _paypal_ensure_product(token):
+    doc = await db.paypal_plans.find_one({"_id": f"product_{PAYPAL_MODE}"})
+    if doc:
+        return doc["product_id"]
+    body = {"name": "DocuAnalytics AI", "type": "SERVICE", "category": "SOFTWARE"}
+    async with httpx.AsyncClient(timeout=30) as c:
+        r = await c.post(f"{PAYPAL_BASE}/v1/catalogs/products", json=body, headers=_pp_headers(token))
+    if r.status_code not in (200, 201):
+        logger.error(f"paypal product error {r.status_code}: {r.text}")
+        raise HTTPException(400, "Errore creazione prodotto PayPal")
+    pid = r.json()["id"]
+    await db.paypal_plans.insert_one({"_id": f"product_{PAYPAL_MODE}", "product_id": pid})
+    return pid
+
+
+async def _paypal_ensure_plan(package_id):
+    pkg = PACKAGES.get(package_id)
+    if not pkg or pkg["type"] != "sub":
+        raise HTTPException(400, "Pacchetto abbonamento non valido")
+    key = f"plan_{PAYPAL_MODE}_{package_id}"
+    doc = await db.paypal_plans.find_one({"_id": key})
+    if doc:
+        return doc["plan_id"]
+    token = await _paypal_token()
+    product_id = await _paypal_ensure_product(token)
+    body = {
+        "product_id": product_id, "name": f'{pkg["name"]} (mensile)',
+        "billing_cycles": [{
+            "frequency": {"interval_unit": "MONTH", "interval_count": 1},
+            "tenure_type": "REGULAR", "sequence": 1, "total_cycles": 0,
+            "pricing_scheme": {"fixed_price": {"value": f'{pkg["amount"]:.2f}', "currency_code": "EUR"}},
+        }],
+        "payment_preferences": {"auto_bill_outstanding": True, "setup_fee_failure_action": "CONTINUE", "payment_failure_threshold": 1},
+    }
+    async with httpx.AsyncClient(timeout=30) as c:
+        r = await c.post(f"{PAYPAL_BASE}/v1/billing/plans", json=body, headers=_pp_headers(token))
+    if r.status_code not in (200, 201):
+        logger.error(f"paypal plan error {r.status_code}: {r.text}")
+        raise HTTPException(400, "Errore creazione piano PayPal")
+    plan_id = r.json()["id"]
+    await db.paypal_plans.insert_one({"_id": key, "plan_id": plan_id, "package_id": package_id})
+    return plan_id
+
+
+@api.post("/paypal/subscription/plan")
+async def paypal_sub_plan(req: PaypalSubReq):
+    if not (PAYPAL_CLIENT_ID and PAYPAL_SECRET):
+        raise HTTPException(500, "PayPal non configurato")
+    plan_id = await _paypal_ensure_plan(req.package_id)
+    return {"plan_id": plan_id, "package_id": req.package_id}
+
+
+@api.post("/paypal/subscription/activate")
+async def paypal_sub_activate(req: PaypalSubActivateReq):
+    pkg = PACKAGES.get(req.package_id)
+    if not pkg or pkg["type"] != "sub":
+        raise HTTPException(400, "Pacchetto abbonamento non valido")
+    token = await _paypal_token()
+    async with httpx.AsyncClient(timeout=30) as c:
+        r = await c.get(f"{PAYPAL_BASE}/v1/billing/subscriptions/{req.subscription_id}", headers=_pp_headers(token))
+    if r.status_code != 200:
+        logger.error(f"paypal sub fetch error {r.status_code}: {r.text}")
+        raise HTTPException(400, "Impossibile verificare l'abbonamento PayPal")
+    status = r.json().get("status")
+    if status not in ("ACTIVE", "APPROVED"):
+        return {"status": status or "pending", "credits_added": 0}
+    now = datetime.now(timezone.utc).isoformat()
+    await db.subscriptions.update_one(
+        {"subscription_id": req.subscription_id},
+        {"$set": {"subscription_id": req.subscription_id, "provider": "paypal", "user_id": req.user_id,
+                  "package_id": req.package_id, "package_name": pkg["name"], "credits": pkg["credits"],
+                  "amount": pkg["amount"], "status": "active", "cancel_at_period_end": False, "updated_at": now},
+         "$setOnInsert": {"created_at": now}}, upsert=True)
+    granted = 0
+    if not await db.payment_transactions.find_one({"session_id": f"pp_sub_{req.subscription_id}"}):
+        await db.payment_transactions.insert_one({
+            "session_id": f"pp_sub_{req.subscription_id}", "provider": "paypal", "subscription_id_ref": req.subscription_id,
+            "user_id": req.user_id, "package_id": req.package_id, "credits": pkg["credits"], "amount": pkg["amount"],
+            "is_subscription": True, "kind": "activation", "status": "completed", "payment_status": "paid",
+            "credited": True, "created_at": now, "updated_at": now})
+        await add_credits(req.user_id, int(pkg["credits"]))
+        granted = pkg["credits"]
+    u = await db.users.find_one({"user_id": req.user_id}, {"_id": 0})
+    return {"status": "active", "credits_added": granted, "user_credits": u["credits"] if u else None}
+
+
+@api.post("/webhook/paypal")
+async def paypal_webhook(request: Request):
+    payload = await request.json()
+    event = payload.get("event_type", "")
+    resource = payload.get("resource", {}) or {}
+    if event == "PAYMENT.SALE.COMPLETED":
+        sub_id = resource.get("billing_agreement_id")
+        sale_id = resource.get("id")
+        if sub_id and sale_id:
+            sdoc = await db.subscriptions.find_one({"subscription_id": sub_id, "provider": "paypal"}, {"_id": 0})
+            if sdoc and not await db.payment_transactions.find_one({"session_id": f"pp_sale_{sale_id}"}):
+                prior = await db.payment_transactions.count_documents({"subscription_id_ref": sub_id, "kind": "sale"})
+                now = datetime.now(timezone.utc).isoformat()
+                credit = prior >= 1  # first sale already covered by activation
+                await db.payment_transactions.insert_one({
+                    "session_id": f"pp_sale_{sale_id}", "provider": "paypal", "subscription_id_ref": sub_id,
+                    "user_id": sdoc["user_id"], "package_id": sdoc.get("package_id"), "credits": sdoc.get("credits"),
+                    "is_subscription": True, "kind": "sale", "status": "completed", "payment_status": "paid",
+                    "credited": credit, "created_at": now, "updated_at": now})
+                if credit:
+                    await add_credits(sdoc["user_id"], int(sdoc.get("credits", 0) or 0))
+    elif event in ("BILLING.SUBSCRIPTION.CANCELLED", "BILLING.SUBSCRIPTION.EXPIRED", "BILLING.SUBSCRIPTION.SUSPENDED"):
+        sub_id = resource.get("id")
+        if sub_id:
+            await db.subscriptions.update_one({"subscription_id": sub_id, "provider": "paypal"},
+                                              {"$set": {"status": "canceled", "updated_at": datetime.now(timezone.utc).isoformat()}})
+    return {"status": "ok"}
 
 
 @api.get("/packages")

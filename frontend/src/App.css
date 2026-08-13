@@ -174,3 +174,5 @@ body{background:var(--bg-color);color:var(--text-primary);font-family:'Inter',sa
 .faq-item .faq-chevron{transition:transform .25s ease;flex-shrink:0;color:var(--accent)}
 .faq-item.open .faq-chevron{transform:rotate(180deg)}
 .faq-a{color:var(--text-secondary);line-height:1.7;padding:0 1rem 1rem;font-size:.9rem}
+
+.faq-list{display:flex;flex-direction:column;gap:.7rem}

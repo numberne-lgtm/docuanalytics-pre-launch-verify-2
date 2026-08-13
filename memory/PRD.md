@@ -87,8 +87,17 @@ IMPLEMENTATO E TESTATO (19/19 backend + frontend E2E, 100%):
 - **MODALITÀ LIVE (REALE)**: dal 2026-06 le credenziali Live dell'utente sono attive. `PAYPAL_MODE=live`, `PAYPAL_CLIENT_ID` (AS_hnt…), `PAYPAL_SECRET` in backend/.env. Verificato: OAuth live 200 e creazione ordine live OK (order_id reale). Le credenziali Sandbox precedenti sono state sostituite.
 - Verificato da testing agent (iteration_8): backend 100% (7/7), frontend 100% (pulsanti PayPal renderizzati, regressioni Stripe/crypto/i18n/blog OK). Warning dev innocuo `<span> in <option>` (tooling).
 
+## Aggiornamento (2026-06) — Sessione 5e: FAQ estese + PayPal abbonamenti + deploy
+- **FAQ**: sezione ampliata a 4 domande (sicurezza documenti, prezzi/piano gratuito, tipi di file, tempi di analisi), accordion indipendenti, tradotte in 5 lingue (faq_q1-4/a1-4).
+- **PayPal abbonamenti (LIVE)**: piani mensili creati on-demand e cachati in `db.paypal_plans` (P-* per sub_single/sub_pro/sub_unlimited). Endpoint `/api/paypal/subscription/plan`, `/activate` (accredito primo ciclo idempotente), `/api/webhook/paypal` (rinnovi PAYMENT.SALE.COMPLETED, con guard per non riaccreditare il primo ciclo; cancel/expire). `list_subscriptions`/`cancel_subscription` instradano per `provider`. Frontend: `PaypalCheckout` carica DUE SDK (window.paypal capture + window.paypalSub subscription via data-namespace) con toggle Pacchetti/Abbonamenti.
+- Errori upstream PayPal: da 502→400 (Cloudflare nascondeva il dettaglio JSON sui 5xx).
+- Verificato testing agent (iteration_9): backend 100% (6/6), frontend 100% (pulsanti Subscribe renderizzati, FAQ/banner/badge, regressioni OK).
+- **DEPLOY** accodato al deployer agent (redeploy).
+
+## ⚠️ AZIONE PRODUZIONE NECESSARIA
+- In produzione devono essere presenti le env `PAYPAL_MODE=live`, `PAYPAL_CLIENT_ID`, `PAYPAL_SECRET` (e opz. `PAYPAL_WEBHOOK_ID`). Se assenti, PayPal risulterà "non disponibile" in produzione.
+- Per i RINNOVI mensili PayPal automatici serve configurare un webhook nel dashboard PayPal (Live) verso `https://docuanalytics.online/api/webhook/paypal` (eventi PAYMENT.SALE.COMPLETED, BILLING.SUBSCRIPTION.*). Il primo mese è accreditato all'attivazione; i rinnovi richiedono il webhook.
+
 ## Promemoria aperto
-- **Trust/Privacy (Sessione 5d)**: banner privacy (bordo viola + scudo) tra hero e upload, riga di 5 badge fiducia (Documenti non memorizzati / Cancellazione immediata / Conforme GDPR / HTTPS cifrato / Nessuna condivisione), nuova sezione FAQ (`id="faq"`, componente `Faq`) con Q&A sulla sicurezza documenti. Tutto tradotto in 5 lingue (chiavi priv_banner, badge_*, faq_*). CSS in App.css (.privacy-banner/.trust-badges/.faq-item).
-- PayPal: **LIVE attivo** ✅ (solo pack one-time). Abbonamenti PayPal = step futuro.
 - Social: Instagram/X non forniti → assenti dal footer.
-- Ogni modifica richiede DEPLOY per andare in produzione (docuanalytics.online).
+- Deploy in corso (redeploy).

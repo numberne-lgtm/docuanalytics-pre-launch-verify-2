@@ -53,6 +53,10 @@ const T = {
     priv_banner: "I tuoi documenti non vengono mai memorizzati. Ogni file viene elaborato in tempo reale e cancellato immediatamente dopo l'analisi: nessun dato resta sui nostri server.",
     badge_nostore: "Documenti non memorizzati", badge_delete: "Cancellazione immediata", badge_gdpr: "Conforme GDPR", badge_https: "HTTPS cifrato", badge_noshare: "Nessuna condivisione",
     faq_title: "Domande frequenti", faq_q1: "I miei documenti sono al sicuro? Chi può accedervi?", faq_a1: "I tuoi documenti sono completamente al sicuro. DocuAnalytics non memorizza alcun file: ogni documento viene elaborato in tempo reale e cancellato permanentemente al termine dell'analisi, senza lasciare alcuna traccia sui nostri server. Nessun operatore umano né sistema automatico conserva o accede ai tuoi file. Pienamente conforme al GDPR.",
+    faq_q2: "Quanto costa? Ci sono piani gratuiti?", faq_a2: "Puoi iniziare gratis con 3 crediti inclusi, senza carta di credito. Successivamente scegli tra pacchetti a pagamento singolo (da 19€) o abbonamenti mensili per studi con crediti ricorrenti. Paghi solo ciò che usi.",
+    faq_q3: "Quali tipi di file e documenti posso analizzare?", faq_a3: "Puoi caricare PDF, JPG e PNG fino a 10 MB. DocuAnalytics riconosce fatture elettroniche, F24, contratti, visure camerali, buste paga e documenti generici, con estrazione dati e audit anti-errore.",
+    faq_q4: "Quanto tempo richiede l'analisi di un documento?", faq_a4: "In media circa 2 secondi. L'AI classifica il documento, estrae tutti i campi chiave e genera l'audit e le risposte del Copilot quasi istantaneamente.",
+    pp_onetime: "Pacchetti", pp_subs: "Abbonamenti",
   },
   en: {
     credits: "Credits", topup: "Top up", login: "Sign in", invite: "Invite", logout: "Log out",
@@ -85,6 +89,10 @@ const T = {
     priv_banner: "Your documents are never stored. Every file is processed in real time and deleted immediately after the analysis: no data remains on our servers.",
     badge_nostore: "Documents not stored", badge_delete: "Instant deletion", badge_gdpr: "GDPR compliant", badge_https: "HTTPS encrypted", badge_noshare: "No sharing",
     faq_title: "Frequently asked questions", faq_q1: "Are my documents safe? Who can access them?", faq_a1: "Your documents are completely safe. DocuAnalytics does not store any file: every document is processed in real time and permanently deleted at the end of the analysis, leaving no trace on our servers. No human operator or automated system keeps or accesses your files. Fully GDPR compliant.",
+    faq_q2: "How much does it cost? Is there a free plan?", faq_a2: "You can start for free with 3 included credits, no credit card required. After that, choose one-time packs (from €19) or monthly firm subscriptions with recurring credits. You only pay for what you use.",
+    faq_q3: "Which file types and documents can I analyze?", faq_a3: "You can upload PDF, JPG and PNG files up to 10 MB. DocuAnalytics recognizes e-invoices, tax forms, contracts, company records, payslips and generic documents, with data extraction and error-check audit.",
+    faq_q4: "How long does it take to analyze a document?", faq_a4: "About 2 seconds on average. The AI classifies the document, extracts all key fields and generates the audit and Copilot answers almost instantly.",
+    pp_onetime: "Packs", pp_subs: "Subscriptions",
   },
   es: {
     credits: "Créditos", topup: "Recargar", login: "Acceder", invite: "Invitar", logout: "Salir",
@@ -117,6 +125,10 @@ const T = {
     priv_banner: "Tus documentos nunca se almacenan. Cada archivo se procesa en tiempo real y se elimina de inmediato tras el análisis: ningún dato permanece en nuestros servidores.",
     badge_nostore: "Documentos no almacenados", badge_delete: "Eliminación inmediata", badge_gdpr: "Conforme al RGPD", badge_https: "HTTPS cifrado", badge_noshare: "Sin compartir",
     faq_title: "Preguntas frecuentes", faq_q1: "¿Mis documentos están seguros? ¿Quién puede acceder a ellos?", faq_a1: "Tus documentos están completamente seguros. DocuAnalytics no almacena ningún archivo: cada documento se procesa en tiempo real y se elimina permanentemente al finalizar el análisis, sin dejar rastro en nuestros servidores. Ningún operador humano ni sistema automático conserva o accede a tus archivos. Totalmente conforme al RGPD.",
+    faq_q2: "¿Cuánto cuesta? ¿Hay un plan gratuito?", faq_a2: "Puedes empezar gratis con 3 créditos incluidos, sin tarjeta. Después elige packs de pago único (desde 19€) o suscripciones mensuales para despachos con créditos recurrentes. Solo pagas lo que usas.",
+    faq_q3: "¿Qué tipos de archivos y documentos puedo analizar?", faq_a3: "Puedes subir archivos PDF, JPG y PNG de hasta 10 MB. DocuAnalytics reconoce facturas electrónicas, modelos fiscales, contratos, registros mercantiles, nóminas y documentos genéricos, con extracción de datos y auditoría antierrores.",
+    faq_q4: "¿Cuánto tarda el análisis de un documento?", faq_a4: "Unos 2 segundos de media. La IA clasifica el documento, extrae todos los campos clave y genera la auditoría y las respuestas del Copilot casi al instante.",
+    pp_onetime: "Packs", pp_subs: "Suscripciones",
   },
   de: {
     credits: "Guthaben", topup: "Aufladen", login: "Anmelden", invite: "Einladen", logout: "Abmelden",
@@ -149,6 +161,10 @@ const T = {
     priv_banner: "Ihre Dokumente werden niemals gespeichert. Jede Datei wird in Echtzeit verarbeitet und unmittelbar nach der Analyse gelöscht: keine Daten verbleiben auf unseren Servern.",
     badge_nostore: "Dokumente nicht gespeichert", badge_delete: "Sofortige Löschung", badge_gdpr: "DSGVO-konform", badge_https: "HTTPS-verschlüsselt", badge_noshare: "Keine Weitergabe",
     faq_title: "Häufige Fragen", faq_q1: "Sind meine Dokumente sicher? Wer kann darauf zugreifen?", faq_a1: "Ihre Dokumente sind vollständig sicher. DocuAnalytics speichert keine Datei: Jedes Dokument wird in Echtzeit verarbeitet und nach Abschluss der Analyse dauerhaft gelöscht, ohne Spuren auf unseren Servern zu hinterlassen. Kein menschlicher Bediener und kein automatisches System speichert oder greift auf Ihre Dateien zu. Vollständig DSGVO-konform.",
+    faq_q2: "Was kostet es? Gibt es einen kostenlosen Plan?", faq_a2: "Sie können kostenlos mit 3 enthaltenen Guthaben starten, ohne Kreditkarte. Danach wählen Sie Einmal-Pakete (ab 19 €) oder monatliche Kanzlei-Abos mit wiederkehrendem Guthaben. Sie zahlen nur, was Sie nutzen.",
+    faq_q3: "Welche Dateitypen und Dokumente kann ich analysieren?", faq_a3: "Sie können PDF-, JPG- und PNG-Dateien bis 10 MB hochladen. DocuAnalytics erkennt E-Rechnungen, Steuerformulare, Verträge, Registerauszüge, Gehaltsabrechnungen und generische Dokumente, mit Datenextraktion und Fehler-Audit.",
+    faq_q4: "Wie lange dauert die Analyse eines Dokuments?", faq_a4: "Im Durchschnitt etwa 2 Sekunden. Die KI klassifiziert das Dokument, extrahiert alle wichtigen Felder und erstellt Audit und Copilot-Antworten nahezu sofort.",
+    pp_onetime: "Pakete", pp_subs: "Abos",
   },
   fr: {
     credits: "Crédits", topup: "Recharger", login: "Se connecter", invite: "Inviter", logout: "Déconnexion",
@@ -181,6 +197,10 @@ const T = {
     priv_banner: "Vos documents ne sont jamais stockés. Chaque fichier est traité en temps réel et supprimé immédiatement après l'analyse : aucune donnée ne reste sur nos serveurs.",
     badge_nostore: "Documents non stockés", badge_delete: "Suppression immédiate", badge_gdpr: "Conforme au RGPD", badge_https: "HTTPS chiffré", badge_noshare: "Aucun partage",
     faq_title: "Questions fréquentes", faq_q1: "Mes documents sont-ils en sécurité ? Qui peut y accéder ?", faq_a1: "Vos documents sont totalement en sécurité. DocuAnalytics ne stocke aucun fichier : chaque document est traité en temps réel et définitivement supprimé à la fin de l'analyse, sans laisser aucune trace sur nos serveurs. Aucun opérateur humain ni système automatique ne conserve ni n'accède à vos fichiers. Entièrement conforme au RGPD.",
+    faq_q2: "Combien ça coûte ? Y a-t-il une offre gratuite ?", faq_a2: "Vous pouvez commencer gratuitement avec 3 crédits inclus, sans carte bancaire. Ensuite, choisissez des packs à paiement unique (à partir de 19 €) ou des abonnements mensuels pour cabinets avec crédits récurrents. Vous ne payez que ce que vous utilisez.",
+    faq_q3: "Quels types de fichiers et de documents puis-je analyser ?", faq_a3: "Vous pouvez importer des fichiers PDF, JPG et PNG jusqu'à 10 Mo. DocuAnalytics reconnaît les factures électroniques, formulaires fiscaux, contrats, extraits Kbis, bulletins de paie et documents génériques, avec extraction de données et audit anti-erreur.",
+    faq_q4: "Combien de temps prend l'analyse d'un document ?", faq_a4: "Environ 2 secondes en moyenne. L'IA classe le document, extrait tous les champs clés et génère l'audit et les réponses du Copilot presque instantanément.",
+    pp_onetime: "Packs", pp_subs: "Abonnements",
   },
 };
 const I18nContext = createContext({ lang: "it", t: (k) => k, change: () => {} });
@@ -967,60 +987,101 @@ function Testimonials() {
   );
 }
 
-function PaypalCheckout({ user, packs, notify, onClose }) {
+function PaypalCheckout({ user, packs, subs, notify, onClose }) {
   const { t } = useI18n();
   const { refresh } = useUser();
   const [cfg, setCfg] = useState(null);
-  const [sel, setSel] = useState("pro");
-  const [ready, setReady] = useState(false);
-  const containerRef = useRef(null);
-  const selRef = useRef(sel);
-  selRef.current = sel;
+  const [ppMode, setPpMode] = useState("packs");
+  const [selPack, setSelPack] = useState("pro");
+  const [selSub, setSelSub] = useState("sub_pro");
+  const [readyCap, setReadyCap] = useState(false);
+  const [readySub, setReadySub] = useState(false);
+  const capRef = useRef(null);
+  const subRef = useRef(null);
+  const selPackRef = useRef(selPack);
+  selPackRef.current = selPack;
 
   useEffect(() => { axios.get(`${API}/paypal/config`).then(({ data }) => setCfg(data)).catch(() => setCfg({ enabled: false })); }, []);
 
   useEffect(() => {
     if (!cfg?.enabled || !cfg.client_id) return;
-    if (window.paypal) { setReady(true); return; }
+    if (window.paypal) { setReadyCap(true); return; }
     const s = document.createElement("script");
     s.src = `https://www.paypal.com/sdk/js?client-id=${cfg.client_id}&currency=EUR&intent=capture&components=buttons`;
-    s.onload = () => setReady(true);
-    s.onerror = () => notify(t("n_pay_start_err"));
+    s.onload = () => setReadyCap(true); s.onerror = () => notify(t("n_pay_start_err"));
     document.body.appendChild(s);
   }, [cfg]); // eslint-disable-line
 
   useEffect(() => {
-    if (!ready || !window.paypal || !containerRef.current) return;
-    containerRef.current.innerHTML = "";
-    const btns = window.paypal.Buttons({
+    if (!cfg?.enabled || !cfg.client_id) return;
+    if (window.paypalSub) { setReadySub(true); return; }
+    const s = document.createElement("script");
+    s.src = `https://www.paypal.com/sdk/js?client-id=${cfg.client_id}&vault=true&intent=subscription&components=buttons`;
+    s.setAttribute("data-namespace", "paypalSub");
+    s.onload = () => setReadySub(true); s.onerror = () => {};
+    document.body.appendChild(s);
+  }, [cfg]); // eslint-disable-line
+
+  useEffect(() => {
+    if (ppMode !== "packs" || !readyCap || !window.paypal || !capRef.current) return;
+    capRef.current.innerHTML = "";
+    const b = window.paypal.Buttons({
       style: { color: "gold", shape: "pill", label: "paypal", height: 45 },
-      createOrder: async () => {
-        const { data } = await axios.post(`${API}/paypal/order`, { user_id: user.user_id, package_id: selRef.current });
-        return data.order_id;
-      },
-      onApprove: async (data) => {
-        try {
-          const { data: res } = await axios.post(`${API}/paypal/capture`, { order_id: data.orderID });
-          if (res.status === "paid") { notify(`${t("n_pay_ok")} +${res.credits_added}`); refresh(); onClose(); }
-          else notify(t("n_pay_fail"));
-        } catch { notify(t("n_pay_fail")); }
-      },
+      createOrder: async () => { const { data } = await axios.post(`${API}/paypal/order`, { user_id: user.user_id, package_id: selPackRef.current }); return data.order_id; },
+      onApprove: async (d) => { try { const { data: res } = await axios.post(`${API}/paypal/capture`, { order_id: d.orderID }); if (res.status === "paid") { notify(`${t("n_pay_ok")} +${res.credits_added}`); refresh(); onClose(); } else notify(t("n_pay_fail")); } catch { notify(t("n_pay_fail")); } },
       onError: () => notify(t("n_pay_start_err")),
     });
-    if (btns.isEligible && !btns.isEligible()) return;
-    btns.render(containerRef.current).catch(() => {});
-    return () => { try { btns.close(); } catch (e) { /* noop */ } };
-  }, [ready]); // eslint-disable-line
+    if (b.isEligible && !b.isEligible()) return;
+    b.render(capRef.current).catch(() => {});
+    return () => { try { b.close(); } catch (e) { /* noop */ } };
+  }, [ppMode, readyCap]); // eslint-disable-line
+
+  useEffect(() => {
+    if (ppMode !== "subs" || !readySub || !window.paypalSub || !subRef.current) return;
+    let closed = false; let btn = null;
+    subRef.current.innerHTML = "";
+    (async () => {
+      let planId;
+      try { const { data } = await axios.post(`${API}/paypal/subscription/plan`, { package_id: selSub }); planId = data.plan_id; }
+      catch { notify(t("n_pay_start_err")); return; }
+      if (closed) return;
+      btn = window.paypalSub.Buttons({
+        style: { color: "blue", shape: "pill", label: "subscribe", height: 45 },
+        createSubscription: (d, actions) => actions.subscription.create({ plan_id: planId }),
+        onApprove: async (d) => { try { const { data: res } = await axios.post(`${API}/paypal/subscription/activate`, { user_id: user.user_id, package_id: selSub, subscription_id: d.subscriptionID }); if (res.status === "active") { notify(`${t("n_sub_ok")} +${res.credits_added}. ${t("n_renew")}`); refresh(); onClose(); } else notify(t("n_pay_fail")); } catch { notify(t("n_pay_fail")); } },
+        onError: () => notify(t("n_pay_start_err")),
+      });
+      if (btn.isEligible && !btn.isEligible()) return;
+      btn.render(subRef.current).catch(() => {});
+    })();
+    return () => { closed = true; try { btn && btn.close(); } catch (e) { /* noop */ } };
+  }, [ppMode, readySub, selSub]); // eslint-disable-line
 
   if (cfg && !cfg.enabled) return <p className="section-sub" data-testid="paypal-disabled">PayPal non disponibile al momento.</p>;
   return (
     <div data-testid="paypal-panel">
-      <p className="section-sub mb1">{t("cr_step1")}</p>
-      <select className="input mb1" data-testid="paypal-pkg" value={sel} onChange={(e) => setSel(e.target.value)}>
-        {packs.map((p) => <option key={p.id} value={p.id}>{p.name} — €{p.amount} ({p.credits} {t("cr_short")})</option>)}
-      </select>
+      <div className="tabs" style={{ marginBottom: ".8rem" }}>
+        <div className={`tab ${ppMode === "packs" ? "active" : ""}`} data-testid="pp-mode-packs" onClick={() => setPpMode("packs")}>{t("pp_onetime")}</div>
+        <div className={`tab ${ppMode === "subs" ? "active" : ""}`} data-testid="pp-mode-subs" onClick={() => setPpMode("subs")}>{t("pp_subs")}</div>
+      </div>
       {cfg?.mode === "sandbox" && <p style={{ color: "#ffb020", fontSize: ".74rem", marginBottom: ".4rem" }}>⚠️ Modalità test PayPal (Sandbox) — nessun pagamento reale.</p>}
-      <div ref={containerRef} data-testid="paypal-buttons" style={{ marginTop: ".6rem", minHeight: 50 }} />
+      {ppMode === "packs" ? (
+        <>
+          <p className="section-sub mb1">{t("cr_step1")}</p>
+          <select className="input mb1" data-testid="paypal-pkg" value={selPack} onChange={(e) => setSelPack(e.target.value)}>
+            {packs.map((p) => <option key={p.id} value={p.id}>{p.name} — €{p.amount} ({p.credits} {t("cr_short")})</option>)}
+          </select>
+          <div ref={capRef} data-testid="paypal-buttons" style={{ marginTop: ".6rem", minHeight: 50 }} />
+        </>
+      ) : (
+        <>
+          <p className="section-sub mb1">{t("cr_step1")}</p>
+          <select className="input mb1" data-testid="paypal-sub-pkg" value={selSub} onChange={(e) => setSelSub(e.target.value)}>
+            {subs.map((p) => <option key={p.id} value={p.id}>{p.name} — €{p.amount}{t("per_month")} ({p.credits >= 99999 ? t("unlim") : p.credits + " " + t("cr_short")})</option>)}
+          </select>
+          <div ref={subRef} data-testid="paypal-sub-buttons" style={{ marginTop: ".6rem", minHeight: 50 }} />
+        </>
+      )}
     </div>
   );
 }
@@ -1147,7 +1208,7 @@ function PricingModal({ user, onClose, notify }) {
         )}
 
         {tab === "paypal" && (
-          <PaypalCheckout user={user} packs={packPkgs} notify={notify} onClose={onClose} />
+          <PaypalCheckout user={user} packs={packPkgs} subs={subPkgs} notify={notify} onClose={onClose} />
         )}
       </div>
     </div>
@@ -1156,17 +1217,27 @@ function PricingModal({ user, onClose, notify }) {
 
 function Faq() {
   const { t } = useI18n();
-  const [open, setOpen] = useState(true);
+  const items = [
+    { q: t("faq_q1"), a: t("faq_a1") },
+    { q: t("faq_q2"), a: t("faq_a2") },
+    { q: t("faq_q3"), a: t("faq_a3") },
+    { q: t("faq_q4"), a: t("faq_a4") },
+  ];
+  const [open, setOpen] = useState(0);
   return (
     <section className="section" id="faq">
       <div className="accent-bar" />
       <div className="flex aic gap mb1"><h2 className="section-title">{t("faq_title")}</h2><ShieldCheck size={20} color="var(--accent)" /></div>
-      <div className={`glass faq-item ${open ? "open" : ""}`} data-testid="faq-item-0">
-        <button className="faq-q" data-testid="faq-q-0" onClick={() => setOpen((o) => !o)}>
-          <span>{t("faq_q1")}</span>
-          <ChevronDown size={20} className="faq-chevron" />
-        </button>
-        {open && <p className="faq-a" data-testid="faq-a-0">{t("faq_a1")}</p>}
+      <div className="faq-list">
+        {items.map((it, i) => (
+          <div className={`glass faq-item ${open === i ? "open" : ""}`} key={i} data-testid={`faq-item-${i}`}>
+            <button className="faq-q" data-testid={`faq-q-${i}`} onClick={() => setOpen((o) => (o === i ? -1 : i))}>
+              <span>{it.q}</span>
+              <ChevronDown size={20} className="faq-chevron" />
+            </button>
+            {open === i && <p className="faq-a" data-testid={`faq-a-${i}`}>{it.a}</p>}
+          </div>
+        ))}
       </div>
     </section>
   );
