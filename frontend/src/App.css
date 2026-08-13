@@ -160,3 +160,17 @@ body{background:var(--bg-color);color:var(--text-primary);font-family:'Inter',sa
 .blog-card:hover{transform:translateY(-4px);border-color:#00d2ff66;box-shadow:0 10px 30px rgba(0,0,0,.35)}
 .article-body h2{color:var(--text-primary)}
 .article-body a{color:inherit}
+
+/* Privacy banner */
+.privacy-banner{display:flex;align-items:center;gap:.85rem;max-width:900px;margin:0 auto 1.1rem;padding:.9rem 1.2rem;border-radius:14px;background:rgba(20,16,34,.85);border:1px solid rgba(139,92,246,.55);box-shadow:0 0 24px rgba(139,92,246,.18);color:#fff;font-size:.9rem;line-height:1.5}
+.privacy-banner .pb-ic{color:#a78bfa;flex-shrink:0}
+/* Trust badges */
+.trust-badges{display:flex;flex-wrap:wrap;justify-content:center;gap:.6rem;max-width:900px;margin:0 auto 2rem}
+.trust-badge{display:flex;align-items:center;gap:.45rem;padding:.5rem .85rem;border-radius:999px;background:rgba(255,255,255,.04);border:1px solid rgba(139,92,246,.3);color:var(--text-secondary);font-size:.78rem;font-weight:600}
+.trust-badge svg{color:#a78bfa}
+/* FAQ */
+.faq-item{padding:.4rem .6rem;border:1px solid rgba(139,92,246,.28)}
+.faq-q{width:100%;display:flex;align-items:center;justify-content:space-between;gap:1rem;background:none;border:none;color:var(--text-primary);font-weight:700;font-size:1rem;text-align:left;cursor:pointer;padding:1rem}
+.faq-item .faq-chevron{transition:transform .25s ease;flex-shrink:0;color:var(--accent)}
+.faq-item.open .faq-chevron{transform:rotate(180deg)}
+.faq-a{color:var(--text-secondary);line-height:1.7;padding:0 1rem 1rem;font-size:.9rem}

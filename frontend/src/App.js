@@ -6,7 +6,8 @@ import {
   Upload, Zap, CreditCard, FileText, ScrollText, Building2, Landmark, Wallet,
   Bot, ShieldAlert, MessageSquare, Star, CheckCircle2, X, Send, Loader2,
   Download, ChevronRight, Bitcoin, LogIn, LogOut, User, Gift, BookOpen,
-  Sparkles, Copy, Play, Lock, Facebook, Linkedin, Youtube, Globe
+  Sparkles, Copy, Play, Lock, Facebook, Linkedin, Youtube, Globe,
+  ShieldCheck, Trash2, BadgeCheck, Ban, ChevronDown
 } from "lucide-react";
 import { BlogIndex, BlogPost } from "./Blog";
 
@@ -49,6 +50,9 @@ const T = {
     rights: "Tutti i diritti riservati", blog_link: "Guide",
     n_credits_out: "Crediti esauriti. Ricarica per continuare.", n_pay_cancel: "Pagamento annullato.", n_disconnected: "Disconnesso.", n_pay_verify: "Verifica pagamento in corso...", n_analyze_fail: "Analisi non riuscita.", n_copilot_err: "Errore nel copilot.", n_addr_copied: "Indirizzo copiato", n_link_copied: "Link copiato!", n_pay_start_err: "Errore nell'avvio del pagamento.", n_crypto_err: "Errore ordine crypto.", n_cancel_ok: "Abbonamento in cancellazione.", n_cancel_err: "Errore annullamento abbonamento.", n_welcome: "Benvenuto", n_login_ok: "Accesso effettuato ✅",
     n_pay_ok: "✅ Pagamento riuscito! Crediti aggiunti:", n_sub_ok: "✅ Abbonamento attivo! Crediti/mese:", n_renew: "Rinnovo automatico.", n_pay_pending: "Verifica in corso, i crediti appariranno a breve.", n_pay_fail: "Pagamento non completato.", auth_err: "Errore. Riprova.",
+    priv_banner: "I tuoi documenti non vengono mai memorizzati. Ogni file viene elaborato in tempo reale e cancellato immediatamente dopo l'analisi: nessun dato resta sui nostri server.",
+    badge_nostore: "Documenti non memorizzati", badge_delete: "Cancellazione immediata", badge_gdpr: "Conforme GDPR", badge_https: "HTTPS cifrato", badge_noshare: "Nessuna condivisione",
+    faq_title: "Domande frequenti", faq_q1: "I miei documenti sono al sicuro? Chi può accedervi?", faq_a1: "I tuoi documenti sono completamente al sicuro. DocuAnalytics non memorizza alcun file: ogni documento viene elaborato in tempo reale e cancellato permanentemente al termine dell'analisi, senza lasciare alcuna traccia sui nostri server. Nessun operatore umano né sistema automatico conserva o accede ai tuoi file. Pienamente conforme al GDPR.",
   },
   en: {
     credits: "Credits", topup: "Top up", login: "Sign in", invite: "Invite", logout: "Log out",
@@ -78,6 +82,9 @@ const T = {
     rights: "All rights reserved", blog_link: "Guides",
     n_credits_out: "Out of credits. Top up to continue.", n_pay_cancel: "Payment cancelled.", n_disconnected: "Logged out.", n_pay_verify: "Verifying payment...", n_analyze_fail: "Analysis failed.", n_copilot_err: "Copilot error.", n_addr_copied: "Address copied", n_link_copied: "Link copied!", n_pay_start_err: "Error starting payment.", n_crypto_err: "Crypto order error.", n_cancel_ok: "Subscription cancelling.", n_cancel_err: "Subscription cancel error.", n_welcome: "Welcome", n_login_ok: "Signed in ✅",
     n_pay_ok: "✅ Payment successful! Credits added:", n_sub_ok: "✅ Subscription active! Credits/month:", n_renew: "Automatic renewal.", n_pay_pending: "Verification in progress, credits will appear shortly.", n_pay_fail: "Payment not completed.", auth_err: "Error. Please try again.",
+    priv_banner: "Your documents are never stored. Every file is processed in real time and deleted immediately after the analysis: no data remains on our servers.",
+    badge_nostore: "Documents not stored", badge_delete: "Instant deletion", badge_gdpr: "GDPR compliant", badge_https: "HTTPS encrypted", badge_noshare: "No sharing",
+    faq_title: "Frequently asked questions", faq_q1: "Are my documents safe? Who can access them?", faq_a1: "Your documents are completely safe. DocuAnalytics does not store any file: every document is processed in real time and permanently deleted at the end of the analysis, leaving no trace on our servers. No human operator or automated system keeps or accesses your files. Fully GDPR compliant.",
   },
   es: {
     credits: "Créditos", topup: "Recargar", login: "Acceder", invite: "Invitar", logout: "Salir",
@@ -107,6 +114,9 @@ const T = {
     rights: "Todos los derechos reservados", blog_link: "Guías",
     n_credits_out: "Créditos agotados. Recarga para continuar.", n_pay_cancel: "Pago cancelado.", n_disconnected: "Sesión cerrada.", n_pay_verify: "Verificando el pago...", n_analyze_fail: "El análisis ha fallado.", n_copilot_err: "Error en el copilot.", n_addr_copied: "Dirección copiada", n_link_copied: "¡Enlace copiado!", n_pay_start_err: "Error al iniciar el pago.", n_crypto_err: "Error en el pedido cripto.", n_cancel_ok: "Suscripción en cancelación.", n_cancel_err: "Error al cancelar la suscripción.", n_welcome: "Bienvenido", n_login_ok: "Sesión iniciada ✅",
     n_pay_ok: "✅ ¡Pago realizado! Créditos añadidos:", n_sub_ok: "✅ ¡Suscripción activa! Créditos/mes:", n_renew: "Renovación automática.", n_pay_pending: "Verificación en curso, los créditos aparecerán pronto.", n_pay_fail: "Pago no completado.", auth_err: "Error. Inténtalo de nuevo.",
+    priv_banner: "Tus documentos nunca se almacenan. Cada archivo se procesa en tiempo real y se elimina de inmediato tras el análisis: ningún dato permanece en nuestros servidores.",
+    badge_nostore: "Documentos no almacenados", badge_delete: "Eliminación inmediata", badge_gdpr: "Conforme al RGPD", badge_https: "HTTPS cifrado", badge_noshare: "Sin compartir",
+    faq_title: "Preguntas frecuentes", faq_q1: "¿Mis documentos están seguros? ¿Quién puede acceder a ellos?", faq_a1: "Tus documentos están completamente seguros. DocuAnalytics no almacena ningún archivo: cada documento se procesa en tiempo real y se elimina permanentemente al finalizar el análisis, sin dejar rastro en nuestros servidores. Ningún operador humano ni sistema automático conserva o accede a tus archivos. Totalmente conforme al RGPD.",
   },
   de: {
     credits: "Guthaben", topup: "Aufladen", login: "Anmelden", invite: "Einladen", logout: "Abmelden",
@@ -136,6 +146,9 @@ const T = {
     rights: "Alle Rechte vorbehalten", blog_link: "Ratgeber",
     n_credits_out: "Guthaben aufgebraucht. Bitte aufladen.", n_pay_cancel: "Zahlung abgebrochen.", n_disconnected: "Abgemeldet.", n_pay_verify: "Zahlung wird überprüft...", n_analyze_fail: "Analyse fehlgeschlagen.", n_copilot_err: "Copilot-Fehler.", n_addr_copied: "Adresse kopiert", n_link_copied: "Link kopiert!", n_pay_start_err: "Fehler beim Starten der Zahlung.", n_crypto_err: "Fehler bei Krypto-Bestellung.", n_cancel_ok: "Abonnement wird gekündigt.", n_cancel_err: "Fehler bei Abo-Kündigung.", n_welcome: "Willkommen", n_login_ok: "Angemeldet ✅",
     n_pay_ok: "✅ Zahlung erfolgreich! Guthaben gutgeschrieben:", n_sub_ok: "✅ Abo aktiv! Guthaben/Monat:", n_renew: "Automatische Verlängerung.", n_pay_pending: "Überprüfung läuft, das Guthaben erscheint in Kürze.", n_pay_fail: "Zahlung nicht abgeschlossen.", auth_err: "Fehler. Bitte erneut versuchen.",
+    priv_banner: "Ihre Dokumente werden niemals gespeichert. Jede Datei wird in Echtzeit verarbeitet und unmittelbar nach der Analyse gelöscht: keine Daten verbleiben auf unseren Servern.",
+    badge_nostore: "Dokumente nicht gespeichert", badge_delete: "Sofortige Löschung", badge_gdpr: "DSGVO-konform", badge_https: "HTTPS-verschlüsselt", badge_noshare: "Keine Weitergabe",
+    faq_title: "Häufige Fragen", faq_q1: "Sind meine Dokumente sicher? Wer kann darauf zugreifen?", faq_a1: "Ihre Dokumente sind vollständig sicher. DocuAnalytics speichert keine Datei: Jedes Dokument wird in Echtzeit verarbeitet und nach Abschluss der Analyse dauerhaft gelöscht, ohne Spuren auf unseren Servern zu hinterlassen. Kein menschlicher Bediener und kein automatisches System speichert oder greift auf Ihre Dateien zu. Vollständig DSGVO-konform.",
   },
   fr: {
     credits: "Crédits", topup: "Recharger", login: "Se connecter", invite: "Inviter", logout: "Déconnexion",
@@ -165,6 +178,9 @@ const T = {
     rights: "Tous droits réservés", blog_link: "Guides",
     n_credits_out: "Crédits épuisés. Rechargez pour continuer.", n_pay_cancel: "Paiement annulé.", n_disconnected: "Déconnecté.", n_pay_verify: "Vérification du paiement...", n_analyze_fail: "Échec de l'analyse.", n_copilot_err: "Erreur du copilot.", n_addr_copied: "Adresse copiée", n_link_copied: "Lien copié !", n_pay_start_err: "Erreur au démarrage du paiement.", n_crypto_err: "Erreur de commande crypto.", n_cancel_ok: "Abonnement en cours de résiliation.", n_cancel_err: "Erreur de résiliation de l'abonnement.", n_welcome: "Bienvenue", n_login_ok: "Connexion réussie ✅",
     n_pay_ok: "✅ Paiement réussi ! Crédits ajoutés :", n_sub_ok: "✅ Abonnement actif ! Crédits/mois :", n_renew: "Renouvellement automatique.", n_pay_pending: "Vérification en cours, les crédits apparaîtront bientôt.", n_pay_fail: "Paiement non terminé.", auth_err: "Erreur. Réessayez.",
+    priv_banner: "Vos documents ne sont jamais stockés. Chaque fichier est traité en temps réel et supprimé immédiatement après l'analyse : aucune donnée ne reste sur nos serveurs.",
+    badge_nostore: "Documents non stockés", badge_delete: "Suppression immédiate", badge_gdpr: "Conforme au RGPD", badge_https: "HTTPS chiffré", badge_noshare: "Aucun partage",
+    faq_title: "Questions fréquentes", faq_q1: "Mes documents sont-ils en sécurité ? Qui peut y accéder ?", faq_a1: "Vos documents sont totalement en sécurité. DocuAnalytics ne stocke aucun fichier : chaque document est traité en temps réel et définitivement supprimé à la fin de l'analyse, sans laisser aucune trace sur nos serveurs. Aucun opérateur humain ni système automatique ne conserve ni n'accède à vos fichiers. Entièrement conforme au RGPD.",
   },
 };
 const I18nContext = createContext({ lang: "it", t: (k) => k, change: () => {} });
@@ -562,6 +578,19 @@ function Home() {
           </div>
         </section>
 
+        {/* Privacy banner + trust badges */}
+        <div className="privacy-banner fade" data-testid="privacy-banner">
+          <ShieldCheck size={22} className="pb-ic" />
+          <span>{t("priv_banner")}</span>
+        </div>
+        <div className="trust-badges" data-testid="trust-badges">
+          <div className="trust-badge"><Lock size={16} /> <span>{t("badge_nostore")}</span></div>
+          <div className="trust-badge"><Trash2 size={16} /> <span>{t("badge_delete")}</span></div>
+          <div className="trust-badge"><BadgeCheck size={16} /> <span>{t("badge_gdpr")}</span></div>
+          <div className="trust-badge"><ShieldCheck size={16} /> <span>{t("badge_https")}</span></div>
+          <div className="trust-badge"><Ban size={16} /> <span>{t("badge_noshare")}</span></div>
+        </div>
+
         {/* Upload */}
         <section className="section" id="upload">
           <div className="accent-bar" />
@@ -614,6 +643,7 @@ function Home() {
         <NewFeatures />
         <Services onGuide={() => setGuideOpen(true)} />
         <Tutorials />
+        <Faq />
         <ReferralBanner authed={authed} onInvite={() => (authed ? setRefOpen(true) : setAuthOpen(true))} />
         <Testimonials />
       </main>
@@ -1121,6 +1151,24 @@ function PricingModal({ user, onClose, notify }) {
         )}
       </div>
     </div>
+  );
+}
+
+function Faq() {
+  const { t } = useI18n();
+  const [open, setOpen] = useState(true);
+  return (
+    <section className="section" id="faq">
+      <div className="accent-bar" />
+      <div className="flex aic gap mb1"><h2 className="section-title">{t("faq_title")}</h2><ShieldCheck size={20} color="var(--accent)" /></div>
+      <div className={`glass faq-item ${open ? "open" : ""}`} data-testid="faq-item-0">
+        <button className="faq-q" data-testid="faq-q-0" onClick={() => setOpen((o) => !o)}>
+          <span>{t("faq_q1")}</span>
+          <ChevronDown size={20} className="faq-chevron" />
+        </button>
+        {open && <p className="faq-a" data-testid="faq-a-0">{t("faq_a1")}</p>}
+      </div>
+    </section>
   );
 }
 

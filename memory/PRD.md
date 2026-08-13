@@ -88,7 +88,7 @@ IMPLEMENTATO E TESTATO (19/19 backend + frontend E2E, 100%):
 - Verificato da testing agent (iteration_8): backend 100% (7/7), frontend 100% (pulsanti PayPal renderizzati, regressioni Stripe/crypto/i18n/blog OK). Warning dev innocuo `<span> in <option>` (tooling).
 
 ## Promemoria aperto
-- PayPal: **LIVE attivo** ✅. Abbonamenti PayPal (billing plans) = step futuro; ora PayPal solo per pack one-time (starter/pro/enterprise).
-- Social: Instagram/X non forniti → assenti dal footer (riaggiungibili con URL reali).
-- Sitemap multilingua con `?lang=` = FATTO.
+- **Trust/Privacy (Sessione 5d)**: banner privacy (bordo viola + scudo) tra hero e upload, riga di 5 badge fiducia (Documenti non memorizzati / Cancellazione immediata / Conforme GDPR / HTTPS cifrato / Nessuna condivisione), nuova sezione FAQ (`id="faq"`, componente `Faq`) con Q&A sulla sicurezza documenti. Tutto tradotto in 5 lingue (chiavi priv_banner, badge_*, faq_*). CSS in App.css (.privacy-banner/.trust-badges/.faq-item).
+- PayPal: **LIVE attivo** ✅ (solo pack one-time). Abbonamenti PayPal = step futuro.
+- Social: Instagram/X non forniti → assenti dal footer.
 - Ogni modifica richiede DEPLOY per andare in produzione (docuanalytics.online).
