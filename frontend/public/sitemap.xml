@@ -2,6 +2,7 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
     <loc>https://docuanalytics.online/</loc>
+    <lastmod>2026-06-10</lastmod>
     <xhtml:link rel="alternate" hreflang="it" href="https://docuanalytics.online/"/>
     <xhtml:link rel="alternate" hreflang="en" href="https://docuanalytics.online/?lang=en"/>
     <xhtml:link rel="alternate" hreflang="es" href="https://docuanalytics.online/?lang=es"/>
@@ -12,7 +13,38 @@
     <priority>1.0</priority>
   </url>
   <url>
+    <loc>https://docuanalytics.online/pricing</loc>
+    <lastmod>2026-06-10</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://docuanalytics.online/features</loc>
+    <lastmod>2026-06-10</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://docuanalytics.online/how-it-works</loc>
+    <lastmod>2026-06-10</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://docuanalytics.online/login</loc>
+    <lastmod>2026-06-10</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>https://docuanalytics.online/register</loc>
+    <lastmod>2026-06-10</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
     <loc>https://docuanalytics.online/blog</loc>
+    <lastmod>2026-06-10</lastmod>
     <xhtml:link rel="alternate" hreflang="it" href="https://docuanalytics.online/blog"/>
     <xhtml:link rel="alternate" hreflang="en" href="https://docuanalytics.online/blog?lang=en"/>
     <xhtml:link rel="alternate" hreflang="es" href="https://docuanalytics.online/blog?lang=es"/>
@@ -24,6 +56,7 @@
   </url>
   <url>
     <loc>https://docuanalytics.online/blog/analisi-fatture-elettroniche-ai</loc>
+    <lastmod>2026-06-10</lastmod>
     <xhtml:link rel="alternate" hreflang="it" href="https://docuanalytics.online/blog/analisi-fatture-elettroniche-ai"/>
     <xhtml:link rel="alternate" hreflang="en" href="https://docuanalytics.online/blog/analisi-fatture-elettroniche-ai?lang=en"/>
     <xhtml:link rel="alternate" hreflang="es" href="https://docuanalytics.online/blog/analisi-fatture-elettroniche-ai?lang=es"/>
@@ -35,6 +68,7 @@
   </url>
   <url>
     <loc>https://docuanalytics.online/blog/controllo-quadratura-f24</loc>
+    <lastmod>2026-06-10</lastmod>
     <xhtml:link rel="alternate" hreflang="it" href="https://docuanalytics.online/blog/controllo-quadratura-f24"/>
     <xhtml:link rel="alternate" hreflang="en" href="https://docuanalytics.online/blog/controllo-quadratura-f24?lang=en"/>
     <xhtml:link rel="alternate" hreflang="es" href="https://docuanalytics.online/blog/controllo-quadratura-f24?lang=es"/>
@@ -46,6 +80,7 @@
   </url>
   <url>
     <loc>https://docuanalytics.online/blog/clausole-vessatorie-contratti-ai</loc>
+    <lastmod>2026-06-10</lastmod>
     <xhtml:link rel="alternate" hreflang="it" href="https://docuanalytics.online/blog/clausole-vessatorie-contratti-ai"/>
     <xhtml:link rel="alternate" hreflang="en" href="https://docuanalytics.online/blog/clausole-vessatorie-contratti-ai?lang=en"/>
     <xhtml:link rel="alternate" hreflang="es" href="https://docuanalytics.online/blog/clausole-vessatorie-contratti-ai?lang=es"/>
@@ -57,6 +92,7 @@
   </url>
   <url>
     <loc>https://docuanalytics.online/blog/visure-camerali-antiriciclaggio-kyc-aml</loc>
+    <lastmod>2026-06-10</lastmod>
     <xhtml:link rel="alternate" hreflang="it" href="https://docuanalytics.online/blog/visure-camerali-antiriciclaggio-kyc-aml"/>
     <xhtml:link rel="alternate" hreflang="en" href="https://docuanalytics.online/blog/visure-camerali-antiriciclaggio-kyc-aml?lang=en"/>
     <xhtml:link rel="alternate" hreflang="es" href="https://docuanalytics.online/blog/visure-camerali-antiriciclaggio-kyc-aml?lang=es"/>
