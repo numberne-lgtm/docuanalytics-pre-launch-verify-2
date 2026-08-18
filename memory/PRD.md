@@ -98,6 +98,9 @@ IMPLEMENTATO E TESTATO (19/19 backend + frontend E2E, 100%):
 - In produzione devono essere presenti le env `PAYPAL_MODE=live`, `PAYPAL_CLIENT_ID`, `PAYPAL_SECRET` (e opz. `PAYPAL_WEBHOOK_ID`). Se assenti, PayPal risulterà "non disponibile" in produzione.
 - Per i RINNOVI mensili PayPal automatici serve configurare un webhook nel dashboard PayPal (Live) verso `https://docuanalytics.online/api/webhook/paypal` (eventi PAYMENT.SALE.COMPLETED, BILLING.SUBSCRIPTION.*). Il primo mese è accreditato all'attivazione; i rinnovi richiedono il webhook.
 
-## Promemoria aperto
-- Social: Instagram/X non forniti → assenti dal footer.
-- Deploy in corso (redeploy).
+## Security Audit (2026-06) — Sessione 5g
+- **SEC-001 [HIGH] CORRETTO**: `/api/paypal/subscription/activate` ora deriva pacchetto/crediti dal `plan_id` reale della sottoscrizione PayPal (lookup in `paypal_plans`), non dal `package_id` inviato dal client. Impediva di richiedere i crediti di un pacchetto più costoso.
+- **SEC-002 [HIGH] CORRETTO**: `/api/webhook/paypal` ora verifica la firma di ogni evento via `verify-webhook-signature` (PAYPAL_WEBHOOK_ID) e rifiuta (400) gli eventi non verificati prima di accreditare. NB: i rinnovi ricorrenti richiedono ora `PAYPAL_WEBHOOK_ID` nei secret di produzione (fail-closed); il primo mese è accreditato all'attivazione.
+- **P3 CORRETTO**: confronto token admin constant-time (`hmac.compare_digest`).
+- **SEC-003 [MEDIUM] APERTO (decisione di prodotto)**: molti endpoint (analyze, chat, paypal order/capture/activate, subscriptions) identificano l'utente via `user_id` nel body invece che dal JWT → BOLA se un UUID altrui trapela. Fix corretto = enforce JWT e derivare user_id dal token, MA romperebbe il free-tier anonimo (3 crediti senza registrazione). Richiede decisione: mantenere anonimo o richiedere login per analizzare.
+- **P3 APERTI**: CORS `*` con allow_credentials=True (impostare origini esplicite); messaggi d'errore con testo eccezione grezzo su alcuni endpoint; fallback JWT_SECRET "change-me" (prod ha valore forte). NoSQL injection: NON APPLICABILE (query di uguaglianza, tipi Pydantic).

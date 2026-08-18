@@ -687,30 +687,38 @@ async def paypal_sub_plan(req: PaypalSubReq):
 
 @api.post("/paypal/subscription/activate")
 async def paypal_sub_activate(req: PaypalSubActivateReq):
-    pkg = PACKAGES.get(req.package_id)
-    if not pkg or pkg["type"] != "sub":
-        raise HTTPException(400, "Pacchetto abbonamento non valido")
     token = await _paypal_token()
     async with httpx.AsyncClient(timeout=30) as c:
         r = await c.get(f"{PAYPAL_BASE}/v1/billing/subscriptions/{req.subscription_id}", headers=_pp_headers(token))
     if r.status_code != 200:
         logger.error(f"paypal sub fetch error {r.status_code}: {r.text}")
         raise HTTPException(400, "Impossibile verificare l'abbonamento PayPal")
-    status = r.json().get("status")
+    sub = r.json()
+    status = sub.get("status")
+    # SEC: derive package from the ACTUAL PayPal plan_id (never trust client package_id)
+    plan_id = sub.get("plan_id")
+    plan_doc = await db.paypal_plans.find_one({"plan_id": plan_id}) if plan_id else None
+    if not plan_doc:
+        logger.error(f"paypal sub plan not recognized: {plan_id}")
+        raise HTTPException(400, "Piano abbonamento non riconosciuto")
+    package_id = plan_doc["package_id"]
+    pkg = PACKAGES.get(package_id)
+    if not pkg or pkg["type"] != "sub":
+        raise HTTPException(400, "Pacchetto abbonamento non valido")
     if status not in ("ACTIVE", "APPROVED"):
         return {"status": status or "pending", "credits_added": 0}
     now = datetime.now(timezone.utc).isoformat()
     await db.subscriptions.update_one(
         {"subscription_id": req.subscription_id},
         {"$set": {"subscription_id": req.subscription_id, "provider": "paypal", "user_id": req.user_id,
-                  "package_id": req.package_id, "package_name": pkg["name"], "credits": pkg["credits"],
+                  "package_id": package_id, "package_name": pkg["name"], "credits": pkg["credits"],
                   "amount": pkg["amount"], "status": "active", "cancel_at_period_end": False, "updated_at": now},
          "$setOnInsert": {"created_at": now}}, upsert=True)
     granted = 0
     if not await db.payment_transactions.find_one({"session_id": f"pp_sub_{req.subscription_id}"}):
         await db.payment_transactions.insert_one({
             "session_id": f"pp_sub_{req.subscription_id}", "provider": "paypal", "subscription_id_ref": req.subscription_id,
-            "user_id": req.user_id, "package_id": req.package_id, "credits": pkg["credits"], "amount": pkg["amount"],
+            "user_id": req.user_id, "package_id": package_id, "credits": pkg["credits"], "amount": pkg["amount"],
             "is_subscription": True, "kind": "activation", "status": "completed", "payment_status": "paid",
             "credited": True, "created_at": now, "updated_at": now})
         await add_credits(req.user_id, int(pkg["credits"]))
@@ -719,9 +727,39 @@ async def paypal_sub_activate(req: PaypalSubActivateReq):
     return {"status": "active", "credits_added": granted, "user_credits": u["credits"] if u else None}
 
 
+async def _verify_paypal_webhook(headers, raw_body, event):
+    if not PAYPAL_WEBHOOK_ID:
+        return False
+    token = await _paypal_token()
+    body = {
+        "auth_algo": headers.get("paypal-auth-algo"),
+        "cert_url": headers.get("paypal-cert-url"),
+        "transmission_id": headers.get("paypal-transmission-id"),
+        "transmission_sig": headers.get("paypal-transmission-sig"),
+        "transmission_time": headers.get("paypal-transmission-time"),
+        "webhook_id": PAYPAL_WEBHOOK_ID,
+        "webhook_event": event,
+    }
+    try:
+        async with httpx.AsyncClient(timeout=30) as c:
+            r = await c.post(f"{PAYPAL_BASE}/v1/notifications/verify-webhook-signature", json=body, headers=_pp_headers(token))
+        return r.status_code == 200 and r.json().get("verification_status") == "SUCCESS"
+    except Exception as e:
+        logger.error(f"paypal webhook verify error: {e}")
+        return False
+
+
 @api.post("/webhook/paypal")
 async def paypal_webhook(request: Request):
-    payload = await request.json()
+    raw = await request.body()
+    try:
+        payload = json.loads(raw)
+    except Exception:
+        raise HTTPException(400, "Payload non valido")
+    # SEC: reject any event not cryptographically verified as coming from PayPal
+    if not await _verify_paypal_webhook(request.headers, raw, payload):
+        logger.warning("paypal webhook rejected: signature not verified")
+        raise HTTPException(400, "Webhook non verificato")
     event = payload.get("event_type", "")
     resource = payload.get("resource", {}) or {}
     if event == "PAYMENT.SALE.COMPLETED":
@@ -757,7 +795,7 @@ class AdminGrantReq(BaseModel):
 async def admin_grant_credits(req: AdminGrantReq, x_admin_token: str = Header(None)):
     if not ADMIN_TOKEN:
         raise HTTPException(503, "Admin non configurato")
-    if x_admin_token != ADMIN_TOKEN:
+    if not (x_admin_token and hmac.compare_digest(x_admin_token, ADMIN_TOKEN)):
         raise HTTPException(401, "Token admin non valido")
     if req.credits <= 0 or req.credits > 100000:
         raise HTTPException(400, "Numero di crediti non valido")
@@ -782,6 +820,7 @@ async def packages():
 
 # ---------------- Auth (JWT email/password) + Referral ----------------
 import bcrypt
+import hmac
 import jwt as pyjwt
 
 JWT_SECRET = _ENV_FILE.get("JWT_SECRET") or os.environ.get("JWT_SECRET", "change-me")
