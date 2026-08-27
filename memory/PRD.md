@@ -1,6 +1,13 @@
 # DocuAnalytics AI — PRD & Stato Progetto
 
-## AGGIORNAMENTO 2026-06 — Ottimizzazione conversione (FASE 1 completata, in PREVIEW)
+## AGGIORNAMENTO 2026-06 (2) — FASE 2 + FASE 3 + A/B (in preview, deploy accodato)
+- **FASE 2 — Landing per settore**: nuove route `/commercialisti`, `/avvocati`, `/notai`, `/cfo`, `/hr`. Componente `SectorLanding({slug})` in App.js, contenuti in `content.js` SECTORS (5 settori × 5 lingue: meta_title/meta_desc/problem/solution/useCases/benefits/example). Ogni landing: header + hero (H1 = nome settore + value-prop, problema, soluzione, CTA→home #upload), Casi d'uso + Vantaggi, Esempio pratico, Sicurezza, Recensioni, altre landing, CTA finale. SEO: title+meta description dinamici per settore. Le card #settori della home navigano alle 5 landing (aziende → #upload). Aggiunte 5 URL a sitemap.xml con hreflang.
+- **FASE 3 — Analytics funnel (GA4)**: helper `track()` + eventi `experiment_impression`, `cta_click`, `view_pricing` (con src), `view_item` (landing settore), `document_analyzed`, `sign_up`, `login`, `copilot_used`, `begin_checkout` (stripe/paypal), `purchase` (stripe/paypal/paypal_sub). L'utente può costruire i funnel in GA4 con questi eventi.
+- **A/B test Hero**: `useHeroVariant()` assegna 50/50 A|B sticky in localStorage `da_hero_ab`; `<h1 data-testid="hero-h1" data-variant>`; variante inclusa in `cta_click` e `sign_up` per misurare l'impatto sulle registrazioni. Variante B: "L'AI che trova errori e rischi nei tuoi documenti / Analisi automatica e strutturata in pochi secondi".
+- TEST: iteration_12.json 100% (8/8) — landing 5 lingue, SEO, navigazione, protezione route /payment/*, A/B, eventi dataLayer. Nessun bug.
+- DEPLOY: accodato al deployer (un solo deploy pubblica Fase 1+2+3+A/B). Nessuna modifica a env/segreti/API backend.
+- BACKLOG residuo: guard opzionale contro doppio-fire eventi in StrictMode (solo dev, prod ok); Instagram/X footer (URL mancanti); configurare PAYPAL_WEBHOOK_ID in prod per rinnovi.
+
 Ristrutturazione homepage orientata alla conversione, senza rompere funzionalità esistenti. Tutte le nuove copy in 5 lingue (IT/EN/ES/DE/FR) via `src/content.js` (MT = stringhe UI, MARK = array marketing; il fallback di `t()` in App.js legge anche MT).
 - **Hero** benefit-oriented: H1 "Analizza i tuoi documenti in pochi secondi / L'AI trova dati, errori e rischi prima di te", doppia CTA (Analizza gratis → #upload, Scopri come funziona → #come-funziona), nota "3 crediti gratuiti · Nessuna carta", rating 4,9/5 · 482+.
 - Nuove sezioni ordinate: BenefitsStrip (#benefici), HowItWorks 4 step (#come-funziona), DocTypesSection (#documenti, card cliccabili → #upload), RedFlagSection (#red-flag), CopilotSection (#copilot), SectorsSection (#settori, card → #upload), SecuritySection (#sicurezza), PricingPreview (#prezzi, dati da GET /api/crypto/info), Faq, TrialCTA/FinalCTA (#prova).

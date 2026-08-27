@@ -1,0 +1,22 @@
+{
+  "summary": "Frontend-only test of FASE 2 (5 sector landings), FASE 3 (GA4 funnel events) and Hero A/B test at 1440x900. ALL requested scenarios PASS. (1) Rendering: /commercialisti, /avvocati, /notai, /cfo, /hr each render sl-logo, sl-back, sl-nav-try, sl-hero (kicker 'DocuAnalytics per <settore>' + H1 with sector name), sl-problem/sl-solution, sl-cta-try, '3 crediti gratuiti' note, sl-usecases (Casi d'uso + Vantaggi), sl-example, #sicurezza, Testimonials, sl-other with exactly the other 4 cards, and the final #prova CTA. Content is sector-specific (avvocati: contratti/clausole/parti/scadenze; hr: buste paga; notai: visure/soci/REA; commercialisti: fatture/F24; cfo: importi/quadrature). (2) SEO: document.title + meta description change per sector (e.g. 'AI per Commercialisti — Analisi automatica di fatture, F24 e visure | DocuAnalytics') and revert to the original homepage title/description on returning to '/'. (3) Navigation: sl-cta-try -> '/?src=commercialisti#upload' with #upload scrolled into view (top=84, scrollY 842); sl-other-avvocati -> /avvocati (scrollY reset 0); sl-back -> '/' with hero-h1 present. (4) HOME -> LANDING: sector-card-commercialisti navigates to /commercialisti; sector-card-aziende stays on '/' and scrolls to #upload (top=84). (5) i18n on /avvocati: lang-toggle -> lang-en and lang-de fully translate kicker, H1 (Lawyers / Anwälte), problem, solution, use cases, benefits, example and page title; no residual Italian. (6) Payment routes: /payment/success and /payment/cancel render Home (hero-h1 present, sl-hero absent); /payment/cancel shows the 'Pagamento annullato.' toast and normalizes URL to '/'. (7) A/B: hero-h1 data-variant stable across 4 loads (A,A,A,A) and matches localStorage 'da_hero_ab'; after clearing localStorage variant B was produced and renders \"L'AI che trova errori e rischi nei tuoi documenti. / Analisi automatica e strutturata in pochi secondi.\" while A renders 'Analizza i tuoi documenti in pochi secondi. / L'AI trova dati, errori e rischi prima di te.' — both variants renderable. (8) GA4 dataLayer: experiment_impression {experiment:'hero_title', variant:'A'} on home load, cta_click {location:'hero', hero_variant:'A'} on hero-cta-try, view_pricing {src:'header'} on topup-btn, view_item {item_category:'sector', sector:'notai'} on landing open.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Observation (dev-only, no fix required): experiment_impression and view_item are pushed TWICE to dataLayer because React.StrictMode double-invokes effects in the dev server. A production build will not duplicate them, but if you want to be safe against future remounts, guard the impression/view_item track() with a ref/session flag.",
+    "SEO nit (optional): the landing H1 is only the sector name (e.g. '<h1>Notai</h1>'); the value proposition lives in the following <p>. A richer H1 (e.g. 'AI per Notai: verifica visure e dati societari') would match the meta_title and improve on-page SEO."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "not tested (skipped per request)", "frontend": "100% (8/8 requested scenarios PASS)"},
+  "seed_data_creation": "None. No credits consumed (no analysis run in this iteration).",
+  "should_call_test_agent_after_fix": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "iteration_10/11 cover the homepage; iteration_12 covers Phase 2 sector landings (/commercialisti,/avvocati,/notai,/cfo,/hr), Phase 3 GA4 events and the Hero A/B test — all PASS, no bugs found. To read GA4 events: window.dataLayer entries are arguments objects; map Array.from(a) and filter a[0]==='event'. To force the alternate hero variant: localStorage.removeItem('da_hero_ab') + reload in a loop until data-variant flips. Note dev StrictMode duplicates load-time events.",
+  "rca_of_the_issue": "No issues found; nothing to root-cause."
+}

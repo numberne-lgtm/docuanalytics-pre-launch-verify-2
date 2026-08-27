@@ -238,6 +238,11 @@ section[id]{scroll-margin-top:84px}
 .benefit-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1rem}
 .benefit-card{text-align:left}
 
+/* Sector landing */
+.sl-problem{color:var(--text);font-size:1.1rem;font-weight:600;max-width:720px;margin:.6rem auto 0}
+.sl-solution{color:var(--text-secondary);font-size:1rem;max-width:720px;margin:.6rem auto 0;line-height:1.6}
+.sl-example{border:1px solid #00d2ff44}
+
 @media(max-width:560px){
   .hero-cta .btn-lg{width:100%;justify-content:center}
   .after-cta{flex-direction:column;align-items:stretch}

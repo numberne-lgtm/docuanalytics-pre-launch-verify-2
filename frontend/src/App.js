@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef, useCallback, createContext, useContext } from "react";
 import "@/App.css";
-import { BrowserRouter, Routes, Route, Link } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Link, useNavigate, Navigate } from "react-router-dom";
 import axios from "axios";
 import {
   Upload, Zap, CreditCard, FileText, ScrollText, Building2, Landmark, Wallet,
@@ -12,7 +12,7 @@ import {
   Users, Briefcase, Files, Server, ArrowRight, Mail
 } from "lucide-react";
 import { BlogIndex, BlogPost } from "./Blog";
-import { MT, MARK } from "./content";
+import { MT, MARK, SECTORS } from "./content";
 
 /* string -> lucide icon map for data-driven marketing sections */
 const ICONS = {
@@ -28,6 +28,16 @@ const scrollToId = (id) => {
 };
 /* lightweight GA4 event helper (no-op if gtag not present) */
 const track = (event, params = {}) => { try { if (window.gtag) window.gtag("event", event, params); } catch (e) { /* noop */ } };
+
+/* Hero A/B test: assign a sticky 50/50 variant, persisted in localStorage */
+function useHeroVariant() {
+  const [v] = useState(() => {
+    let x = localStorage.getItem("da_hero_ab");
+    if (x !== "A" && x !== "B") { x = Math.random() < 0.5 ? "A" : "B"; localStorage.setItem("da_hero_ab", x); }
+    return x;
+  });
+  return v;
+}
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -449,6 +459,8 @@ const DOC_TYPES = [
   { id: "busta_paga", Icon: Wallet },
 ];
 
+const SECTOR_SLUGS = ["commercialisti", "avvocati", "notai", "cfo", "hr"];
+
 function useUser() {
   const [user, setUser] = useState({ user_id: null, credits: 0, email: null });
   const [authed, setAuthed] = useState(false);
@@ -513,6 +525,7 @@ function Home() {
   const { user, setUser, refresh, authed, login, logout } = useUser();
   const { t } = useI18n();
   const content = useContent();
+  const heroAB = useHeroVariant();
   const [docType, setDocType] = useState("auto");
   const [file, setFile] = useState(null);
   const [drag, setDrag] = useState(false);
@@ -528,6 +541,14 @@ function Home() {
   const inputRef = useRef();
 
   const notify = (m) => { setToast(m); setTimeout(() => setToast(""), 6000); };
+  const openPricing = (src) => { track("view_pricing", { src: src || "unknown" }); setPricingOpen(true); };
+
+  useEffect(() => { track("experiment_impression", { experiment: "hero_title", variant: heroAB }); }, [heroAB]);
+
+  useEffect(() => {
+    const h = window.location.hash;
+    if (h && h.length > 1) setTimeout(() => scrollToId(h.slice(1)), 450);
+  }, []);
 
   useEffect(() => {
     const langs = ["it", "en", "es", "de", "fr"];
@@ -555,6 +576,7 @@ function Home() {
       const { data } = await axios.get(`${API}/payments/status/${sid}`);
       if (data.payment_status === "paid") {
         refresh();
+        track("purchase", { method: "stripe", credits: data.credits_added, subscription: !!data.is_subscription });
         notify(data.is_subscription
           ? `${t("n_sub_ok")} +${data.credits_added}. ${t("n_renew")}`
           : `${t("n_pay_ok")} +${data.credits_added}`);
@@ -576,7 +598,7 @@ function Home() {
 
   const analyze = async () => {
     if (!file) return;
-    if (user.credits <= 0) { notify(t("n_credits_out")); setPricingOpen(true); return; }
+    if (user.credits <= 0) { notify(t("n_credits_out")); openPricing("credits_out"); return; }
     setAnalyzing(true); setResult(null); setStage(0);
     const timers = [0, 1, 2, 3].map((i) => setTimeout(() => setStage(i), i * 700));
     try {
@@ -602,18 +624,21 @@ function Home() {
   return (
     <div className="App">
       <Header credits={user.credits} authed={authed} user={user}
-        onTopup={() => setPricingOpen(true)} onAuth={() => setAuthOpen(true)}
+        onTopup={() => openPricing("header")} onAuth={() => setAuthOpen(true)}
         onReferral={() => setRefOpen(true)} onLogout={() => { logout(); notify(t("n_disconnected")); }} />
 
       <main className="wrap">
         {/* Hero */}
         <section className="hero fade">
           <div className="hero-badges mb1"><span className="badge badge-info">{t("hero_kicker")}</span></div>
-          <h1>{t("hero_h1a")}<br /><span className="grad">{t("hero_h1b")}</span></h1>
+          <h1 data-testid="hero-h1" data-variant={heroAB}>
+            {heroAB === "B" ? t("hero_h1a_b") : t("hero_h1a")}<br />
+            <span className="grad">{heroAB === "B" ? t("hero_h1b_b") : t("hero_h1b")}</span>
+          </h1>
           <p>{t("hero_sub2")}</p>
           <div className="hero-cta">
             <button className="btn btn-primary btn-lg" data-testid="hero-cta-try"
-              onClick={() => { track("cta_click", { location: "hero" }); scrollToId("upload"); }}>
+              onClick={() => { track("cta_click", { location: "hero", hero_variant: heroAB }); scrollToId("upload"); }}>
               <Bot size={18} /> {t("cta_try")}
             </button>
             <button className="btn btn-lg btn-ghost" data-testid="hero-cta-how"
@@ -694,7 +719,7 @@ function Home() {
         </section>
 
         {result && <Results result={result} analysisId={analysisId} notify={notify}
-          credits={user.credits} onTopup={() => setPricingOpen(true)}
+          credits={user.credits} onTopup={() => openPricing("after_analysis")}
           onAgain={() => { setFile(null); setResult(null); setStage(-1); scrollToId("upload"); }} />}
 
         <BenefitsStrip />
@@ -707,13 +732,13 @@ function Home() {
         <Tutorials />
         <SecuritySection />
         <Testimonials />
-        <PricingPreview onBuy={() => setPricingOpen(true)} />
+        <PricingPreview onBuy={() => openPricing("pricing_section")} />
         <Faq />
         <TrialCTA onCta={() => { track("cta_click", { location: "final" }); scrollToId("upload"); }} />
         <ReferralBanner authed={authed} onInvite={() => (authed ? setRefOpen(true) : setAuthOpen(true))} />
       </main>
 
-      <Footer onTopup={() => setPricingOpen(true)} onGuide={() => setGuideOpen(true)} />
+      <Footer onTopup={() => openPricing("footer")} onGuide={() => setGuideOpen(true)} />
       {pricingOpen && <PricingModal user={user} onClose={() => setPricingOpen(false)} notify={notify} />}
       {authOpen && <AuthModal user={user} onClose={() => setAuthOpen(false)} onAuthed={login} notify={notify} />}
       {refOpen && <ReferralModal user={user} onClose={() => setRefOpen(false)} notify={notify} />}
@@ -765,6 +790,7 @@ function Results({ result, analysisId, notify, credits, onTopup, onAgain }) {
     try {
       const { data } = await axios.post(`${API}/chat`, { user_id: localStorage.getItem("da_uid"), analysis_id: analysisId, question });
       setMsgs((m) => [...m, { r: "a", t: data.answer }]);
+      track("copilot_used", {});
     } catch { setMsgs((m) => [...m, { r: "a", t: t("n_copilot_err") }]); }
     finally { setLoading(false); }
   };
@@ -1001,6 +1027,7 @@ function CopilotSection({ onCta }) {
 function SectorsSection({ onCta }) {
   const { t } = useI18n();
   const m = useMark();
+  const navigate = useNavigate();
   return (
     <section className="section" id="settori">
       <div className="accent-bar" />
@@ -1009,12 +1036,14 @@ function SectorsSection({ onCta }) {
       <div className="doc-grid">
         {m.sectors.map((s) => {
           const Icon = ICONS[s.icon] || Briefcase;
+          const clickable = SECTOR_SLUGS.includes(s.slug);
           return (
-            <div className="glass pad sector-card" key={s.slug} data-testid={`sector-card-${s.slug}`} onClick={onCta}>
+            <div className="glass pad sector-card" key={s.slug} data-testid={`sector-card-${s.slug}`}
+              onClick={() => clickable ? navigate(`/${s.slug}`) : onCta()}>
               <div className="doc-ic"><Icon size={22} color="var(--accent)" /></div>
               <h3 className="doc-t">{s.t}</h3>
               <p className="doc-d">{s.d}</p>
-              <span className="sector-link">{t("sct_cta")} <ArrowRight size={14} /></span>
+              <span className="sector-link">{clickable ? t("sct_cta") : t("cta_try_short")} <ArrowRight size={14} /></span>
             </div>
           );
         })}
@@ -1310,8 +1339,8 @@ function PaypalCheckout({ user, packs, subs, notify, onClose }) {
     capRef.current.innerHTML = "";
     const b = window.paypal.Buttons({
       style: { color: "gold", shape: "pill", label: "paypal", height: 45 },
-      createOrder: async () => { const { data } = await axios.post(`${API}/paypal/order`, { user_id: user.user_id, package_id: selPackRef.current }); return data.order_id; },
-      onApprove: async (d) => { try { const { data: res } = await axios.post(`${API}/paypal/capture`, { order_id: d.orderID }); if (res.status === "paid") { notify(`${t("n_pay_ok")} +${res.credits_added}`); refresh(); onClose(); } else notify(t("n_pay_fail")); } catch { notify(t("n_pay_fail")); } },
+      createOrder: async () => { track("begin_checkout", { method: "paypal", plan: selPackRef.current }); const { data } = await axios.post(`${API}/paypal/order`, { user_id: user.user_id, package_id: selPackRef.current }); return data.order_id; },
+      onApprove: async (d) => { try { const { data: res } = await axios.post(`${API}/paypal/capture`, { order_id: d.orderID }); if (res.status === "paid") { track("purchase", { method: "paypal", credits: res.credits_added }); notify(`${t("n_pay_ok")} +${res.credits_added}`); refresh(); onClose(); } else notify(t("n_pay_fail")); } catch { notify(t("n_pay_fail")); } },
       onError: () => notify(t("n_pay_start_err")),
     });
     if (b.isEligible && !b.isEligible()) return;
@@ -1331,7 +1360,7 @@ function PaypalCheckout({ user, packs, subs, notify, onClose }) {
       btn = window.paypalSub.Buttons({
         style: { color: "blue", shape: "pill", label: "subscribe", height: 45 },
         createSubscription: (d, actions) => actions.subscription.create({ plan_id: planId }),
-        onApprove: async (d) => { try { const { data: res } = await axios.post(`${API}/paypal/subscription/activate`, { user_id: user.user_id, package_id: selSub, subscription_id: d.subscriptionID }); if (res.status === "active") { notify(`${t("n_sub_ok")} +${res.credits_added}. ${t("n_renew")}`); refresh(); onClose(); } else notify(t("n_pay_fail")); } catch { notify(t("n_pay_fail")); } },
+        onApprove: async (d) => { try { const { data: res } = await axios.post(`${API}/paypal/subscription/activate`, { user_id: user.user_id, package_id: selSub, subscription_id: d.subscriptionID }); if (res.status === "active") { track("purchase", { method: "paypal_sub", credits: res.credits_added }); notify(`${t("n_sub_ok")} +${res.credits_added}. ${t("n_renew")}`); refresh(); onClose(); } else notify(t("n_pay_fail")); } catch { notify(t("n_pay_fail")); } },
         onError: () => notify(t("n_pay_start_err")),
       });
       if (btn.isEligible && !btn.isEligible()) return;
@@ -1396,6 +1425,7 @@ function PricingModal({ user, onClose, notify }) {
 
   const buyStripe = async (id) => {
     setLoading(id);
+    track("begin_checkout", { method: "stripe", plan: id });
     try {
       const { data } = await axios.post(`${API}/payments/checkout`, {
         package_id: id, origin_url: window.location.origin, user_id: user.user_id,
@@ -1577,10 +1607,11 @@ function AuthModal({ user, onClose, onAuthed, notify }) {
           email, password, name, user_id: user.user_id, ref: localStorage.getItem("da_ref") || undefined,
         });
         onAuthed(data.token, data.user); notify(`${t("n_welcome")}, ${data.user.name}! 🎉`); onClose();
-        track("sign_up", { method: "email" });
+        track("sign_up", { method: "email", hero_variant: localStorage.getItem("da_hero_ab") || "A" });
       } else {
         const { data } = await axios.post(`${API}/auth/login`, { email, password });
         onAuthed(data.token, data.user); notify(t("n_login_ok")); onClose();
+        track("login", { method: "email" });
       }
     } catch (e) {
       setErr(fmtErr(e?.response?.data?.detail) || t("auth_err"));
@@ -1682,6 +1713,108 @@ function ServicesGuideModal({ onClose }) {
   );
 }
 
+function SectorLanding({ slug }) {
+  const { t, lang } = useI18n();
+  const m = useMark();
+  const navigate = useNavigate();
+  const data = (SECTORS[lang] || SECTORS.it)[slug];
+  const sect = m.sectors.find((s) => s.slug === slug);
+
+  useEffect(() => {
+    if (!data) return;
+    const prevTitle = document.title;
+    document.title = data.meta_title;
+    const meta = document.querySelector('meta[name="description"]');
+    const prevDesc = meta ? meta.getAttribute("content") : null;
+    if (meta) meta.setAttribute("content", data.meta_desc);
+    window.scrollTo(0, 0);
+    track("view_item", { item_category: "sector", sector: slug });
+    return () => { document.title = prevTitle; if (meta && prevDesc) meta.setAttribute("content", prevDesc); };
+  }, [slug, lang, data]);
+
+  if (!data || !sect) return <Navigate to="/" replace />;
+  const Icon = ICONS[sect.icon] || Briefcase;
+  const goTry = () => { track("cta_click", { location: "sector_hero", sector: slug }); navigate(`/?src=${slug}#upload`); };
+
+  return (
+    <div className="App">
+      <header className="header">
+        <div className="header-inner">
+          <Link to="/" className="logo" data-testid="sl-logo" style={{ textDecoration: "none", color: "inherit" }}>
+            <img src="/logo.png" alt="DocuAnalytics AI" className="logo-img" /> Docu<span className="grad">Analytics</span> AI
+          </Link>
+          <nav className="nav">
+            <Link to="/" className="btn btn-sm btn-ghost" data-testid="sl-back">{t("sl_back")}</Link>
+            <LanguageSwitcher />
+            <button className="btn btn-primary btn-sm" data-testid="sl-nav-try" onClick={goTry}><Bot size={14} /> {t("cta_try_short")}</button>
+          </nav>
+        </div>
+      </header>
+
+      <main className="wrap">
+        <section className="hero fade" data-testid="sl-hero">
+          <div className="hero-badges mb1"><span className="badge badge-info">{t("sl_for")} {sect.t}</span></div>
+          <h1 data-testid="sl-h1">{sect.t}<br /><span className="grad">{sect.d}</span></h1>
+          <p className="sl-problem">{data.problem}</p>
+          <p className="sl-solution">{data.solution}</p>
+          <div className="hero-cta">
+            <button className="btn btn-primary btn-lg" data-testid="sl-cta-try" onClick={goTry}><Bot size={18} /> {t("cta_try")}</button>
+          </div>
+          <div className="hero-free"><CheckCircle2 size={15} color="var(--success)" /> {t("free_note")}</div>
+          <div className="hero-rating"><span className="stars">{[...Array(5)].map((_, k) => <Star key={k} size={14} fill="#ffd600" color="#ffd600" style={{ display: "inline" }} />)}</span><span>{t("rating_line")}</span></div>
+        </section>
+
+        <section className="section" data-testid="sl-usecases">
+          <div className="accent-bar" />
+          <div className="split">
+            <div className="split-txt">
+              <h2 className="section-title">{t("sl_usecases")}</h2>
+              <div className="point-list mt1">
+                {data.useCases.map((u) => <div className="point" key={u}><CheckCircle2 size={16} color="var(--success)" /><span>{u}</span></div>)}
+              </div>
+            </div>
+            <div className="split-txt">
+              <h2 className="section-title">{t("sl_benefits")}</h2>
+              <div className="point-list mt1">
+                {data.benefits.map((b) => <div className="point" key={b}><Sparkles size={16} color="var(--accent)" /><span>{b}</span></div>)}
+              </div>
+            </div>
+          </div>
+          <div className="glass pad mt2 sl-example" data-testid="sl-example">
+            <div className="flex aic gap mb1"><Icon size={22} color="var(--accent)" /><strong>{t("sl_example")}</strong></div>
+            <p className="doc-d" style={{ fontSize: ".95rem" }}>{data.example}</p>
+            <button className="btn btn-primary mt1" data-testid="sl-example-cta" onClick={goTry}><Bot size={15} /> {t("cta_try_short")}</button>
+          </div>
+        </section>
+
+        <SecuritySection />
+        <Testimonials />
+
+        <section className="section" data-testid="sl-other">
+          <h2 className="section-title mb1">{t("sl_other")}</h2>
+          <div className="doc-grid">
+            {m.sectors.filter((s) => s.slug !== slug && SECTOR_SLUGS.includes(s.slug)).map((s) => {
+              const SI = ICONS[s.icon] || Briefcase;
+              return (
+                <div className="glass pad sector-card" key={s.slug} data-testid={`sl-other-${s.slug}`} onClick={() => navigate(`/${s.slug}`)}>
+                  <div className="doc-ic"><SI size={22} color="var(--accent)" /></div>
+                  <h3 className="doc-t">{s.t}</h3>
+                  <p className="doc-d">{s.d}</p>
+                  <span className="sector-link">{t("sct_cta")} <ArrowRight size={14} /></span>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+
+        <TrialCTA onCta={goTry} />
+      </main>
+
+      <Footer onTopup={() => navigate("/?src=" + slug + "#prezzi")} onGuide={() => navigate("/")} />
+    </div>
+  );
+}
+
 function App() {
   return (
     <I18nProvider>
@@ -1689,6 +1822,7 @@ function App() {
         <Routes>
           <Route path="/blog" element={<BlogIndex />} />
           <Route path="/blog/:slug" element={<BlogPost />} />
+          {SECTOR_SLUGS.map((s) => <Route key={s} path={`/${s}`} element={<SectorLanding slug={s} />} />)}
           <Route path="*" element={<Home />} />
         </Routes>
       </BrowserRouter>
