@@ -1,5 +1,19 @@
 # DocuAnalytics AI — PRD & Stato Progetto
 
+## AGGIORNAMENTO 2026-06 — Ottimizzazione conversione (FASE 1 completata, in PREVIEW)
+Ristrutturazione homepage orientata alla conversione, senza rompere funzionalità esistenti. Tutte le nuove copy in 5 lingue (IT/EN/ES/DE/FR) via `src/content.js` (MT = stringhe UI, MARK = array marketing; il fallback di `t()` in App.js legge anche MT).
+- **Hero** benefit-oriented: H1 "Analizza i tuoi documenti in pochi secondi / L'AI trova dati, errori e rischi prima di te", doppia CTA (Analizza gratis → #upload, Scopri come funziona → #come-funziona), nota "3 crediti gratuiti · Nessuna carta", rating 4,9/5 · 482+.
+- Nuove sezioni ordinate: BenefitsStrip (#benefici), HowItWorks 4 step (#come-funziona), DocTypesSection (#documenti, card cliccabili → #upload), RedFlagSection (#red-flag), CopilotSection (#copilot), SectorsSection (#settori, card → #upload), SecuritySection (#sicurezza), PricingPreview (#prezzi, dati da GET /api/crypto/info), Faq, TrialCTA/FinalCTA (#prova).
+- **Momento WOW**: barra in Results con conteggio REALE (n° campi estratti + n° controlli audit). CTA contestuale post-analisi (Analizza un altro documento / Acquista crediti) con crediti residui.
+- Ancore header desktop (Come funziona, Prezzi), footer con email contatto docuanalitics@gmail.com.
+- GA4: helper `track()` + eventi `cta_click`, `document_analyzed`, `sign_up`.
+- Rimosso NewFeatures (sostituito da sezioni dedicate Red-Flag/Copilot che riusano CONTENT.features tradotti).
+- Mobile-first: results-grid single-column <860px, CTA full-width <560px, nav-anchor nascosti <940px.
+- TEST: iteration_10.json (suite completa homepage, 92% - core 100%), iteration_11.json (4 fix follow-up, 100%). Regressione OK su upload/analisi/copilot/export/pricing/auth/i18n.
+- ⚠️ Tutto in PREVIEW. Produzione (docuanalytics.online) esegue ancora il codice precedente: serve DEPLOY per pubblicare.
+- BACKLOG: FASE 2 = landing page per settore (/commercialisti, /avvocati, /notai, /cfo, /hr) — le card oggi scrollano a #upload. FASE 3 = funnel analytics avanzato + A/B testing.
+
+
 ## Problem statement (originale, IT)
 "rivedi questo sito nella zip controlla se ci sono bug rendilo piu professionale possibile controlla tutti i metodi di pagamento che siano funzionanti fai un check completo prima del lancio"
 

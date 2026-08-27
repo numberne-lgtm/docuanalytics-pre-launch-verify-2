@@ -1,0 +1,57 @@
+{
+  "summary": "Frontend-only E2E testing of the FASE 1 conversion-oriented homepage restructure (DocuAnalytics AI) on the public preview URL. Verified new Hero, all 10 new sections and every requested data-testid, anchor scrolling, pricing preview fed by GET /api/crypto/info, pricing modal (stripe/crypto/paypal tabs), full regression of upload+AI analysis (credits 3->2, 13 fields, Red-Flag audit, wow-bar, after-analysis CTA), AI Copilot chat, CSV/JSON export, auth register+logout, i18n IT/EN/DE on the NEW copy, and mobile 390x844 layout. Core flows all pass with zero app console errors. Found 1 HIGH mobile layout bug (results grid overflows viewport), 1 desktop overlap bug in final CTA, and 1 CSS specificity bug that renders all prices as a big euro sign + tiny grey digits.",
+  "backend_issues": { "critical": [], "minor": [] },
+  "frontend_issues": {
+    "ui_bugs": [
+      {
+        "component": "Results() results grid (#results)",
+        "issue": "On mobile (390x844) the results grid uses inline style gridTemplateColumns: '1.4fr 1fr' with no responsive fallback, so it stays 2 columns and overflows horizontally: the right column (AI Red-Flag Audit, AI Copilot title + chat-input/chat-send) is cut off outside the viewport and unreachable. Reproduced after a real analysis on mobile; document.querySelectorAll scan returned multiple elements with right > innerWidth (DIV.glass pad mb1, DIV.audit-item audit-ok, DIV.audit-item audit-warning...). Fix: move the inline style to a class (e.g. .results-grid) and add @media(max-width:860px){grid-template-columns:1fr}.",
+        "selector": "#results .grid, [data-testid=\"chat-input\"]",
+        "priority": "HIGH"
+      },
+      {
+        "component": "TrialCTA (#prova final-cta) - desktop 1920",
+        "issue": "The free-note line and the CTA button overlap on desktop: note box y=955 h=17 while [data-testid='trial-cta'] box y=939 h=47 and x starts at the end of the note text, visually covering '...Nessuna carta richiesta'. Cause: .hero-free is display:inline-flex and the following <button> is also inline-level inside a text-align:center container, so they share the same line. Mobile (390) is OK. Fix: wrap the note in a block-level div (or set .final-cta .hero-free{display:flex;justify-content:center} and make the button display:block/margin:auto).",
+        "selector": "#prova .hero-free, [data-testid=\"trial-cta\"]",
+        "priority": "MEDIUM"
+      },
+      {
+        "component": "PricingPreview / PricingModal price rendering (.price-amt)",
+        "issue": "All prices render as a large bold euro sign followed by tiny 14.4px, 35%-opacity digits (e.g. '€ 49', '€ 149') in both #prezzi cards and the pricing modal. Root cause: the bare descendant rule '.price-amt span{font-size:.9rem;color:var(--text-muted)}' (App.css:102) also matches the span that wraps the dynamic {p.amount} expression, not only the '/mese' suffix. Fix: give the suffix its own class (<span className=\"per\">) and scope the rule to '.price-amt .per'. Affects every plan card and hurts the pricing readability of the new conversion section.",
+        "selector": "[data-testid=\"preview-plan-pro\"] .price-amt",
+        "priority": "MEDIUM"
+      },
+      {
+        "component": "DocTypesSection (#documenti)",
+        "issue": "doc-card elements have no onClick, while sector-card, cop-example, rf-cta, how-cta and trial-cta all scroll to #upload. Clicking data-testid='doc-card-fattura' does nothing (page stays put, chip-fattura not selected) although the cards look interactive. Suggest making each doc-card select the matching chip and scroll to #upload for consistency/conversion.",
+        "selector": "[data-testid=\"doc-card-fattura\"]",
+        "priority": "LOW"
+      }
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      { "screen": "Pricing modal on mobile (390px)", "issues": ["Crypto tab layout stays 2 columns (inline '1fr 1fr'): no overflow but the package select and BTC/USDT tabs are very cramped and labels wrap to 2 lines"] },
+      { "screen": "Dev console", "issues": ["Non-blocking dev-only React hydration warning ('<span> cannot be a child of <option>') caused by the visual-editor instrumentation injecting spans into <option> inside data-testid='crypto-pkg' - not app code, will not appear in a production build"] }
+    ]
+  },
+  "test_report_links": ["/app/test_reports/iteration_10.json"],
+  "action_items": [
+    "HIGH: make the #results grid single-column below ~860px (replace inline gridTemplateColumns with a class + media query) so Red-Flag Audit and AI Copilot chat are usable on mobile",
+    "MEDIUM: fix the #prova final CTA overlap between the free-note line and data-testid='trial-cta' on desktop",
+    "MEDIUM: scope '.price-amt span' to a dedicated class so plan prices render at full size/contrast in #prezzi and in the pricing modal",
+    "LOW: make #documenti doc-card clickable (select chip + scroll to #upload) for consistency with sector-card"
+  ],
+  "critical_code_review_comments": [
+    "App.js is 1699 lines - split Home sections (Hero/BenefitsStrip/HowItWorks/DocTypes/RedFlag/Copilot/Sectors/Security/PricingPreview/TrialCTA) into src/components/home/* modules",
+    "DRY: the plan card markup is duplicated verbatim in PricingPreview.row() and PricingModal.Card() (lines 1057-1064 vs 1414-1423) - extract a shared PlanCard component (would also fix the price CSS bug in one place)",
+    "Avoid inline gridTemplateColumns for multi-column layouts; inline styles cannot be overridden by media queries, which is the root cause of the mobile results overflow"
+  ],
+  "updated_files": [],
+  "success_rate": { "backend": "not tested (frontend-only request)", "frontend": "92% (11/12 requested scenarios fully pass; mobile scenario partially fails due to results-grid overflow)" },
+  "seed_data_creation": "Generated /tmp/test_fattura.png (synthetic Italian invoice image) for the analysis regression. Registered a throwaway user test_awen4az7@example.com / Passw0rd!2026 (registration + logout verified). Two anonymous free-tier sessions consumed 1 credit each.",
+  "should_call_test_agent_after_fix": true,
+  "should_main_agent_self_test": false,
+  "test_credentials": "/app/memory/test_credentials.md present; not required - anonymous free tier (3 credits) and a random new registration were used",
+  "context_for_next_testing_agent": "Verified PASS: hero (hero-cta-try/hero-cta-how/hero-free-note/hero-rating, H1 benefit copy), anchors (hero-cta-how, nav-how, nav-price all land at top~84px), all sections #benefici(4 benefit-card) #come-funziona(how-step-01..04) #documenti(6 doc-card) #red-flag(rf-cta/rf-visual) #copilot(cop-cta/cop-visual/6 cop-example) #settori(6 sector-card) #sicurezza(6 security-card) #prezzi(6 preview-plan/preview-buy from GET /api/crypto/info) #faq(4 items, default item 0 OPEN - a single click on faq-q-0 CLOSES it, don't misread as a bug) #prova(trial-cta/final-cta). Analysis regression OK: chip-fattura + file-input + analyze-btn -> wow-bar '13 dati estratti / 3 controlli eseguiti', credits 3->2, extracted fields, Red-Flag audit, after-analysis-cta with analyze-again-btn (scrolls to #upload) and after-buy-btn (opens pricing-modal). Chat answered correctly (~10s). Exports download docuanalytics.csv/.json. Pricing modal: 6 buy-* in stripe, crypto panel + paypal SDK buttons render (17KB html). Auth register+logout OK. i18n IT/EN/DE verified on all new copy with zero Italian leftovers. Retest after fixes: mobile 390 results layout, #prova desktop overlap, .price-amt sizing.",
+  "rca_of_the_issue": "Mobile results overflow: Results() renders <div className='grid' style={{gridTemplateColumns:'1.4fr 1fr'}}> - an inline style that no media query can override, so the two-column layout persists at 390px and the second column is pushed outside the viewport. Price rendering: the un-scoped CSS descendant selector '.price-amt span' catches the dynamic-expression span wrapping the amount, shrinking/greying the digits. Final CTA overlap: .hero-free{display:inline-flex} keeps the note inline, so the sibling inline-flex button shares the same line inside the centered .final-cta container."
+}

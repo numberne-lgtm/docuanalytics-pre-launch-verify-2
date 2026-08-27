@@ -1,15 +1,33 @@
 import { useEffect, useState, useRef, useCallback, createContext, useContext } from "react";
 import "@/App.css";
-import { BrowserRouter, Routes, Route, useNavigate, Link } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Link } from "react-router-dom";
 import axios from "axios";
 import {
   Upload, Zap, CreditCard, FileText, ScrollText, Building2, Landmark, Wallet,
   Bot, ShieldAlert, MessageSquare, Star, CheckCircle2, X, Send, Loader2,
   Download, ChevronRight, Bitcoin, LogIn, LogOut, User, Gift, BookOpen,
   Sparkles, Copy, Play, Lock, Facebook, Linkedin, Youtube, Globe,
-  ShieldCheck, Trash2, BadgeCheck, Ban, ChevronDown
+  ShieldCheck, Trash2, BadgeCheck, Ban, ChevronDown,
+  Clock, AlertTriangle, Search, Rocket, Scale, FileSignature, TrendingUp,
+  Users, Briefcase, Files, Server, ArrowRight, Mail
 } from "lucide-react";
 import { BlogIndex, BlogPost } from "./Blog";
+import { MT, MARK } from "./content";
+
+/* string -> lucide icon map for data-driven marketing sections */
+const ICONS = {
+  Clock, AlertTriangle, Search, Rocket, Upload, Zap, Landmark, Scale,
+  FileSignature, TrendingUp, Users, Briefcase, Files, Server, Ban, Trash2,
+  BadgeCheck, Lock, ShieldCheck, FileText, ScrollText, Building2, Wallet,
+};
+
+/* smooth-scroll to a homepage section id (accounts for sticky header) */
+const scrollToId = (id) => {
+  const el = document.getElementById(id);
+  if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+};
+/* lightweight GA4 event helper (no-op if gtag not present) */
+const track = (event, params = {}) => { try { if (window.gtag) window.gtag("event", event, params); } catch (e) { /* noop */ } };
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -210,7 +228,7 @@ function I18nProvider({ children }) {
     if (q && ["it", "en", "es", "de", "fr"].includes(q)) { localStorage.setItem("da_lang", q); return q; }
     return localStorage.getItem("da_lang") || "it";
   });
-  const t = useCallback((k) => (T[lang] && T[lang][k]) || T.it[k] || k, [lang]);
+  const t = useCallback((k) => (T[lang] && T[lang][k]) || (MT[lang] && MT[lang][k]) || T.it[k] || MT.it[k] || k, [lang]);
   const change = useCallback((l) => { setLang(l); localStorage.setItem("da_lang", l); }, []);
   useEffect(() => { document.documentElement.lang = lang; }, [lang]);
   return <I18nContext.Provider value={{ lang, t, change }}>{children}</I18nContext.Provider>;
@@ -391,6 +409,7 @@ const CONTENT = {
   },
 };
 const useContent = () => CONTENT[useI18n().lang] || CONTENT.it;
+const useMark = () => MARK[useI18n().lang] || MARK.it;
 
 function LanguageSwitcher() {
   const { lang, change } = useI18n();
@@ -567,6 +586,7 @@ function Home() {
         mime_type: file.type || "application/octet-stream", file_base64: b64,
       });
       setResult(data.result); setAnalysisId(data.analysis_id);
+      track("document_analyzed", { doc_type: data.result?.doc_type || docType });
       setUser((u) => ({ ...u, credits: data.credits }));
       setStage(3);
       setTimeout(() => document.getElementById("results")?.scrollIntoView({ behavior: "smooth" }), 200);
@@ -589,8 +609,23 @@ function Home() {
         {/* Hero */}
         <section className="hero fade">
           <div className="hero-badges mb1"><span className="badge badge-info">{t("hero_kicker")}</span></div>
-          <h1>{t("hero_t1")}<br /><span className="grad">{t("hero_t2")}</span></h1>
-          <p>{t("hero_sub")}</p>
+          <h1>{t("hero_h1a")}<br /><span className="grad">{t("hero_h1b")}</span></h1>
+          <p>{t("hero_sub2")}</p>
+          <div className="hero-cta">
+            <button className="btn btn-primary btn-lg" data-testid="hero-cta-try"
+              onClick={() => { track("cta_click", { location: "hero" }); scrollToId("upload"); }}>
+              <Bot size={18} /> {t("cta_try")}
+            </button>
+            <button className="btn btn-lg btn-ghost" data-testid="hero-cta-how"
+              onClick={() => scrollToId("come-funziona")}>
+              {t("cta_how")} <ChevronRight size={16} />
+            </button>
+          </div>
+          <div className="hero-free" data-testid="hero-free-note"><CheckCircle2 size={15} color="var(--success)" /> {t("free_note")}</div>
+          <div className="hero-rating" data-testid="hero-rating">
+            <span className="stars">{[...Array(5)].map((_, k) => <Star key={k} size={14} fill="#ffd600" color="#ffd600" style={{ display: "inline" }} />)}</span>
+            <span>{t("rating_line")}</span>
+          </div>
           <div className="hero-badges">
             {DOC_TYPES.map(({ id, Icon }) => (
               <span className="hero-badge flex aic gap" key={id}><Icon size={15} /> {content.docTypes[id]}</span>
@@ -658,14 +693,24 @@ function Home() {
           )}
         </section>
 
-        {result && <Results result={result} analysisId={analysisId} notify={notify} />}
+        {result && <Results result={result} analysisId={analysisId} notify={notify}
+          credits={user.credits} onTopup={() => setPricingOpen(true)}
+          onAgain={() => { setFile(null); setResult(null); setStage(-1); scrollToId("upload"); }} />}
 
-        <NewFeatures />
+        <BenefitsStrip />
+        <HowItWorks onCta={() => scrollToId("upload")} />
+        <DocTypesSection onCta={() => scrollToId("upload")} />
+        <RedFlagSection onCta={() => scrollToId("upload")} />
+        <CopilotSection onCta={() => scrollToId("upload")} />
+        <SectorsSection onCta={() => scrollToId("upload")} />
         <Services onGuide={() => setGuideOpen(true)} />
         <Tutorials />
-        <Faq />
-        <ReferralBanner authed={authed} onInvite={() => (authed ? setRefOpen(true) : setAuthOpen(true))} />
+        <SecuritySection />
         <Testimonials />
+        <PricingPreview onBuy={() => setPricingOpen(true)} />
+        <Faq />
+        <TrialCTA onCta={() => { track("cta_click", { location: "final" }); scrollToId("upload"); }} />
+        <ReferralBanner authed={authed} onInvite={() => (authed ? setRefOpen(true) : setAuthOpen(true))} />
       </main>
 
       <Footer onTopup={() => setPricingOpen(true)} onGuide={() => setGuideOpen(true)} />
@@ -685,6 +730,8 @@ function Header({ credits, authed, user, onTopup, onAuth, onReferral, onLogout }
       <div className="header-inner">
         <div className="logo"><img src="/logo.png" alt="DocuAnalytics AI" className="logo-img" /> Docu<span className="grad">Analytics</span> AI</div>
         <nav className="nav">
+          <button className="btn btn-sm btn-ghost nav-anchor" data-testid="nav-how" onClick={() => scrollToId("come-funziona")}>{t("nav_how")}</button>
+          <button className="btn btn-sm btn-ghost nav-anchor" data-testid="nav-price" onClick={() => scrollToId("prezzi")}>{t("nav_price")}</button>
           <Link to="/blog" className="btn btn-sm btn-ghost" data-testid="nav-blog"><BookOpen size={15} /> {t("blog_link")}</Link>
           <LanguageSwitcher />
           <span className="credits-badge" data-testid="credits-badge"><Zap size={15} /> {credits} {t("credits")}</span>
@@ -704,11 +751,13 @@ function Header({ credits, authed, user, onTopup, onAuth, onReferral, onLogout }
   );
 }
 
-function Results({ result, analysisId, notify }) {
+function Results({ result, analysisId, notify, credits, onTopup, onAgain }) {
   const { t } = useI18n();
   const [q, setQ] = useState("");
   const [msgs, setMsgs] = useState([]);
   const [loading, setLoading] = useState(false);
+  const fieldsN = (result.fields || []).length;
+  const checksN = (result.audit || []).length;
 
   const ask = async () => {
     if (!q.trim()) return;
@@ -739,7 +788,14 @@ function Results({ result, analysisId, notify }) {
       <h2 className="section-title">{t("results_title")}</h2>
       <p className="section-sub mb1">{result.doc_type} — {result.summary}</p>
 
-      <div className="grid" style={{ gridTemplateColumns: "1.4fr 1fr" }}>
+      <div className="wow-bar" data-testid="wow-bar">
+        <CheckCircle2 size={20} color="var(--success)" />
+        <strong>{t("wow_done")}</strong>
+        <span className="wow-chip"><Sparkles size={13} /> {fieldsN} {t("wow_fields")}</span>
+        <span className="wow-chip"><ShieldCheck size={13} /> {checksN} {t("wow_checks")}</span>
+      </div>
+
+      <div className="results-grid">
         <div className="glass pad">
           <div className="flex between aic mb1">
             <strong style={{ fontSize: ".95rem" }}>{t("ex_data")}</strong>
@@ -781,6 +837,265 @@ function Results({ result, analysisId, notify }) {
           </div>
         </div>
       </div>
+
+      <div className="after-cta glass pad" data-testid="after-analysis-cta">
+        <div>
+          <strong style={{ fontSize: "1rem" }}>{t("after_title")}</strong>
+          <p className="section-sub" style={{ marginTop: ".2rem" }}>
+            {credits > 0 ? t("after_left").replace("{n}", credits) : t("after_out")}
+          </p>
+        </div>
+        <div className="flex gap wrapf">
+          <button className="btn btn-primary" data-testid="analyze-again-btn" onClick={onAgain}>
+            <Upload size={16} /> {t("after_again")}
+          </button>
+          <button className="btn btn-accent" data-testid="after-buy-btn" onClick={onTopup}>
+            <CreditCard size={16} /> {t("price_buy")}
+          </button>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function BenefitsStrip() {
+  const m = useMark();
+  return (
+    <section className="section" id="benefici">
+      <div className="benefit-grid">
+        {m.benefits.map((b) => {
+          const Icon = ICONS[b.icon] || Clock;
+          return (
+            <div className="glass pad benefit-card" key={b.t} data-testid="benefit-card">
+              <Icon size={24} color="var(--accent)" />
+              <h3 className="doc-t" style={{ marginTop: ".6rem" }}>{b.t}</h3>
+              <p className="doc-d">{b.d}</p>
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+function HowItWorks({ onCta }) {
+  const { t } = useI18n();
+  const m = useMark();
+  return (
+    <section className="section" id="come-funziona">
+      <div className="accent-bar" />
+      <h2 className="section-title">{t("how_title")}</h2>
+      <p className="section-sub mb1">{t("how_sub")}</p>
+      <div className="how-grid">
+        {m.how.map((s) => {
+          const Icon = ICONS[s.icon] || Upload;
+          return (
+            <div className="glass pad how-card" key={s.n} data-testid={`how-step-${s.n}`}>
+              <span className="how-num">{s.n}</span>
+              <Icon size={26} color="var(--accent)" />
+              <h3 className="how-t">{s.t}</h3>
+              <p className="how-d">{s.d}</p>
+            </div>
+          );
+        })}
+      </div>
+      <div className="center mt2">
+        <button className="btn btn-primary btn-lg" data-testid="how-cta" onClick={onCta}><Bot size={17} /> {t("cta_try")}</button>
+      </div>
+    </section>
+  );
+}
+
+const DOC_ICONS = { fattura: FileText, f24: Landmark, contratto: ScrollText, visura: Building2, busta_paga: Wallet, altri: Files };
+
+function DocTypesSection({ onCta }) {
+  const { t } = useI18n();
+  const m = useMark();
+  return (
+    <section className="section" id="documenti">
+      <div className="accent-bar" />
+      <h2 className="section-title">{t("doc_title")}</h2>
+      <p className="section-sub mb1">{t("doc_sub")}</p>
+      <div className="doc-grid">
+        {m.docs.map((d) => {
+          const Icon = DOC_ICONS[d.key] || Files;
+          return (
+            <div className="glass pad doc-card sector-card" key={d.key} data-testid={`doc-card-${d.key}`} onClick={onCta}>
+              <div className="doc-ic"><Icon size={22} color="var(--accent)" /></div>
+              <h3 className="doc-t">{d.t}</h3>
+              <p className="doc-d">{d.d}</p>
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+function RedFlagSection({ onCta }) {
+  const { t } = useI18n();
+  const m = useMark();
+  const content = useContent();
+  const f = content.features[0]; // AUDIT (translated points)
+  return (
+    <section className="section" id="red-flag">
+      <div className="accent-bar" />
+      <div className="split">
+        <div className="split-txt">
+          <span className="badge badge-new mb1" style={{ display: "inline-block" }}>{t("rf_kicker")}</span>
+          <h2 className="section-title" style={{ marginTop: ".5rem" }}>{t("rf_title")}</h2>
+          <p className="section-sub mb1">{t("rf_sub")}</p>
+          <div className="point-list">
+            {f.points.map((p) => (
+              <div className="point" key={p}><CheckCircle2 size={16} color="var(--success)" /><span>{p}</span></div>
+            ))}
+          </div>
+          <button className="btn btn-primary mt2" data-testid="rf-cta" onClick={onCta}><ShieldAlert size={16} /> {t("cta_try_short")}</button>
+        </div>
+        <div className="split-vis glass pad" data-testid="rf-visual">
+          <div className="flex aic gap mb1"><ShieldAlert size={18} color="var(--accent)" /><strong>{t("rf_finds")}</strong></div>
+          {m.rfFinds.map((x, i) => (
+            <div className={`audit-item ${i % 3 === 2 ? "audit-warning" : "audit-ok"}`} key={x}>
+              {i % 3 === 2 ? <AlertTriangle size={16} /> : <CheckCircle2 size={16} />}<span>{x}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function CopilotSection({ onCta }) {
+  const { t } = useI18n();
+  const m = useMark();
+  const content = useContent();
+  const f = content.features[1]; // COPILOT
+  return (
+    <section className="section" id="copilot">
+      <div className="accent-bar" />
+      <div className="split reverse">
+        <div className="split-vis glass pad" data-testid="cop-visual">
+          <div className="flex aic gap mb1"><MessageSquare size={18} color="#E100FF" /><strong>{t("cop_examples_ttl")}</strong></div>
+          <div className="cop-examples">
+            {m.copExamples.map((q) => (
+              <div className="cop-q" key={q} onClick={onCta} data-testid="cop-example"><MessageSquare size={13} /> {q}</div>
+            ))}
+          </div>
+        </div>
+        <div className="split-txt">
+          <span className="badge badge-info mb1" style={{ display: "inline-block" }}>{t("cop_kicker")}</span>
+          <h2 className="section-title" style={{ marginTop: ".5rem" }}>{t("cop_title")}</h2>
+          <p className="section-sub mb1">{t("cop_sub")}</p>
+          <div className="point-list">
+            {f.points.map((p) => (
+              <div className="point" key={p}><CheckCircle2 size={16} color="var(--success)" /><span>{p}</span></div>
+            ))}
+          </div>
+          <button className="btn btn-primary mt2" data-testid="cop-cta" onClick={onCta}><MessageSquare size={16} /> {t("cop_cta")}</button>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function SectorsSection({ onCta }) {
+  const { t } = useI18n();
+  const m = useMark();
+  return (
+    <section className="section" id="settori">
+      <div className="accent-bar" />
+      <h2 className="section-title">{t("sct_title")}</h2>
+      <p className="section-sub mb1">{t("sct_sub")}</p>
+      <div className="doc-grid">
+        {m.sectors.map((s) => {
+          const Icon = ICONS[s.icon] || Briefcase;
+          return (
+            <div className="glass pad sector-card" key={s.slug} data-testid={`sector-card-${s.slug}`} onClick={onCta}>
+              <div className="doc-ic"><Icon size={22} color="var(--accent)" /></div>
+              <h3 className="doc-t">{s.t}</h3>
+              <p className="doc-d">{s.d}</p>
+              <span className="sector-link">{t("sct_cta")} <ArrowRight size={14} /></span>
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+function SecuritySection() {
+  const { t } = useI18n();
+  const m = useMark();
+  return (
+    <section className="section" id="sicurezza">
+      <div className="accent-bar" />
+      <span className="badge badge-info" style={{ display: "inline-block" }}>{t("secp_kicker")}</span>
+      <h2 className="section-title" style={{ marginTop: ".5rem" }}>{t("secp_title")}</h2>
+      <p className="section-sub mb1">{t("secp_sub")}</p>
+      <div className="sec-grid">
+        {m.security.map((s) => {
+          const Icon = ICONS[s.icon] || ShieldCheck;
+          return (
+            <div className="glass pad sec-card" key={s.t} data-testid="security-card">
+              <div className="doc-ic"><Icon size={20} color="#a78bfa" /></div>
+              <h3 className="doc-t">{s.t}</h3>
+              <p className="doc-d">{s.d}</p>
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+function PricingPreview({ onBuy }) {
+  const { t } = useI18n();
+  const [pkgs, setPkgs] = useState([]);
+  useEffect(() => { axios.get(`${API}/crypto/info`).then(({ data }) => setPkgs(data.packages || [])).catch(() => {}); }, []);
+  const packs = pkgs.filter((p) => p.type === "pack");
+  const subs = pkgs.filter((p) => p.type === "sub");
+  const row = (p, pop) => (
+    <div className={`glass pad price-card ${pop ? "pop" : ""}`} key={p.id} data-testid={`preview-plan-${p.id}`}>
+      {pop && <span className="badge badge-info" style={{ position: "absolute", top: 12, right: 12 }}>{t("price_recommended")}</span>}
+      <div style={{ fontWeight: 800 }}>{p.name}</div>
+      <div className="price-amt">€{p.amount.toFixed(0)}{p.type === "sub" && <span className="per">{t("per_month")}</span>}</div>
+      <div className="price-cr">{p.credits >= 99999 ? t("unlim_cr") : `${p.credits} ${t("cr")}`}</div>
+      <button className="btn btn-primary mt1" data-testid={`preview-buy-${p.id}`} onClick={onBuy}><CreditCard size={15} /> {t("price_buy")}</button>
+    </div>
+  );
+  return (
+    <section className="section" id="prezzi">
+      <div className="accent-bar" />
+      <h2 className="section-title">{t("price_title")}</h2>
+      <p className="section-sub mb1">{t("price_sub")}</p>
+      {packs.length > 0 && <>
+        <p className="section-sub mb1 mt1" style={{ fontWeight: 700 }}>{t("price_packs")}</p>
+        <div className="price-grid mb1">{packs.map((p) => row(p, p.id === "pro"))}</div>
+      </>}
+      {subs.length > 0 && <>
+        <p className="section-sub mb1 mt2" style={{ fontWeight: 700 }}>{t("price_subs")}</p>
+        <div className="price-grid">{subs.map((p) => row(p, p.id === "sub_pro"))}</div>
+      </>}
+      <div className="center mt2">
+        <button className="btn btn-accent" data-testid="pricing-preview-all" onClick={onBuy}>{t("price_all")} <ChevronRight size={15} /></button>
+      </div>
+    </section>
+  );
+}
+
+function TrialCTA({ onCta }) {
+  const { t } = useI18n();
+  return (
+    <section className="section" id="prova">
+      <div className="glass pad final-cta" data-testid="final-cta">
+        <Sparkles size={34} color="var(--accent)" />
+        <h2 className="section-title mt1">{t("final_title")}</h2>
+        <p className="section-sub mb1">{t("final_sub")}</p>
+        <div className="hero-free" style={{ justifyContent: "center" }}>
+          <CheckCircle2 size={15} color="var(--success)" /> {t("trial_l1")} · {t("trial_l2")}
+        </div>
+        <button className="btn btn-primary btn-lg mt1" data-testid="trial-cta" onClick={onCta}><Bot size={18} /> {t("trial_cta")}</button>
+      </div>
     </section>
   );
 }
@@ -808,38 +1123,6 @@ function Services({ onGuide }) {
       </div>
       <div className="center mt2">
         <button className="btn btn-accent" data-testid="open-guide-btn" onClick={onGuide}><BookOpen size={16} /> {t("guide_btn")}</button>
-      </div>
-    </section>
-  );
-}
-
-const FEATURE_ICONS = { AUDIT: ShieldAlert, COPILOT: MessageSquare };
-
-function NewFeatures() {
-  const { t } = useI18n();
-  const content = useContent();
-  return (
-    <section className="section" id="funzionalita">
-      <div className="accent-bar" />
-      <div className="flex aic gap mb1"><h2 className="section-title">{t("feat_title")}</h2><span className="badge badge-new">NEW</span></div>
-      <p className="section-sub mb1">{t("feat_sub")}</p>
-      <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(320px,1fr))" }}>
-        {content.features.map((f) => {
-          const Icon = FEATURE_ICONS[f.tag] || ShieldAlert;
-          return (
-            <div className="glass pad" key={f.t}>
-              <div className="flex aic gap mb1"><Icon size={26} color="var(--accent)" /><span className="badge badge-info">{f.tag}</span></div>
-              <h3 style={{ fontSize: "1.15rem", fontWeight: 800, margin: ".4rem 0" }}>{f.t}</h3>
-              <p style={{ color: "var(--text-secondary)", fontSize: ".88rem", lineHeight: 1.55, marginBottom: ".6rem" }}>{f.d}</p>
-              {f.points.map((p) => (
-                <div className="flex gap" key={p} style={{ alignItems: "flex-start", marginBottom: ".4rem" }}>
-                  <CheckCircle2 size={16} color="var(--success)" style={{ flexShrink: 0, marginTop: 2 }} />
-                  <span style={{ fontSize: ".84rem", color: "var(--text-secondary)" }}>{p}</span>
-                </div>
-              ))}
-            </div>
-          );
-        })}
       </div>
     </section>
   );
@@ -1132,7 +1415,7 @@ function PricingModal({ user, onClose, notify }) {
     <div className={`glass pad price-card ${pop ? "pop" : ""}`} key={p.id}>
       {pop && <span className="badge badge-info" style={{ position: "absolute", top: 12, right: 12 }}>{t("pop")}</span>}
       <div style={{ fontWeight: 800 }}>{p.name}</div>
-      <div className="price-amt">€{p.amount.toFixed(0)}{p.type === "sub" && <span>{t("per_month")}</span>}</div>
+      <div className="price-amt">€{p.amount.toFixed(0)}{p.type === "sub" && <span className="per">{t("per_month")}</span>}</div>
       <div className="price-cr">{p.credits >= 99999 ? t("unlim_cr") : `${p.credits} ${t("cr")}`}</div>
       <button className="btn btn-primary mt1" data-testid={`buy-${p.id}`} disabled={loading === p.id} onClick={() => buyStripe(p.id)}>
         {loading === p.id ? <Loader2 className="spinner" /> : <><CreditCard size={15} /> {t("buy")}</>}
@@ -1266,6 +1549,7 @@ function Footer({ onTopup, onGuide }) {
         <div className="flex gap wrapf aic" style={{ justifyContent: "center", marginTop: "1rem" }}>
           <Link to="/blog" className="btn btn-sm btn-ghost" data-testid="footer-blog"><BookOpen size={14} /> {t("blog_link")}</Link>
           <button className="btn btn-sm btn-ghost" onClick={onGuide}><BookOpen size={14} /> {t("foot_guide")}</button>
+          <a className="btn btn-sm btn-ghost" href="mailto:docuanalitics@gmail.com" data-testid="footer-contact"><Mail size={14} /> {t("contact")}</a>
           <button className="btn btn-primary btn-sm" onClick={onTopup}><CreditCard size={14} /> {t("foot_topup")}</button>
         </div>
         <p style={{ color: "var(--text-muted)", fontSize: ".72rem", marginTop: "1.2rem" }}>© {new Date().getFullYear()} DocuAnalytics AI · {t("rights")}</p>
@@ -1293,6 +1577,7 @@ function AuthModal({ user, onClose, onAuthed, notify }) {
           email, password, name, user_id: user.user_id, ref: localStorage.getItem("da_ref") || undefined,
         });
         onAuthed(data.token, data.user); notify(`${t("n_welcome")}, ${data.user.name}! 🎉`); onClose();
+        track("sign_up", { method: "email" });
       } else {
         const { data } = await axios.post(`${API}/auth/login`, { email, password });
         onAuthed(data.token, data.user); notify(t("n_login_ok")); onClose();

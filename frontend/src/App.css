@@ -99,7 +99,7 @@ body{background:var(--bg-color);color:var(--text-primary);font-family:'Inter',sa
 .price-card{position:relative;display:flex;flex-direction:column;gap:.5rem}
 .price-card.pop{border-color:var(--accent);box-shadow:0 0 26px #00d2ff33}
 .price-amt{font-size:2rem;font-weight:900}
-.price-amt span{font-size:.9rem;color:var(--text-muted);font-weight:600}
+.price-amt .per{font-size:.9rem;color:var(--text-muted);font-weight:600}
 .price-cr{color:var(--accent);font-weight:800}
 
 /* Modal */
@@ -176,3 +176,70 @@ body{background:var(--bg-color);color:var(--text-primary);font-family:'Inter',sa
 .faq-a{color:var(--text-secondary);line-height:1.7;padding:0 1rem 1rem;font-size:.9rem}
 
 .faq-list{display:flex;flex-direction:column;gap:.7rem}
+
+/* ===== Conversion redesign (Phase 1) ===== */
+section[id]{scroll-margin-top:84px}
+.nav-anchor{display:none}
+@media(min-width:940px){.nav-anchor{display:inline-flex}}
+
+/* Hero CTAs */
+.hero-cta{display:flex;gap:.8rem;justify-content:center;flex-wrap:wrap;margin-top:1.8rem}
+.hero-free{display:inline-flex;align-items:center;gap:.45rem;margin:1.1rem auto 0;color:var(--text-secondary);font-size:.9rem;font-weight:600}
+.hero-rating{display:flex;align-items:center;justify-content:center;gap:.5rem;margin-top:.7rem;color:var(--text-muted);font-size:.82rem}
+.hero-rating .stars{display:inline-flex;gap:1px}
+.trusted-line{color:var(--text-muted);font-size:.82rem;text-align:center;margin-top:.6rem}
+
+/* WOW bar */
+.wow-bar{display:flex;align-items:center;gap:.7rem;flex-wrap:wrap;padding:.8rem 1.1rem;margin-bottom:1.1rem;border-radius:14px;
+  background:linear-gradient(135deg,#00e67618,#00d2ff12);border:1px solid #00e67640}
+.wow-chip{display:inline-flex;align-items:center;gap:.35rem;background:#0a0a0f66;border:1px solid var(--border-color);padding:.3rem .7rem;border-radius:20px;font-size:.8rem;font-weight:700}
+
+/* After-analysis contextual CTA */
+.after-cta{display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;margin-top:1.4rem;border:1px solid #00d2ff44}
+
+/* How it works */
+.how-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:1.1rem}
+.how-card{position:relative;overflow:hidden}
+.how-num{position:absolute;top:.6rem;right:.9rem;font-size:2.4rem;font-weight:900;color:#ffffff0f;letter-spacing:-2px}
+.how-t{font-size:1.05rem;font-weight:800;margin:.6rem 0 .3rem}
+.how-d{color:var(--text-secondary);font-size:.85rem;line-height:1.5}
+
+/* Doc types + sectors + security cards */
+.doc-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:1rem}
+.sec-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:1rem}
+.doc-ic{width:46px;height:46px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:#00d2ff12;border:1px solid #00d2ff33;margin-bottom:.7rem}
+.doc-t{font-size:1rem;font-weight:800;margin-bottom:.3rem}
+.doc-d{color:var(--text-secondary);font-size:.84rem;line-height:1.5}
+.sector-card{cursor:pointer;transition:transform .2s ease,border-color .2s ease,box-shadow .2s ease}
+.sector-card:hover{transform:translateY(-4px);border-color:#00d2ff66;box-shadow:0 10px 30px #0006}
+.sector-link{display:inline-flex;align-items:center;gap:.35rem;margin-top:.7rem;color:var(--accent);font-weight:700;font-size:.82rem}
+.sec-card .doc-ic{background:#8b5cf61a;border-color:#8b5cf644}
+
+/* Split sections (Red-Flag / Copilot) */
+.split{display:grid;grid-template-columns:1fr 1fr;gap:1.6rem;align-items:center}
+.split.reverse .split-vis{order:-1}
+@media(max-width:860px){.split{grid-template-columns:1fr}.split.reverse .split-vis{order:0}}
+.point-list{display:flex;flex-direction:column;gap:.55rem;margin-top:.8rem}
+.point{display:flex;gap:.6rem;align-items:flex-start;font-size:.88rem;color:var(--text-secondary)}
+.point svg{flex-shrink:0;margin-top:2px}
+.cop-examples{display:flex;flex-direction:column;gap:.5rem}
+.cop-q{display:flex;align-items:center;gap:.5rem;padding:.6rem .8rem;border-radius:10px;background:#ffffff0a;border:1px solid var(--border-color);font-size:.85rem;cursor:pointer;transition:border-color .15s,background-color .15s}
+.cop-q:hover{border-color:#E100FF66;background:#E100FF12}
+
+/* Final CTA */
+.final-cta{text-align:center}
+.final-cta .hero-free{display:flex;justify-content:center;margin:.6rem 0}
+
+/* Results grid (responsive) */
+.results-grid{display:grid;grid-template-columns:1.4fr 1fr;gap:1rem;align-items:start}
+@media(max-width:860px){.results-grid{grid-template-columns:1fr}}
+
+/* Benefits strip */
+.benefit-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1rem}
+.benefit-card{text-align:left}
+
+@media(max-width:560px){
+  .hero-cta .btn-lg{width:100%;justify-content:center}
+  .after-cta{flex-direction:column;align-items:stretch}
+  .after-cta .btn{width:100%;justify-content:center}
+}

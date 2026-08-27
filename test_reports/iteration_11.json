@@ -1,0 +1,21 @@
+{
+  "summary": "Targeted retest of the 4 fixes from iteration_10 (frontend only, no backend suite). All 4 PASS. (1) Mobile 390x844: ran real analysis (chip-fattura + PNG invoice + analyze-btn -> results in ~6s); .results-grid computed grid-template-columns = '350px' (single column), documentElement.scrollWidth == innerWidth == 390, zero elements with right > innerWidth, and wow-bar / after-analysis-cta / chat-input / chat-send all visible and inside viewport; AI Red-Flag Audit text present. (2) 1440x900 #prova final CTA: note '3 crediti inclusi · Nessuna carta richiesta' bottom=479, trial-cta top=498 -> no overlap, button below note. (3) Prices: all preview-plan-* .price-amt render at 32px/900 weight full-size (€19/€49/€149/€29 etc.) with only the '/mese' suffix scoped to 14.4px muted; identical correct rendering inside pricing modal (topup-btn -> tab-stripe). (4) doc-card-fattura click scrolled from scrollY 1746 to 778 with #upload in view (top=84).",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Note (not a regression, test-env observation): backend /api/analyze correctly rejects non PDF/JPG/PNG uploads with 400 'Formato non supportato' — the file input accept list matches, no fix needed."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "not tested (skipped per request)", "frontend": "100% (4/4 targeted fixes verified)"},
+  "seed_data_creation": "Generated /tmp/fattura_test.png (synthetic invoice image) for the analysis flow; consumed 1 anonymous free credit (2 remaining shown in after-analysis CTA).",
+  "should_call_test_agent_after_fix": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "iteration_10 covered the full homepage suite (PASS). iteration_11 verified the 4 follow-up fixes: mobile single-column results, final-CTA spacing, price-amt font rendering (preview + modal), doc-card scroll-to-#upload. For the analysis flow you MUST upload PDF/JPG/PNG (a .txt returns 400); use PIL to generate an invoice PNG. Sector/doc cards intentionally scroll to #upload (sector landings are Phase 2).",
+  "rca_of_the_issue": "No new issues found. Previous mobile overflow was caused by inline gridTemplateColumns on Results(); now handled by .results-grid CSS with @media(max-width:860px){grid-template-columns:1fr} — confirmed applied at 390px. Price rendering fixed by scoping .price-amt .per to the suffix span only."
+}
