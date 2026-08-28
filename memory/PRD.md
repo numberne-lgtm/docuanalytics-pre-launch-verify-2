@@ -1,5 +1,15 @@
 # DocuAnalytics AI — PRD & Stato Progetto
 
+## AGGIORNAMENTO 2026-06 (10) — Integrazione Claude AI (multi-modello) ✅ TESTATO
+- Aggiunta scelta modello AI: **Gemini** (default) o **Claude Sonnet 5** (`claude-sonnet-5`), via Emergent LLM key (nessuna chiave utente).
+- Selettore UI (`data-testid="model-select"`, `model-gemini`, `model-claude`) accanto al pulsante "Analizza"; stato `aiModel` in `Home()`.
+- Backend `server.py`: `AnalyzeReq.model` e `ChatReq.model`; dispatch provider in `/api/analyze` (Claude vision per immagini, Gemini per PDF) e `/api/chat` (Copilot Gemini o Claude).
+- Nota comportamento: Claude analizza le IMMAGINI (vision); i PDF usano sempre Gemini (attachment file non supportato via Claude in questo path). Fallback silenzioso a Gemini per PDF anche se l'utente sceglie Claude.
+- Stringa i18n `ai_engine` in 5 lingue (`content.js`); stili `.model-select/.model-toggle/.model-opt` in `App.css`.
+- Test e2e (localhost): Gemini analyze ✅, Claude analyze su immagine fattura (campi estratti correttamente, credito -1) ✅, Copilot Claude ✅. Provider Claude verificato via Emergent key.
+- NON ancora deployato in produzione: richiede publish esplicito dall'utente.
+
+
 ## AGGIORNAMENTO 2026-06 (9) — Icone PWA dedicate + deploy (PWA + dominio .it)
 - **Icone PWA su misura**: generata icona on-brand (documento + spark AI + lente, gradiente ciano→viola su tile scura). Create `public/icon-192.png`, `icon-512.png`, `icon-512-maskable.png`; `manifest.json` aggiornato (icons any + maskable); aggiunto `apple-touch-icon` in index.html. Tutte 200.
 - **DEPLOY accodato**: pubblica PWA (manifest/sw/icone) + migrazione dominio docuanalytics.it (sitemap/robots/canonical/OG/hreflang/PUBLIC_BASE_URL/CORS). Nessuna modifica a segreti/API.

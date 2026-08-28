@@ -528,6 +528,7 @@ function Home() {
   const content = useContent();
   const heroAB = useHeroVariant();
   const [docType, setDocType] = useState("auto");
+  const [aiModel, setAiModel] = useState("gemini");
   const [file, setFile] = useState(null);
   const [drag, setDrag] = useState(false);
   const [stage, setStage] = useState(-1); // pipeline
@@ -606,7 +607,7 @@ function Home() {
       const b64 = await toBase64(file);
       const { data } = await axios.post(`${API}/analyze`, {
         user_id: user.user_id, doc_type: docType, filename: file.name,
-        mime_type: file.type || "application/octet-stream", file_base64: b64,
+        mime_type: file.type || "application/octet-stream", file_base64: b64, model: aiModel,
       });
       setResult(data.result); setAnalysisId(data.analysis_id);
       track("document_analyzed", { doc_type: data.result?.doc_type || docType });
@@ -706,6 +707,16 @@ function Home() {
               data-testid="file-input" onChange={(e) => onFile(e.target.files[0])} />
           </div>
 
+          <div className="model-select center mt2" data-testid="model-select">
+            <span className="model-lbl">{t("ai_engine")}</span>
+            <div className="model-toggle">
+              <button className={"model-opt" + (aiModel === "gemini" ? " on" : "")} data-testid="model-gemini"
+                onClick={() => setAiModel("gemini")}><Sparkles size={14} /> Gemini</button>
+              <button className={"model-opt" + (aiModel === "claude" ? " on" : "")} data-testid="model-claude"
+                onClick={() => setAiModel("claude")}><Bot size={14} /> Claude</button>
+            </div>
+          </div>
+
           <div className="center mt2">
             <button className="btn btn-primary btn-lg" data-testid="analyze-btn" disabled={!file || analyzing} onClick={analyze}>
               {analyzing ? <><Loader2 className="spinner" /> {t("analyzing")}</> : <><Bot size={18} /> {t("analyze")}</>}
@@ -726,7 +737,7 @@ function Home() {
           )}
         </section>
 
-        {result && <Results result={result} analysisId={analysisId} notify={notify}
+        {result && <Results result={result} analysisId={analysisId} notify={notify} aiModel={aiModel}
           credits={user.credits} onTopup={() => openPricing("after_analysis")}
           onAgain={() => { setFile(null); setResult(null); setStage(-1); scrollToId("upload"); }} />}
 
@@ -784,7 +795,7 @@ function Header({ credits, authed, user, onTopup, onAuth, onReferral, onLogout }
   );
 }
 
-function Results({ result, analysisId, notify, credits, onTopup, onAgain }) {
+function Results({ result, analysisId, notify, credits, onTopup, onAgain, aiModel }) {
   const { t } = useI18n();
   const [q, setQ] = useState("");
   const [msgs, setMsgs] = useState([]);
@@ -796,7 +807,7 @@ function Results({ result, analysisId, notify, credits, onTopup, onAgain }) {
     if (!q.trim()) return;
     const question = q; setQ(""); setMsgs((m) => [...m, { r: "u", t: question }]); setLoading(true);
     try {
-      const { data } = await axios.post(`${API}/chat`, { user_id: localStorage.getItem("da_uid"), analysis_id: analysisId, question });
+      const { data } = await axios.post(`${API}/chat`, { user_id: localStorage.getItem("da_uid"), analysis_id: analysisId, question, model: aiModel });
       setMsgs((m) => [...m, { r: "a", t: data.answer }]);
       track("copilot_used", {});
     } catch { setMsgs((m) => [...m, { r: "a", t: t("n_copilot_err") }]); }

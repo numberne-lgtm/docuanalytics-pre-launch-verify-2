@@ -96,12 +96,14 @@ class AnalyzeReq(BaseModel):
     filename: str
     mime_type: str
     file_base64: str
+    model: Optional[str] = "gemini"
 
 
 class ChatReq(BaseModel):
     user_id: str
     analysis_id: str
     question: str
+    model: Optional[str] = "gemini"
 
 
 class CheckoutReq(BaseModel):
@@ -304,10 +306,18 @@ Rispondi SOLO con un oggetto JSON valido, senza testo prima o dopo, con questa s
 Estrai tutti i dati chiave (importi, date, partite IVA, IBAN, parti coinvolte, codici tributo, saldi, totali).
 Nella sezione audit, esegui controlli di quadratura (es. saldo F24, netto busta paga), segnala clausole vessatorie, IBAN esteri, visto di conformità IVA sopra 5.000 euro, o eventuali anomalie."""
 
-        file_content = FileContentWithMimeType(file_path=tmp.name, mime_type=req.mime_type)
+        _use_claude = (req.model or "gemini").lower() == "claude"
         chat = LlmChat(api_key=EMERGENT_LLM_KEY, session_id=f"analyze-{uuid.uuid4()}",
-                       system_message="Estrai dati strutturati dai documenti e rispondi solo in JSON valido.").with_model("gemini", "gemini-2.5-flash")
-        resp = await chat.send_message(UserMessage(text=prompt, file_contents=[file_content]))
+                       system_message="Estrai dati strutturati dai documenti e rispondi solo in JSON valido.")
+        if _use_claude and mime.startswith("image/"):
+            from emergentintegrations.llm.chat import ImageContent
+            chat = chat.with_model("anthropic", "claude-sonnet-5")
+            resp = await chat.send_message(UserMessage(text=prompt, file_contents=[ImageContent(image_base64=raw_b64)]))
+        else:
+            # PDFs (and Gemini default) use file attachment, supported on Gemini only
+            file_content = FileContentWithMimeType(file_path=tmp.name, mime_type=req.mime_type)
+            chat = chat.with_model("gemini", "gemini-2.5-flash")
+            resp = await chat.send_message(UserMessage(text=prompt, file_contents=[file_content]))
     except Exception as e:
         raise _generic_500("analyze", e)
     finally:
@@ -347,8 +357,9 @@ async def chat_copilot(req: ChatReq, request: Request):
     resp = ""
     try:
         from emergentintegrations.llm.chat import LlmChat, UserMessage
+        _prov = ("anthropic", "claude-sonnet-5") if (req.model or "gemini").lower() == "claude" else ("gemini", "gemini-2.5-flash")
         chat = LlmChat(api_key=EMERGENT_LLM_KEY, session_id=f"chat-{req.analysis_id}",
-                       system_message=f"Sei un copilot AI. Rispondi in italiano basandoti SOLO su questo documento:\n\n{context[:12000]}").with_model("gemini", "gemini-2.5-flash")
+                       system_message=f"Sei un copilot AI. Rispondi in italiano basandoti SOLO su questo documento:\n\n{context[:12000]}").with_model(*_prov)
         resp = await chat.send_message(UserMessage(text=req.question))
     except Exception as e:
         raise _generic_500("copilot", e)
