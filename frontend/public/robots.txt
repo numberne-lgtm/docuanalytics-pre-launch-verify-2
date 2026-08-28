@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://docuanalytics.online/sitemap.xml
+Sitemap: https://docuanalytics.it/sitemap.xml

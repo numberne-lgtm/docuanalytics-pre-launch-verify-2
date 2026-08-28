@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, ArrowRight, CheckCircle2, Clock, BookOpen, Sparkles, CreditCard, Globe } from "lucide-react";
 
-const SITE = "https://docuanalytics.online";
+const SITE = "https://docuanalytics.it";
 const VALID = ["it", "en", "es", "de", "fr"];
 const LANGS = [
   { code: "it", label: "Italiano", flag: "🇮🇹" },
