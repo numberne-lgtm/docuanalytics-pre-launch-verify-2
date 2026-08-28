@@ -1,6 +1,11 @@
 # DocuAnalytics AI — PRD & Stato Progetto
 
-## AGGIORNAMENTO 2026-06 (7) — Code review: applicata solo la correzione sensata
+## AGGIORNAMENTO 2026-06 (8) — Migrazione dominio .it + PWA (preview, da deployare)
+- **Dominio principale → docuanalytics.it**: sostituito `docuanalytics.online` in tutto (sitemap 82 URL, robots.txt, canonical+OG index.html, hreflang App.js/Blog.js, `PUBLIC_BASE_URL`). CORS ora ammette .it/.eu/.online (+www) + preview. `.eu` e `.online` andranno in redirect 301 → .it (lato registrar Register.it). Passaggi piattaforma forniti (Emergent "Link domain" + DNS Register.it + Search Console "Cambio indirizzo").
+- **PWA**: `public/manifest.json` (name/short_name DocuAnalytics, start_url "/", standalone, bg #000000, theme #6B5CE7, icons logo.png); `public/index.html` head con manifest + theme-color #6B5CE7 + apple-mobile-web-app-capable/title; `src/index.js` registra `/sw.js` on load; `public/sw.js` cache-first per asset core (/, index.html, manifest, logo), network-first per navigazioni, salta /api e cross-origin. Verificato: sw.js/manifest 200, nessun errore console.
+- ⚠️ Tutto in PREVIEW: richiede DEPLOY per andare live (+ collegamento dominio lato utente).
+
+
 - Report code-review valutato criticamente. La maggior parte erano falsi positivi o refactor stilistici rischiosi su app live → non applicati (token localStorage = design JWT; `is False` server.py = uso corretto del singleton; hook-deps/split/useMemo/key statiche/catch no-op = warning senza impatto utente).
 - **UNICA modifica applicata**: in PaypalCheckout sostituito `ref.current.innerHTML = ""` con `ref.current.replaceChildren()` (2 punti) per rimuovere il pattern segnalato (svuotamento contenitore prima del mount dei bottoni PayPal). Funzionalmente identico.
 - TEST iteration_14.json: 100% — bottoni PayPal packs+subs montano, toggle tab senza errori, Stripe ok. Nessuna regressione. Cambio funzionalmente neutro → nessun deploy urgente, si allinea al prossimo.
