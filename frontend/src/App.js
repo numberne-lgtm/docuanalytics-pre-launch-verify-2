@@ -1421,7 +1421,7 @@ function PaypalCheckout({ user, packs, subs, notify, onClose }) {
 
   useEffect(() => {
     if (ppMode !== "packs" || !readyCap || !window.paypal || !capRef.current) return;
-    capRef.current.innerHTML = "";
+    capRef.current.replaceChildren();
     const b = window.paypal.Buttons({
       style: { color: "gold", shape: "pill", label: "paypal", height: 45 },
       createOrder: async () => { track("begin_checkout", { method: "paypal", plan: selPackRef.current }); const { data } = await axios.post(`${API}/paypal/order`, { user_id: user.user_id, package_id: selPackRef.current }); return data.order_id; },
@@ -1436,7 +1436,7 @@ function PaypalCheckout({ user, packs, subs, notify, onClose }) {
   useEffect(() => {
     if (ppMode !== "subs" || !readySub || !window.paypalSub || !subRef.current) return;
     let closed = false; let btn = null;
-    subRef.current.innerHTML = "";
+    subRef.current.replaceChildren();
     (async () => {
       let planId;
       try { const { data } = await axios.post(`${API}/paypal/subscription/plan`, { package_id: selSub }); planId = data.plan_id; }

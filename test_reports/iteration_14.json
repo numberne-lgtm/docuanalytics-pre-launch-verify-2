@@ -1,0 +1,23 @@
+{
+  "summary": "Frontend-only regression test of PaypalCheckout after innerHTML='' -> replaceChildren() change. Pricing modal opens (topup-btn -> pricing-modal), PayPal tab renders paypal-panel (GET /api/paypal/config returns enabled:true, mode:live). PACKS sub-tab: capRef container [data-testid=paypal-buttons] populated by PayPal SDK (2 iframes, ~17.2KB HTML, gold PayPal + Debit/Credit Card buttons visible). ABBONAMENTI sub-tab: subRef container [data-testid=paypal-sub-buttons] populated (2 iframes, Subscribe + PayPal Credit Subscribe + card buttons). Toggled packs<->subs 3 times: no JS errors, containers re-mount cleanly (no duplicate/stale buttons). Stripe tab regression OK: 6 buy-* buttons across 3 packs + 3 subscriptions. No payment was completed.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "replaceChildren() is functionally equivalent to innerHTML='' here; combined with b.close() cleanup it prevents duplicate button mounts - verified with repeated tab toggling (3 round trips).",
+    "Console noise (non-blocking, NOT caused by this change): two 'Failed to load resource: 401' entries during page load, and a React hydration warning '<span> cannot be a child of <option>' coming from the Emergent preview visual-editor instrumentation injected into the <option> of the paypal-pkg select (App.js ~1469). Neither breaks PayPal mounting.",
+    "PayPal config reports mode:'live' in the preview environment - confirm intended (sandbox warning banner therefore hidden; risk of real payments during manual testing)."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "not tested (skipped per request)", "frontend": "100%"},
+  "seed_data_creation": "none (anonymous free tier)",
+  "should_call_test_agent_after_fix": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "PayPal is ENABLED (live) in preview, so both sub-tab containers render real PayPal iframes. Selectors: topup-btn, pricing-modal, tab-stripe/tab-paypal, pp-mode-packs/pp-mode-subs, paypal-buttons (capRef), paypal-sub-buttons (subRef), buy-* for Stripe. Do NOT click PayPal iframe buttons (live mode).",
+  "rca_of_the_issue": "No regression found; replaceChildren() empties the container before window.paypal(.Sub).Buttons(...).render() exactly as innerHTML='' did."
+}

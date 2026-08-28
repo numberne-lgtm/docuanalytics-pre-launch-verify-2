@@ -1,6 +1,11 @@
 # DocuAnalytics AI — PRD & Stato Progetto
 
-## AGGIORNAMENTO 2026-06 (6) — Hero demo multi-documento (deploy accodato)
+## AGGIORNAMENTO 2026-06 (7) — Code review: applicata solo la correzione sensata
+- Report code-review valutato criticamente. La maggior parte erano falsi positivi o refactor stilistici rischiosi su app live → non applicati (token localStorage = design JWT; `is False` server.py = uso corretto del singleton; hook-deps/split/useMemo/key statiche/catch no-op = warning senza impatto utente).
+- **UNICA modifica applicata**: in PaypalCheckout sostituito `ref.current.innerHTML = ""` con `ref.current.replaceChildren()` (2 punti) per rimuovere il pattern segnalato (svuotamento contenitore prima del mount dei bottoni PayPal). Funzionalmente identico.
+- TEST iteration_14.json: 100% — bottoni PayPal packs+subs montano, toggle tab senza errori, Stripe ok. Nessuna regressione. Cambio funzionalmente neutro → nessun deploy urgente, si allinea al prossimo.
+
+
 - **Hero demo a rotazione**: `DEMO` in content.js ora ha `variants` (fattura, contratto, busta paga) per 5 lingue, ognuna con campi estratti e Red-Flag specifici; `HeroDemo` cicla `di` a ogni loop. Rimossa la fase Copilot dalla demo (Copilot resta come sezione dedicata). Loop più rapido. Dati fittizi etichettati.
 - Verificato: compila senza errori console; deploy accodato (frontend-only).
 - Meta description settore: le attuali sono già SEO-ottimizzate (keyword + beneficio + CTA "3 crediti, senza carta"); in attesa di eventuali keyword target dall'utente per un tuning mirato.
