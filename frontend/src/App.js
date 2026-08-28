@@ -630,33 +630,39 @@ function Home() {
       <main className="wrap">
         {/* Hero */}
         <section className="hero fade">
-          <div className="hero-badges mb1"><span className="badge badge-info">{t("hero_kicker")}</span></div>
-          <h1 data-testid="hero-h1" data-variant={heroAB}>
-            {heroAB === "B" ? t("hero_h1a_b") : t("hero_h1a")}<br />
-            <span className="grad">{heroAB === "B" ? t("hero_h1b_b") : t("hero_h1b")}</span>
-          </h1>
-          <p>{t("hero_sub2")}</p>
-          <div className="hero-cta">
-            <button className="btn btn-primary btn-lg" data-testid="hero-cta-try"
-              onClick={() => { track("cta_click", { location: "hero", hero_variant: heroAB }); scrollToId("upload"); }}>
-              <Bot size={18} /> {t("cta_try")}
-            </button>
-            <button className="btn btn-lg btn-ghost" data-testid="hero-cta-how"
-              onClick={() => scrollToId("come-funziona")}>
-              {t("cta_how")} <ChevronRight size={16} />
-            </button>
+          <div className="hero-2col">
+            <div className="hero-left">
+              <div className="hero-badges mb1"><span className="badge badge-info">{t("hero_kicker")}</span></div>
+              <h1 data-testid="hero-h1" data-variant={heroAB}>
+                {heroAB === "B" ? t("hero_h1a_b") : t("hero_h1a")}<br />
+                <span className="grad">{heroAB === "B" ? t("hero_h1b_b") : t("hero_h1b")}</span>
+              </h1>
+              <p>{t("hero_sub2")}</p>
+              <div className="hero-cta">
+                <button className="btn btn-primary btn-lg" data-testid="hero-cta-try"
+                  onClick={() => { track("cta_click", { location: "hero", hero_variant: heroAB }); scrollToId("upload"); }}>
+                  <Bot size={18} /> {t("cta_try")}
+                </button>
+                <button className="btn btn-lg btn-ghost" data-testid="hero-cta-how"
+                  onClick={() => scrollToId("come-funziona")}>
+                  {t("cta_how")} <ChevronRight size={16} />
+                </button>
+              </div>
+              <div className="hero-free" data-testid="hero-free-note"><CheckCircle2 size={15} color="var(--success)" /> {t("free_note")}</div>
+              <div className="hero-rating" data-testid="hero-rating">
+                <span className="stars">{[...Array(5)].map((_, k) => <Star key={k} size={14} fill="#ffd600" color="#ffd600" style={{ display: "inline" }} />)}</span>
+                <span>{t("rating_line")}</span>
+              </div>
+              <div className="hero-badges">
+                {DOC_TYPES.map(({ id, Icon }) => (
+                  <span className="hero-badge flex aic gap" key={id}><Icon size={15} /> {content.docTypes[id]}</span>
+                ))}
+              </div>
+            </div>
+            <div className="hero-right">
+              <HeroDemo />
+            </div>
           </div>
-          <div className="hero-free" data-testid="hero-free-note"><CheckCircle2 size={15} color="var(--success)" /> {t("free_note")}</div>
-          <div className="hero-rating" data-testid="hero-rating">
-            <span className="stars">{[...Array(5)].map((_, k) => <Star key={k} size={14} fill="#ffd600" color="#ffd600" style={{ display: "inline" }} />)}</span>
-            <span>{t("rating_line")}</span>
-          </div>
-          <div className="hero-badges">
-            {DOC_TYPES.map(({ id, Icon }) => (
-              <span className="hero-badge flex aic gap" key={id}><Icon size={15} /> {content.docTypes[id]}</span>
-            ))}
-          </div>
-          <HeroDemo />
         </section>
 
         {/* Privacy banner + trust badges */}
@@ -1815,6 +1821,9 @@ function SectorLanding({ slug }) {
 
   if (!data || !sect) return <Navigate to="/" replace />;
   const Icon = ICONS[sect.icon] || Briefcase;
+  const _h1parts = data.meta_title.split("|")[0].split("—").map((s) => s.trim());
+  const h1a = _h1parts[0];
+  const h1b = _h1parts.slice(1).join(" — ");
   const goTry = () => { track("cta_click", { location: "sector_hero", sector: slug }); navigate(`/?src=${slug}#upload`); };
 
   return (
@@ -1835,7 +1844,7 @@ function SectorLanding({ slug }) {
       <main className="wrap">
         <section className="hero fade" data-testid="sl-hero">
           <div className="hero-badges mb1"><span className="badge badge-info">{t("sl_for")} {sect.t}</span></div>
-          <h1 data-testid="sl-h1">{sect.t}<br /><span className="grad">{sect.d}</span></h1>
+          <h1 data-testid="sl-h1">{h1a}{h1b && <><br /><span className="grad">{h1b}</span></>}</h1>
           <p className="sl-problem">{data.problem}</p>
           <p className="sl-solution">{data.solution}</p>
           <div className="hero-cta">

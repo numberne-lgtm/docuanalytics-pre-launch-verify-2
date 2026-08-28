@@ -1,6 +1,11 @@
 # DocuAnalytics AI — PRD & Stato Progetto
 
-## AGGIORNAMENTO 2026-06 (4) — Hero demo animata + chiarimento API key
+## AGGIORNAMENTO 2026-06 (5) — Hero 2 colonne + H1 SEO settore (deploy accodato)
+- **Hero a due colonne (desktop)**: testo + CTA a sinistra, `HeroDemo` animata a destra (CSS `.hero-2col/.hero-left/.hero-right`, breakpoint 1000px; su mobile impilato). Layout SaaS ad alta conversione.
+- **H1 SEO landing settore**: SectorLanding ora deriva un H1 keyword-rich dallo split del `meta_title` (parte prima di "|", divisa su "—" in titolo bianco + sottotitolo gradient). Es. /avvocati → "AI per Avvocati / Analisi contratti e clausole".
+- Verificato via screenshot (hero 2col + demo + H1 landing). DEPLOY accodato (frontend-only). Verifica email ancora OFF (attende RESEND_API_KEY).
+
+
 - **Hero demo animata**: componente React `HeroDemo` in App.js (tema scuro on-brand), testi `DEMO` in content.js (5 lingue), CSS `.hero-demo/.hd-*`. Loop: upload → documento (fattura esempio €1.240,00) → barra avanzamento (lettura/estrazione/controllo) → risultati (3 dati + Red-Flag) → Copilot Q&A. Dati FITTIZI ed etichettati. Inserita nella hero sotto i badge documenti. Verificata via screenshot (render + on-brand). In PREVIEW → richiede deploy per andare live.
 - **Chiarimento API key** (dubbio utente): le chiavi del sito (Stripe/PayPal/LLM/JWT/Mongo) sono già configurate lato backend e protette; l'utente non deve fornirle. L'unica chiave nuova è RESEND_API_KEY, necessaria SOLO per attivare la verifica email (flag `EMAIL_VERIFICATION_ENABLED`).
 - IN ATTESA dall'utente: RESEND_API_KEY + verifica dominio docuanalytics.online in Resend per attivare la verifica email; conferma deploy hero demo.
