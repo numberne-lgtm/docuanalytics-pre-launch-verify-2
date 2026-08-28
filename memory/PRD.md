@@ -1,6 +1,11 @@
 # DocuAnalytics AI — PRD & Stato Progetto
 
-## AGGIORNAMENTO 2026-06 (5) — Hero 2 colonne + H1 SEO settore (deploy accodato)
+## AGGIORNAMENTO 2026-06 (6) — Hero demo multi-documento (deploy accodato)
+- **Hero demo a rotazione**: `DEMO` in content.js ora ha `variants` (fattura, contratto, busta paga) per 5 lingue, ognuna con campi estratti e Red-Flag specifici; `HeroDemo` cicla `di` a ogni loop. Rimossa la fase Copilot dalla demo (Copilot resta come sezione dedicata). Loop più rapido. Dati fittizi etichettati.
+- Verificato: compila senza errori console; deploy accodato (frontend-only).
+- Meta description settore: le attuali sono già SEO-ottimizzate (keyword + beneficio + CTA "3 crediti, senza carta"); in attesa di eventuali keyword target dall'utente per un tuning mirato.
+
+
 - **Hero a due colonne (desktop)**: testo + CTA a sinistra, `HeroDemo` animata a destra (CSS `.hero-2col/.hero-left/.hero-right`, breakpoint 1000px; su mobile impilato). Layout SaaS ad alta conversione.
 - **H1 SEO landing settore**: SectorLanding ora deriva un H1 keyword-rich dallo split del `meta_title` (parte prima di "|", divisa su "—" in titolo bianco + sottotitolo gradient). Es. /avvocati → "AI per Avvocati / Analisi contratti e clausole".
 - Verificato via screenshot (hero 2col + demo + H1 landing). DEPLOY accodato (frontend-only). Verifica email ancora OFF (attende RESEND_API_KEY).

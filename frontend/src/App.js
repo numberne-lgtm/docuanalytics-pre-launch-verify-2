@@ -894,26 +894,31 @@ function Results({ result, analysisId, notify, credits, onTopup, onAgain }) {
 function HeroDemo() {
   const { lang } = useI18n();
   const d = DEMO[lang] || DEMO.it;
-  const [phase, setPhase] = useState("idle"); // idle -> doc -> analyzing -> results -> copilot
+  const [phase, setPhase] = useState("idle"); // idle -> doc -> analyzing -> results
   const [pct, setPct] = useState(0);
+  const [di, setDi] = useState(0); // rotating document index
   useEffect(() => {
     let alive = true; const timers = [];
     const wait = (ms) => new Promise((r) => { const id = setTimeout(r, ms); timers.push(id); });
     (async function loop() {
       while (alive) {
-        setPhase("idle"); setPct(0); await wait(1300); if (!alive) break;
+        setPhase("idle"); setPct(0); await wait(1200); if (!alive) break;
         setPhase("doc"); await wait(800); if (!alive) break;
         setPhase("analyzing");
-        for (let i = 0; i <= 100; i += 5) { if (!alive) break; setPct(i); await wait(55); }
-        await wait(300); if (!alive) break;
-        setPhase("results"); await wait(1100); if (!alive) break;
-        setPhase("copilot"); await wait(2400);
+        for (let i = 0; i <= 100; i += 5) { if (!alive) break; setPct(i); await wait(45); }
+        await wait(250); if (!alive) break;
+        setPhase("results"); await wait(2600); if (!alive) break;
+        setDi((x) => (x + 1) % d.variants.length);
       }
     })();
     return () => { alive = false; timers.forEach(clearTimeout); };
-  }, []);
+  }, [d.variants.length]);
+  const v = d.variants[di] || d.variants[0];
   const pLabel = pct < 35 ? d.pRead : pct < 70 ? d.pExtract : d.pCheck;
-  const showResults = phase === "results" || phase === "copilot";
+  const showResults = phase === "results";
+  const DocCard = (
+    <div className="hd-doc"><div className="hd-doc-h">{v.title}</div><div className="hd-l" /><div className="hd-l s" /><div className="hd-l" /><div className="hd-l" /><div className="hd-total">{v.headline}</div></div>
+  );
   return (
     <div className="hero-demo" data-testid="hero-demo" aria-hidden="true">
       <div className="hd-bar"><span className="hd-dot" /><span className="hd-dot" /><span className="hd-dot" /><span className="hd-addr">app.docuanalytics.online</span></div>
@@ -930,9 +935,7 @@ function HeroDemo() {
               {phase === "idle" && (
                 <div className="hd-upload"><Upload size={26} color="var(--accent)" /><strong>{d.drop}</strong><small>{d.or}</small></div>
               )}
-              {phase === "doc" && (
-                <div className="hd-doc"><div className="hd-doc-h">{d.invoice}</div><div className="hd-l" /><div className="hd-l s" /><div className="hd-l" /><div className="hd-l" /><div className="hd-total">{d.total}</div></div>
-              )}
+              {phase === "doc" && DocCard}
               {phase === "analyzing" && (
                 <div className="hd-doc">
                   <div className="hd-prog-lbl"><span>{pLabel}</span><span>{pct}%</span></div>
@@ -940,9 +943,7 @@ function HeroDemo() {
                   <div className="hd-l" style={{ marginTop: 14 }} /><div className="hd-l s" /><div className="hd-l" />
                 </div>
               )}
-              {showResults && (
-                <div className="hd-doc"><div className="hd-doc-h">{d.invoice}</div><div className="hd-l" /><div className="hd-l s" /><div className="hd-l" /><div className="hd-total">{d.total}</div></div>
-              )}
+              {showResults && DocCard}
             </div>
             <div className="hd-card">
               <div className="hd-rt"><span className="hd-ct">{d.result}</span>
@@ -950,13 +951,10 @@ function HeroDemo() {
               <div className="hd-cs">{d.resultSub}</div>
               {showResults ? (
                 <div className="hd-res">
-                  <div className="hd-item"><span className="hd-chk"><CheckCircle2 size={12} /></span>{d.amount}<b>{d.total}</b></div>
-                  <div className="hd-item"><span className="hd-chk"><CheckCircle2 size={12} /></span>{d.date}<b>28/08/2026</b></div>
-                  <div className="hd-item"><span className="hd-chk"><CheckCircle2 size={12} /></span>{d.fiscal}<b>{d.complete}</b></div>
-                  <div className="hd-red"><b><AlertTriangle size={12} /> {d.redflag}</b><p>{d.redflagP}</p></div>
-                  {phase === "copilot" && (
-                    <div className="hd-cop"><div className="hd-q">{d.q}</div><div className="hd-a"><b>Copilot:</b> {d.a}</div></div>
-                  )}
+                  {v.items.map(([label, val]) => (
+                    <div className="hd-item" key={label}><span className="hd-chk"><CheckCircle2 size={12} /></span>{label}<b>{val}</b></div>
+                  ))}
+                  <div className="hd-red"><b><AlertTriangle size={12} /> {v.flag}</b><p>{v.flagP}</p></div>
                 </div>
               ) : (
                 <div className="hd-empty"><Bot size={30} color="var(--text-muted)" /></div>
