@@ -460,6 +460,7 @@ const DOC_TYPES = [
 ];
 
 const SECTOR_SLUGS = ["commercialisti", "avvocati", "notai", "cfo", "hr"];
+const PUBLIC_ORIGIN = "https://docuanalytics.it";
 
 function useUser() {
   const [user, setUser] = useState({ user_id: null, credits: 0, email: null });
@@ -1807,14 +1808,32 @@ function SectorLanding({ slug }) {
 
   useEffect(() => {
     if (!data) return;
+    const url = `${PUBLIC_ORIGIN}/${slug}`;
+    const restore = [];
+    const setMeta = (selector, attr, value, createTag) => {
+      let el = document.head.querySelector(selector);
+      let created = false;
+      if (!el && createTag) { el = createTag(); document.head.appendChild(el); created = true; }
+      if (!el) return;
+      const prev = el.getAttribute(attr);
+      el.setAttribute(attr, value);
+      restore.push(() => { if (created) el.remove(); else if (prev !== null) el.setAttribute(attr, prev); });
+    };
     const prevTitle = document.title;
     document.title = data.meta_title;
-    const meta = document.querySelector('meta[name="description"]');
-    const prevDesc = meta ? meta.getAttribute("content") : null;
-    if (meta) meta.setAttribute("content", data.meta_desc);
+    setMeta('meta[name="description"]', "content", data.meta_desc, () => Object.assign(document.createElement("meta"), { name: "description" }));
+    setMeta('link[rel="canonical"]', "href", url, () => Object.assign(document.createElement("link"), { rel: "canonical" }));
+    const og = (p, v) => setMeta(`meta[property="${p}"]`, "content", v, () => { const m = document.createElement("meta"); m.setAttribute("property", p); return m; });
+    og("og:title", data.meta_title);
+    og("og:description", data.meta_desc);
+    og("og:url", url);
+    og("og:type", "website");
+    setMeta('meta[name="twitter:title"]', "content", data.meta_title, () => Object.assign(document.createElement("meta"), { name: "twitter:title" }));
+    setMeta('meta[name="twitter:description"]', "content", data.meta_desc, () => Object.assign(document.createElement("meta"), { name: "twitter:description" }));
+    document.documentElement.setAttribute("lang", lang);
     window.scrollTo(0, 0);
     track("view_item", { item_category: "sector", sector: slug });
-    return () => { document.title = prevTitle; if (meta && prevDesc) meta.setAttribute("content", prevDesc); };
+    return () => { document.title = prevTitle; restore.forEach((f) => f()); };
   }, [slug, lang, data]);
 
   if (!data || !sect) return <Navigate to="/" replace />;
