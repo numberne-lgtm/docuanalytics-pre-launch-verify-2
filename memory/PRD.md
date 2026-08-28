@@ -1,5 +1,12 @@
 # DocuAnalytics AI — PRD & Stato Progetto
 
+## AGGIORNAMENTO 2026-06 (13) — Storico Riapribile + Export Confronto ✅ TESTATO (100%)
+- **Storico Riapribile**: pulsante `history-reopen` in ogni voce dello Storico carica l'analisi passata nella vista risultati principale (`#results`) con badge modello e Copilot funzionante (chat resettata via `key={analysisId}`). Il confronto è nascosto per le analisi riaperte (nessun file in memoria → `canCompare`).
+- **Export Confronto**: nel `compare-panel` pulsanti `compare-export-csv` e `compare-export-pdf`. CSV e PDF (jsPDF + jspdf-autotable, client-side) con tabella a 3 colonne (Campo, Modello1, Modello2). Deps aggiunte: jspdf, jspdf-autotable.
+- Test: `iteration_16.json` → 100%, download CSV/PDF verificati, Copilot su analisi riaperta OK, zero errori console. Fix applicato: `key={analysisId}` su Results per resettare la chat.
+- Nota: il confronto crea una seconda analisi reale (con l'altro modello) che appare anch'essa nello Storico — comportamento voluto.
+- Deploy in produzione: avviato dopo questa iterazione.
+
 ## AGGIORNAMENTO 2026-06 (12) — Claude hint + Storico analisi + Confronto modelli ✅ TESTATO (100%)
 - **Claude Consigliato**: hint contestuale sotto il selettore (`data-testid="model-hint"`) — Claude "consigliato per contratti e testi lunghi", Gemini "veloce su fatture e documenti strutturati". 5 lingue.
 - **Storico Analisi**: nuovo `GET /api/analyses` (auth via `_auth_user_id`, max 50, ordinato per data) + `HistoryModal` aperto dal bottone header `nav-history`. Lista con tipo doc, badge modello, data (localizzata per lingua) ed espansione dettaglio campi.

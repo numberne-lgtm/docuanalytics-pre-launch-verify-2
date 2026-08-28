@@ -1,0 +1,25 @@
+{
+  "summary": "Frontend-only test of the 2 new features on the preview URL: (A) 'Storico Riapribile' and (B) 'Export Confronto' (CSV/PDF via jsPDF + jspdf-autotable). Flow executed end-to-end with a synthetic Italian invoice PNG: upload -> model-gemini -> analyze-btn (analysis OK, 11 fields, 6 checks) -> compare-btn -> compare-panel (Gemini vs Claude Sonnet 5) -> compare-export-csv download 'confronto-modelli.csv' -> compare-export-pdf download 'confronto-modelli.pdf' (19 KB, valid) -> nav-history -> history-item expand -> history-reopen -> modal closed, #results shows reopened analysis (model-badge 'Claude Sonnet 5', 11 field rows), compare-btn correctly absent (count 0) -> Copilot ask on reopened analysis returned correct AI answer ('L'importo totale della fattura e 1830,00 EUR'). ZERO JS console errors and zero pageerrors captured (no 'autoTable is not a function' / import errors). Backend not tested (per request).",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Results / compare panel", "issues": ["Toast 'Esportato PDF' renders bottom-center and can visually overlap the after-analysis CTA card content (cosmetic only)."]}
+    ]
+  },
+  "test_report_links": ["/app/test_reports/iteration_16.json"],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Results component is not re-keyed on reopen (App.js ~line 771): its local `msgs` chat state persists, so Copilot messages from a previous analysis would remain visible after clicking 'Riapri'. Suggest <Results key={analysisId} ...> to reset chat/local state. Low impact but user-visible.",
+    "The comparison run persists a second analysis document, so a single user analysis produces 2 entries in Storico (observed 2 history items after 1 upload + 1 compare). Verify this is intended; otherwise flag compare-generated analyses in the history list."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "not tested", "frontend": "100%"},
+  "seed_data_creation": "Anonymous session (3 free credits); 1 synthetic invoice image /tmp/fattura.png analyzed with Gemini + compare with Claude (2 credits consumed).",
+  "should_call_test_agent_after_fix": false,
+  "should_main_agent_self_test": true,
+  "test_credentials": "none required (anonymous session)",
+  "context_for_next_testing_agent": "Both new features (history reopen + compare CSV/PDF export) fully pass on the preview URL. Downloads verified via page.expect_download. Remaining optional check: Copilot chat-state reset after reopen when messages already exist (see code review comment).",
+  "rca_of_the_issue": "n/a - no failures observed"
+}

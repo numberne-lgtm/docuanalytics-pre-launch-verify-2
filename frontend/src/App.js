@@ -13,6 +13,8 @@ import {
 } from "lucide-react";
 import { BlogIndex, BlogPost } from "./Blog";
 import { MT, MARK, SECTORS, DEMO } from "./content";
+import { jsPDF } from "jspdf";
+import autoTable from "jspdf-autotable";
 
 /* string -> lucide icon map for data-driven marketing sections */
 const ICONS = {
@@ -766,8 +768,8 @@ function Home() {
           )}
         </section>
 
-        {result && <Results result={result} analysisId={analysisId} notify={notify} aiModel={aiModel} provider={usedProvider}
-          compare={compare} comparing={comparing} onCompare={compareWithOther}
+        {result && <Results key={analysisId} result={result} analysisId={analysisId} notify={notify} aiModel={aiModel} provider={usedProvider}
+          compare={compare} comparing={comparing} onCompare={compareWithOther} canCompare={!!file}
           credits={user.credits} onTopup={() => openPricing("after_analysis")}
           onAgain={() => { setFile(null); setResult(null); setStage(-1); scrollToId("upload"); }} />}
 
@@ -791,7 +793,12 @@ function Home() {
       {pricingOpen && <PricingModal user={user} onClose={() => setPricingOpen(false)} notify={notify} />}
       {authOpen && <AuthModal user={user} onClose={() => setAuthOpen(false)} onAuthed={login} notify={notify} />}
       {refOpen && <ReferralModal user={user} onClose={() => setRefOpen(false)} notify={notify} />}
-      {histOpen && <HistoryModal onClose={() => setHistOpen(false)} />}
+      {histOpen && <HistoryModal onClose={() => setHistOpen(false)} onReopen={(a) => {
+        setResult({ doc_type: a.doc_type, summary: a.summary, fields: a.fields || [], audit: a.audit || [] });
+        setAnalysisId(a.analysis_id); setUsedProvider(a.ai_provider);
+        setFile(null); setCompare(null); setHistOpen(false);
+        setTimeout(() => scrollToId("results"), 300);
+      }} />}
       {guideOpen && <ServicesGuideModal onClose={() => setGuideOpen(false)} />}
       <Toast msg={toast} />
     </div>
@@ -827,7 +834,7 @@ function Header({ credits, authed, user, onTopup, onAuth, onReferral, onLogout, 
   );
 }
 
-function Results({ result, analysisId, notify, credits, onTopup, onAgain, aiModel, provider, compare, comparing, onCompare }) {
+function Results({ result, analysisId, notify, credits, onTopup, onAgain, aiModel, provider, compare, comparing, onCompare, canCompare }) {
   const { t } = useI18n();
   const [q, setQ] = useState("");
   const [msgs, setMsgs] = useState([]);
@@ -856,6 +863,34 @@ function Results({ result, analysisId, notify, credits, onTopup, onAgain, aiMode
     }
     const url = URL.createObjectURL(new Blob([content], { type: mime }));
     const a = document.createElement("a"); a.href = url; a.download = name; a.click(); URL.revokeObjectURL(url);
+    notify(`${t("exported")} ${fmt.toUpperCase()}`);
+  };
+
+  const buildCompareRows = () => {
+    const m1 = provider === "claude" ? "Claude Sonnet 5" : "Gemini";
+    const m2 = compare.provider === "claude" ? "Claude Sonnet 5" : "Gemini";
+    const map1 = new Map((result.fields || []).map((f) => [f.label, f.value]));
+    const map2 = new Map((compare.result.fields || []).map((f) => [f.label, f.value]));
+    const labels = [...new Set([...map1.keys(), ...map2.keys()])];
+    const body = labels.map((l) => [l, String(map1.get(l) ?? "—"), String(map2.get(l) ?? "—")]);
+    return { head: ["Campo", m1, m2], body };
+  };
+
+  const exportCompare = (fmt) => {
+    const { head, body } = buildCompareRows();
+    if (fmt === "csv") {
+      const rows = [head, ...body];
+      const content = rows.map((r) => r.map((c) => `"${String(c ?? "").replace(/"/g, '""')}"`).join(",")).join("\n");
+      const url = URL.createObjectURL(new Blob([content], { type: "text/csv" }));
+      const a = document.createElement("a"); a.href = url; a.download = "confronto-modelli.csv"; a.click(); URL.revokeObjectURL(url);
+    } else {
+      const doc = new jsPDF();
+      doc.setFontSize(14); doc.text(`${t("compare_title")} — ${result.doc_type || ""}`, 14, 16);
+      doc.setFontSize(9); doc.setTextColor(120);
+      doc.text("DocuAnalytics AI", 14, 22);
+      autoTable(doc, { head: [head], body, startY: 28, styles: { fontSize: 9 }, headStyles: { fillColor: [107, 92, 231] } });
+      doc.save("confronto-modelli.pdf");
+    }
     notify(`${t("exported")} ${fmt.toUpperCase()}`);
   };
 
@@ -922,16 +957,22 @@ function Results({ result, analysisId, notify, credits, onTopup, onAgain, aiMode
 
       {/* Model comparison */}
       <div className="compare-wrap" data-testid="compare-section">
-        {!compare && (
+        {!compare && canCompare && (
           <button className="btn btn-ghost" data-testid="compare-btn" onClick={onCompare} disabled={comparing}>
             {comparing ? <><Loader2 className="spinner" /> {t("comparing")}</>
               : <><Bot size={16} /> {t("compare_btn")} {provider === "claude" ? "Gemini" : "Claude"}</>}
           </button>
         )}
-        {!compare && <p className="compare-note">{t("compare_note")}</p>}
+        {!compare && canCompare && <p className="compare-note">{t("compare_note")}</p>}
         {compare && (
           <div className="glass pad" data-testid="compare-panel">
-            <div className="flex aic gap mb1"><Bot size={18} color="var(--accent)" /><strong>{t("compare_title")}</strong></div>
+            <div className="flex between aic mb1">
+              <div className="flex aic gap"><Bot size={18} color="var(--accent)" /><strong>{t("compare_title")}</strong></div>
+              <div className="flex gap">
+                <button className="btn btn-sm" data-testid="compare-export-csv" onClick={() => exportCompare("csv")}><Download size={14} /> CSV</button>
+                <button className="btn btn-sm" data-testid="compare-export-pdf" onClick={() => exportCompare("pdf")}><Download size={14} /> PDF</button>
+              </div>
+            </div>
             <div className="compare-grid">
               {[{ r: result, p: provider }, { r: compare.result, p: compare.provider }].map((col, ci) => (
                 <div className="compare-col" key={ci}>
@@ -1877,7 +1918,7 @@ function ServicesGuideModal({ onClose }) {
   );
 }
 
-function HistoryModal({ onClose }) {
+function HistoryModal({ onClose, onReopen }) {
   const { t, lang } = useI18n();
   const [items, setItems] = useState(null);
   const [open, setOpen] = useState(null);
@@ -1929,7 +1970,12 @@ function HistoryModal({ onClose }) {
                     {(a.fields || []).map((f, i) => (
                       <div className="field-row" key={i}><span className="k">{f.label}</span><span className="v">{String(f.value)}</span></div>
                     ))}
-                    <p className="hist-count">{(a.fields || []).length} {t("hist_fields")}</p>
+                    <div className="flex between aic mt1">
+                      <p className="hist-count">{(a.fields || []).length} {t("hist_fields")}</p>
+                      <button className="btn btn-primary btn-sm" data-testid="history-reopen" onClick={() => onReopen(a)}>
+                        <MessageSquare size={14} /> {t("hist_reopen")}
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
