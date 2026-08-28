@@ -1,6 +1,13 @@
 # DocuAnalytics AI — PRD & Stato Progetto
 
-## AGGIORNAMENTO 2026-06 (10) — Integrazione Claude AI (multi-modello) ✅ TESTATO
+## AGGIORNAMENTO 2026-06 (11) — Badge Modello + Claude su PDF + deploy ✅ TESTATO
+- **Claude su PDF**: i PDF vengono renderizzati in immagini (PyMuPDF `pymupdf==1.28.2`, max 5 pagine, matrix 2x) e inviati a Claude vision. Ora la scelta Gemini/Claude vale su TUTTI i documenti (immagini e PDF). Gemini resta default con attachment file nativo.
+- **Badge Modello**: `/api/analyze` salva e ritorna `ai_provider` ("gemini"/"claude"); `Results` mostra un chip `data-testid="model-badge"` (Claude Sonnet 5 arancio / Gemini blu) nella wow-bar. Stringa i18n `analyzed_by` in 5 lingue.
+- Test e2e (localhost): Claude analyze su PDF fattura ✅ (ai_provider=claude, campi estratti), badge cablato ✅.
+- **Deploy in produzione**: avviato via deployer (job queued) con Claude multi-modello + badge + Claude-PDF.
+- **Verifica Email (Resend)**: ancora PENDING — l'utente ha saltato la Resend API key. Scaffolding pronto; da attivare quando l'utente fornisce la key + dominio verificato. Scelte da riconfermare al momento dell'attivazione (mittente dominio proprio vs resend.dev; crediti sbloccati dopo verifica vs entro un limite).
+
+
 - Aggiunta scelta modello AI: **Gemini** (default) o **Claude Sonnet 5** (`claude-sonnet-5`), via Emergent LLM key (nessuna chiave utente).
 - Selettore UI (`data-testid="model-select"`, `model-gemini`, `model-claude`) accanto al pulsante "Analizza"; stato `aiModel` in `Home()`.
 - Backend `server.py`: `AnalyzeReq.model` e `ChatReq.model`; dispatch provider in `/api/analyze` (Claude vision per immagini, Gemini per PDF) e `/api/chat` (Copilot Gemini o Claude).

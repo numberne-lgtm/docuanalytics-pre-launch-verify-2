@@ -529,6 +529,7 @@ function Home() {
   const heroAB = useHeroVariant();
   const [docType, setDocType] = useState("auto");
   const [aiModel, setAiModel] = useState("gemini");
+  const [usedProvider, setUsedProvider] = useState(null);
   const [file, setFile] = useState(null);
   const [drag, setDrag] = useState(false);
   const [stage, setStage] = useState(-1); // pipeline
@@ -609,7 +610,7 @@ function Home() {
         user_id: user.user_id, doc_type: docType, filename: file.name,
         mime_type: file.type || "application/octet-stream", file_base64: b64, model: aiModel,
       });
-      setResult(data.result); setAnalysisId(data.analysis_id);
+      setResult(data.result); setAnalysisId(data.analysis_id); setUsedProvider(data.ai_provider);
       track("document_analyzed", { doc_type: data.result?.doc_type || docType });
       setUser((u) => ({ ...u, credits: data.credits }));
       setStage(3);
@@ -737,7 +738,7 @@ function Home() {
           )}
         </section>
 
-        {result && <Results result={result} analysisId={analysisId} notify={notify} aiModel={aiModel}
+        {result && <Results result={result} analysisId={analysisId} notify={notify} aiModel={aiModel} provider={usedProvider}
           credits={user.credits} onTopup={() => openPricing("after_analysis")}
           onAgain={() => { setFile(null); setResult(null); setStage(-1); scrollToId("upload"); }} />}
 
@@ -795,7 +796,7 @@ function Header({ credits, authed, user, onTopup, onAuth, onReferral, onLogout }
   );
 }
 
-function Results({ result, analysisId, notify, credits, onTopup, onAgain, aiModel }) {
+function Results({ result, analysisId, notify, credits, onTopup, onAgain, aiModel, provider }) {
   const { t } = useI18n();
   const [q, setQ] = useState("");
   const [msgs, setMsgs] = useState([]);
@@ -838,6 +839,11 @@ function Results({ result, analysisId, notify, credits, onTopup, onAgain, aiMode
         <strong>{t("wow_done")}</strong>
         <span className="wow-chip"><Sparkles size={13} /> {fieldsN} {t("wow_fields")}</span>
         <span className="wow-chip"><ShieldCheck size={13} /> {checksN} {t("wow_checks")}</span>
+        {provider && (
+          <span className={"wow-chip model-badge " + (provider === "claude" ? "mb-claude" : "mb-gemini")} data-testid="model-badge" title={t("analyzed_by")}>
+            <Bot size={13} /> {provider === "claude" ? "Claude Sonnet 5" : "Gemini"}
+          </span>
+        )}
       </div>
 
       <div className="results-grid">

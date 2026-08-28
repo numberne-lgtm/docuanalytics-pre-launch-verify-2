@@ -307,14 +307,26 @@ Estrai tutti i dati chiave (importi, date, partite IVA, IBAN, parti coinvolte, c
 Nella sezione audit, esegui controlli di quadratura (es. saldo F24, netto busta paga), segnala clausole vessatorie, IBAN esteri, visto di conformità IVA sopra 5.000 euro, o eventuali anomalie."""
 
         _use_claude = (req.model or "gemini").lower() == "claude"
+        used_provider = "gemini"
         chat = LlmChat(api_key=EMERGENT_LLM_KEY, session_id=f"analyze-{uuid.uuid4()}",
                        system_message="Estrai dati strutturati dai documenti e rispondi solo in JSON valido.")
-        if _use_claude and mime.startswith("image/"):
+        if _use_claude:
             from emergentintegrations.llm.chat import ImageContent
+            images_b64 = []
+            if mime.startswith("image/"):
+                images_b64 = [raw_b64]
+            elif mime == "application/pdf":
+                import fitz  # PyMuPDF: render PDF pages to PNG for Claude vision
+                doc = fitz.open(tmp.name)
+                for page in doc[:5]:  # max 5 pages
+                    pix = page.get_pixmap(matrix=fitz.Matrix(2, 2))
+                    images_b64.append(base64.b64encode(pix.tobytes("png")).decode())
+                doc.close()
             chat = chat.with_model("anthropic", "claude-sonnet-5")
-            resp = await chat.send_message(UserMessage(text=prompt, file_contents=[ImageContent(image_base64=raw_b64)]))
+            used_provider = "claude"
+            resp = await chat.send_message(UserMessage(
+                text=prompt, file_contents=[ImageContent(image_base64=b) for b in images_b64]))
         else:
-            # PDFs (and Gemini default) use file attachment, supported on Gemini only
             file_content = FileContentWithMimeType(file_path=tmp.name, mime_type=req.mime_type)
             chat = chat.with_model("gemini", "gemini-2.5-flash")
             resp = await chat.send_message(UserMessage(text=prompt, file_contents=[file_content]))
@@ -339,10 +351,10 @@ Nella sezione audit, esegui controlli di quadratura (es. saldo F24, netto busta 
     analysis_id = str(uuid.uuid4())
     await db.analyses.insert_one({
         "analysis_id": analysis_id, "user_id": uid, "doc_type": req.doc_type,
-        "filename": req.filename, "result": data,
+        "filename": req.filename, "result": data, "ai_provider": used_provider,
         "created_at": datetime.now(timezone.utc).isoformat(),
     })
-    return {"analysis_id": analysis_id, "result": data, "credits": u2["credits"]}
+    return {"analysis_id": analysis_id, "result": data, "credits": u2["credits"], "ai_provider": used_provider}
 
 
 @api.post("/chat")
