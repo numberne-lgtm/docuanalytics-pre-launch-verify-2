@@ -9,12 +9,38 @@ import {
   Sparkles, Copy, Play, Lock, Facebook, Linkedin, Youtube, Globe,
   ShieldCheck, Trash2, BadgeCheck, Ban, ChevronDown,
   Clock, AlertTriangle, Search, Rocket, Scale, FileSignature, TrendingUp,
-  Users, Briefcase, Files, Server, ArrowRight, Mail, History
+  Users, Briefcase, Files, Server, ArrowRight, Mail, History, FileDown, FileCode, Pencil
 } from "lucide-react";
+import { createPortal } from "react-dom";
 import { BlogIndex, BlogPost } from "./Blog";
-import { MT, MARK, SECTORS, DEMO } from "./content";
+import { MT, MARK, SECTORS, DEMO, validatePiva, validateCF } from "./content";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
+
+// ---- structured object <-> flat path helpers (for Field Mapping) ----
+function flattenObj(obj, prefix = "") {
+  let out = [];
+  if (obj && typeof obj === "object" && !Array.isArray(obj)) {
+    for (const k of Object.keys(obj)) out = out.concat(flattenObj(obj[k], prefix ? `${prefix}.${k}` : k));
+  } else if (Array.isArray(obj)) {
+    obj.forEach((v, i) => { out = out.concat(flattenObj(v, `${prefix}.${i}`)); });
+  } else {
+    out.push({ path: prefix, value: obj == null ? "" : String(obj) });
+  }
+  return out;
+}
+function setByPath(obj, path, value) {
+  const segs = path.split(".");
+  let cur = obj;
+  for (let i = 0; i < segs.length - 1; i++) {
+    const s = segs[i];
+    if (cur[s] == null) cur[s] = /^\d+$/.test(segs[i + 1]) ? [] : {};
+    cur = cur[s];
+  }
+  cur[segs[segs.length - 1]] = value;
+  return obj;
+}
+
 
 /* string -> lucide icon map for data-driven marketing sections */
 const ICONS = {
@@ -839,6 +865,7 @@ function Results({ result, analysisId, notify, credits, onTopup, onAgain, aiMode
   const [q, setQ] = useState("");
   const [msgs, setMsgs] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
   const fieldsN = (result.fields || []).length;
   const checksN = (result.audit || []).length;
 
@@ -917,6 +944,7 @@ function Results({ result, analysisId, notify, credits, onTopup, onAgain, aiMode
           <div className="flex between aic mb1">
             <strong style={{ fontSize: ".95rem" }}>{t("ex_data")}</strong>
             <div className="flex gap">
+              <button className="btn btn-sm btn-primary" data-testid="export-sync-btn" onClick={() => setExportOpen(true)}><FileDown size={14} /> {t("export_sync")}</button>
               <button className="btn btn-sm" data-testid="export-csv" onClick={() => exportData("csv")}><Download size={14} /> CSV</button>
               <button className="btn btn-sm" data-testid="export-json" onClick={() => exportData("json")}><Download size={14} /> JSON</button>
             </div>
@@ -1007,7 +1035,132 @@ function Results({ result, analysisId, notify, credits, onTopup, onAgain, aiMode
           </button>
         </div>
       </div>
+      {exportOpen && <ExportDrawer result={result} notify={notify} onClose={() => setExportOpen(false)} />}
     </section>
+  );
+}
+
+function ExportDrawer({ result, notify, onClose }) {
+  const { t } = useI18n();
+  const CATS = ["invoice", "f24", "visura", "contract", "other"];
+  const [category, setCategory] = useState(result.category || "other");
+  const [structured, setStructured] = useState(() => JSON.parse(JSON.stringify(result.structured || {})));
+  const [software, setSoftware] = useState("zucchetti");
+  const [busy, setBusy] = useState(false);
+
+  const flat = flattenObj(structured);
+
+  const updateField = (path, value) => setStructured((prev) => setByPath(JSON.parse(JSON.stringify(prev)), path, value));
+
+  const fieldKind = (path) => {
+    const p = path.toLowerCase();
+    if (p.includes("piva_cf")) return "pivacf";
+    if (p.includes("codice_fiscale") || p.endsWith(".cf")) return "cf";
+    if (p.includes("piva") || p.includes("partita")) return "piva";
+    return null;
+  };
+
+  const dl = (blob, name) => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a"); a.href = url; a.download = name; a.click(); URL.revokeObjectURL(url);
+  };
+
+  const downloadServer = async (endpoint, body, fallback) => {
+    setBusy(true);
+    try {
+      const res = await axios.post(`${API}/export/${endpoint}`, body, { responseType: "blob" });
+      const cd = res.headers["content-disposition"] || "";
+      const m = cd.match(/filename="?([^"]+)"?/);
+      const name = m ? m[1] : fallback;
+      dl(res.data, name);
+      notify(`${t("exported")} ${name.split(".").pop().toUpperCase()}`);
+    } catch { notify(t("export_fail")); }
+    finally { setBusy(false); }
+  };
+
+  const fname = (result.doc_type || "documento").replace(/\s+/g, "_");
+  const exportFatturaPA = () => downloadServer("fatturapa", { structured, filename: fname }, "FatturaPA.xml");
+  const exportAccounting = (fmt) => downloadServer("accounting", { structured, category, software, fmt, filename: fname, doc_type: result.doc_type }, `template.${fmt}`);
+
+  const exportJSON = () => {
+    const payload = { metadata: { app: "DocuAnalytics AI", exported_at: new Date().toISOString(), category, doc_type: result.doc_type }, structured, summary: result.summary, audit: result.audit };
+    dl(new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" }), "docuanalytics-export.json");
+    notify(`${t("exported")} JSON`);
+  };
+
+  const exportExecPDF = () => {
+    const doc = new jsPDF();
+    doc.setFontSize(16); doc.text("Executive Summary — DocuAnalytics AI", 14, 16);
+    doc.setFontSize(10); doc.setTextColor(90); doc.text(String(result.doc_type || ""), 14, 23);
+    const sum = doc.splitTextToSize(result.summary || "", 180); doc.text(sum, 14, 30);
+    let y = 30 + sum.length * 5 + 4;
+    autoTable(doc, { head: [["Campo", "Valore"]], body: (result.fields || []).map((f) => [f.label, String(f.value)]), startY: y, styles: { fontSize: 9 }, headStyles: { fillColor: [107, 92, 231] } });
+    y = doc.lastAutoTable.finalY + 6;
+    if ((result.audit || []).length) {
+      autoTable(doc, { head: [["Livello", "Controllo / Red-Flag"]], body: result.audit.map((a) => [a.level, a.message]), startY: y, styles: { fontSize: 9 }, headStyles: { fillColor: [220, 90, 60] } });
+      y = doc.lastAutoTable.finalY + 6;
+    }
+    if (result.full_text) {
+      if (y > 250) { doc.addPage(); y = 16; }
+      doc.setFontSize(11); doc.setTextColor(20); doc.text("Testo estratto (verifica OCR)", 14, y); y += 6;
+      doc.setFontSize(8); doc.setTextColor(90);
+      doc.text(doc.splitTextToSize(String(result.full_text).slice(0, 3000), 180), 14, y);
+    }
+    doc.save("executive-summary.pdf");
+    notify(`${t("exported")} PDF`);
+  };
+
+  return createPortal(
+    <div className="drawer-bg" onClick={onClose}>
+      <div className="drawer glass" onClick={(e) => e.stopPropagation()} data-testid="export-drawer">
+        <div className="drawer-head">
+          <h2 className="section-title flex aic gap"><FileDown size={20} /> {t("export_title")}</h2>
+          <button className="close-x" data-testid="close-export" onClick={onClose}><X size={18} /></button>
+        </div>
+        <span className="gdpr-badge" data-testid="gdpr-badge"><ShieldCheck size={14} /> {t("gdpr_badge")}</span>
+
+        <div className="drawer-row">
+          <label>{t("doc_category")}</label>
+          <select data-testid="export-category" value={category} onChange={(e) => setCategory(e.target.value)}>
+            {CATS.map((c) => <option key={c} value={c}>{t("cat_" + c)}</option>)}
+          </select>
+        </div>
+
+        <div className="mapping" data-testid="field-mapping">
+          <div className="flex aic gap mb1"><Pencil size={15} /><strong>{t("field_mapping")}</strong></div>
+          {flat.length === 0 && <p className="section-sub">{t("no_structured")}</p>}
+          {flat.map(({ path, value }) => {
+            const kind = fieldKind(path);
+            const valid = kind ? (kind === "piva" ? validatePiva(value) : kind === "cf" ? validateCF(value) : (validatePiva(value) || validateCF(value))) : null;
+            return (
+              <div className="map-row" key={path}>
+                <span className="map-key" title={path}>{path}</span>
+                <input className="map-input" value={value} data-testid={"map-" + path} onChange={(e) => updateField(path, e.target.value)} />
+                {kind && value ? (valid ? <CheckCircle2 size={15} color="var(--success)" data-testid="valid-ok" /> : <ShieldAlert size={15} color="#ef4444" data-testid="valid-bad" />) : <span style={{ width: 15 }} />}
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="export-opts">
+          <button className="btn btn-primary" data-testid="exp-fatturapa" disabled={category !== "invoice" || busy} onClick={exportFatturaPA}><FileCode size={15} /> XML FatturaPA</button>
+          <div className="soft-row">
+            <select data-testid="exp-software" value={software} onChange={(e) => setSoftware(e.target.value)}>
+              <option value="zucchetti">Zucchetti</option>
+              <option value="teamsystem">TeamSystem</option>
+              <option value="datev">Datev Koinos</option>
+              <option value="passepartout">Passepartout</option>
+            </select>
+            <button className="btn" data-testid="exp-xlsx" disabled={busy} onClick={() => exportAccounting("xlsx")}><Download size={15} /> Excel</button>
+            <button className="btn" data-testid="exp-csv" disabled={busy} onClick={() => exportAccounting("csv")}><Download size={15} /> CSV</button>
+          </div>
+          <button className="btn" data-testid="exp-json" onClick={exportJSON}><Download size={15} /> JSON</button>
+          <button className="btn" data-testid="exp-pdf" onClick={exportExecPDF}><FileText size={15} /> {t("exec_pdf")}</button>
+        </div>
+        <p className="tmpl-note">{t("tmpl_note")}</p>
+      </div>
+    </div>,
+    document.body
   );
 }
 

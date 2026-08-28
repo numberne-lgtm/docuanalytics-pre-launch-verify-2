@@ -269,6 +269,25 @@ section[id]{scroll-margin-top:84px}
 .hist-date{font-size:.72rem;color:var(--text-muted);white-space:nowrap}
 .hist-detail{margin-top:.8rem;border-top:1px solid var(--border-color);padding-top:.8rem}
 .hist-count{font-size:.75rem;color:var(--text-muted);margin-top:.5rem}
+/* Export & Sync drawer */
+.drawer-bg{position:fixed;inset:0;background:rgba(2,6,16,.72);backdrop-filter:blur(6px);z-index:120;display:flex;justify-content:flex-end}
+.drawer{width:min(560px,100%);height:100%;overflow-y:auto;border-left:1px solid var(--border-color);border-radius:0;padding:1.6rem 1.4rem;animation:slideIn .25s ease}
+@keyframes slideIn{from{transform:translateX(40px);opacity:.4}to{transform:translateX(0);opacity:1}}
+.drawer-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:.6rem}
+.gdpr-badge{display:inline-flex;align-items:center;gap:.4rem;font-size:.74rem;font-weight:700;color:#34d399;background:#10b98118;border:1px solid #10b98140;border-radius:99px;padding:.35rem .7rem;margin-bottom:1rem}
+.drawer-row{display:flex;align-items:center;gap:.7rem;margin:.8rem 0}
+.drawer-row label{font-size:.82rem;color:var(--text-secondary);font-weight:600;min-width:130px}
+.drawer select,.map-input{background:#0c1424;border:1px solid var(--border-color);border-radius:8px;color:var(--text-primary);padding:.45rem .6rem;font-size:.82rem}
+.drawer select{cursor:pointer}
+.mapping{margin:1rem 0;border:1px solid var(--border-color);border-radius:12px;padding:1rem;max-height:34vh;overflow-y:auto;background:#0a1220}
+.map-row{display:grid;grid-template-columns:1fr 1.3fr 18px;gap:.6rem;align-items:center;margin-bottom:.45rem}
+.map-key{font-size:.72rem;color:var(--text-muted);font-family:monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.map-input{width:100%}
+.export-opts{display:flex;flex-direction:column;gap:.6rem;margin-top:.6rem}
+.soft-row{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center}
+.soft-row select{flex:1;min-width:140px}
+.tmpl-note{font-size:.72rem;color:var(--text-muted);margin-top:.9rem;line-height:1.4}
+@media(max-width:560px){.drawer{width:100%}.map-row{grid-template-columns:1fr 1fr 18px}}
 
 /* Hero two-column layout (desktop: text left, demo right) */
 .hero-2col{display:block}

@@ -1,5 +1,14 @@
 # DocuAnalytics AI — PRD & Stato Progetto
 
+## AGGIORNAMENTO 2026-06 (14) — Italian Professional Accounting & Legal Export Engine ✅ TESTATO (95%→fix)
+- **Estrazione strutturata tipizzata**: il prompt di `/api/analyze` ora restituisce `category` (invoice/f24/visura/contract/other) e `structured` con schema dedicato per categoria (fattura: supplier/customer/document/totals/vat_lines/iban/line_items; F24: taxpayer/sections/codici tributo/saldi; visura: company/REA/ATECO/rappresentanti; contratto: parties/date/penali/reminder). Selettore categoria manuale nel drawer come fallback.
+- **Validatori CF/P.IVA** (checksum): `export_engine.py` (Python) + `content.js` (JS) — P.IVA algoritmo di controllo mod10, Codice Fiscale tabelle pari/dispari mod26. Validazione live nel Field Mapping.
+- **Drawer "Export & Sync"** (`ExportDrawer`, portalato su document.body): badge GDPR (testo accurato "nessuna conservazione · file non salvato"), selettore categoria, Field Mapping Preview editabile (flattenObj/setByPath) con validazione live inline, e opzioni export.
+- **Export multi-formato**: XML FatturaPA v1.2 bozza NON firmata SDI (lxml, solo categoria invoice); Excel/CSV pre-mappati per Zucchetti/TeamSystem/Datev Koinos/Passepartout (openpyxl, tracciati GENERICI etichettati "da adattare"); JSON con metadata; PDF Executive Summary (jsPDF+autotable, con tabelle campi/audit e testo estratto per verifica OCR side-by-side).
+- Endpoint: `POST /api/validate`, `POST /api/export/fatturapa`, `POST /api/export/accounting` (fmt xlsx|csv). Deps: lxml, openpyxl (già in requirements.txt).
+- Test: `iteration_17.json` → 8/8 scenari funzionali OK (download tutti i formati, validazione live, edit mapping persistito, gating FatturaPA). Bug MEDIO overlay non full-viewport (containing block da transform su .fade) → RISOLTO con React portal. Migliorata validazione `piva_cf`.
+- ⚠️ TRASPARENZA: NON dichiarata conformità XSD SDI completa (FatturaPA è bozza) né compatibilità 1:1 con i gestionali (tracciati generici). Badge GDPR: solo "no-retention" (verificabile); "Processed in EU" NON asserito perché dipende dalla region del provider LLM (Emergent/Gemini/Anthropic) — da confermare prima di eventuale claim EU.
+
 ## AGGIORNAMENTO 2026-06 (13) — Storico Riapribile + Export Confronto ✅ TESTATO (100%)
 - **Storico Riapribile**: pulsante `history-reopen` in ogni voce dello Storico carica l'analisi passata nella vista risultati principale (`#results`) con badge modello e Copilot funzionante (chat resettata via `key={analysisId}`). Il confronto è nascosto per le analisi riaperte (nessun file in memoria → `canCompare`).
 - **Export Confronto**: nel `compare-panel` pulsanti `compare-export-csv` e `compare-export-pdf`. CSV e PDF (jsPDF + jspdf-autotable, client-side) con tabella a 3 colonne (Campo, Modello1, Modello2). Deps aggiunte: jspdf, jspdf-autotable.

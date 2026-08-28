@@ -26,6 +26,16 @@ export const MT = {
     history_empty: "Non hai ancora nessuna analisi.",
     hist_fields: "campi",
     hist_reopen: "Riapri",
+    export_sync: "Export & Sync",
+    export_title: "Export & Sync",
+    gdpr_badge: "Elaborazione senza conservazione · File non salvato",
+    doc_category: "Categoria documento",
+    cat_invoice: "Fattura", cat_f24: "Modello F24", cat_visura: "Visura Camerale", cat_contract: "Contratto", cat_other: "Altro",
+    field_mapping: "Verifica e modifica campi",
+    no_structured: "Nessun dato strutturato disponibile per questo documento.",
+    exec_pdf: "PDF Executive Summary",
+    tmpl_note: "I tracciati per software contabili sono generici, da adattare alla versione del tuo gestionale. XML FatturaPA in versione bozza (non firmata SDI).",
+    export_fail: "Export non riuscito. Riprova.",
     rating_line: "4,9/5 · 482+ recensioni verificate",
     trusted_by: "Scelto da commercialisti, avvocati, notai e responsabili HR",
     how_title: "Come funziona",
@@ -96,6 +106,16 @@ export const MT = {
     history_empty: "You have no analyses yet.",
     hist_fields: "fields",
     hist_reopen: "Reopen",
+    export_sync: "Export & Sync",
+    export_title: "Export & Sync",
+    gdpr_badge: "No-retention processing · File not stored",
+    doc_category: "Document category",
+    cat_invoice: "Invoice", cat_f24: "F24 Form", cat_visura: "Company Report", cat_contract: "Contract", cat_other: "Other",
+    field_mapping: "Verify & edit fields",
+    no_structured: "No structured data available for this document.",
+    exec_pdf: "Executive Summary PDF",
+    tmpl_note: "Accounting-software templates are generic and must be adapted to your software version. FatturaPA XML is a draft (not SDI-signed).",
+    export_fail: "Export failed. Please retry.",
     rating_line: "4.9/5 · 482+ verified reviews",
     trusted_by: "Chosen by accountants, lawyers, notaries and HR managers",
     how_title: "How it works",
@@ -166,6 +186,16 @@ export const MT = {
     history_empty: "Aún no tienes análisis.",
     hist_fields: "campos",
     hist_reopen: "Reabrir",
+    export_sync: "Export & Sync",
+    export_title: "Export & Sync",
+    gdpr_badge: "Procesamiento sin retención · Archivo no almacenado",
+    doc_category: "Categoría del documento",
+    cat_invoice: "Factura", cat_f24: "Modelo F24", cat_visura: "Informe mercantil", cat_contract: "Contrato", cat_other: "Otro",
+    field_mapping: "Verificar y editar campos",
+    no_structured: "No hay datos estructurados para este documento.",
+    exec_pdf: "PDF resumen ejecutivo",
+    tmpl_note: "Las plantillas para software contable son genéricas; adáptalas a tu versión. XML FatturaPA en borrador (sin firma SDI).",
+    export_fail: "Error de exportación. Inténtalo de nuevo.",
     rating_line: "4,9/5 · 482+ reseñas verificadas",
     trusted_by: "Elegido por asesores, abogados, notarios y responsables de RR. HH.",
     how_title: "Cómo funciona",
@@ -236,6 +266,16 @@ export const MT = {
     history_empty: "Sie haben noch keine Analysen.",
     hist_fields: "Felder",
     hist_reopen: "Öffnen",
+    export_sync: "Export & Sync",
+    export_title: "Export & Sync",
+    gdpr_badge: "Verarbeitung ohne Speicherung · Datei nicht gespeichert",
+    doc_category: "Dokumentkategorie",
+    cat_invoice: "Rechnung", cat_f24: "F24-Formular", cat_visura: "Handelsauskunft", cat_contract: "Vertrag", cat_other: "Andere",
+    field_mapping: "Felder prüfen & bearbeiten",
+    no_structured: "Keine strukturierten Daten für dieses Dokument.",
+    exec_pdf: "Executive-Summary-PDF",
+    tmpl_note: "Vorlagen für Buchhaltungssoftware sind generisch und an Ihre Version anzupassen. FatturaPA-XML als Entwurf (nicht SDI-signiert).",
+    export_fail: "Export fehlgeschlagen. Bitte erneut versuchen.",
     rating_line: "4,9/5 · 482+ verifizierte Bewertungen",
     trusted_by: "Gewählt von Steuerberatern, Anwälten, Notaren und HR-Verantwortlichen",
     how_title: "So funktioniert's",
@@ -306,6 +346,16 @@ export const MT = {
     history_empty: "Vous n'avez pas encore d'analyses.",
     hist_fields: "champs",
     hist_reopen: "Rouvrir",
+    export_sync: "Export & Sync",
+    export_title: "Export & Sync",
+    gdpr_badge: "Traitement sans conservation · Fichier non stocké",
+    doc_category: "Catégorie du document",
+    cat_invoice: "Facture", cat_f24: "Formulaire F24", cat_visura: "Extrait Kbis", cat_contract: "Contrat", cat_other: "Autre",
+    field_mapping: "Vérifier et modifier les champs",
+    no_structured: "Aucune donnée structurée pour ce document.",
+    exec_pdf: "PDF résumé exécutif",
+    tmpl_note: "Les modèles pour logiciels comptables sont génériques, à adapter à votre version. XML FatturaPA en brouillon (non signé SDI).",
+    export_fail: "Échec de l'export. Réessayez.",
     rating_line: "4,9/5 · 482+ avis vérifiés",
     trusted_by: "Choisi par experts-comptables, avocats, notaires et responsables RH",
     how_title: "Comment ça marche",
@@ -833,3 +883,29 @@ export const DEMO = {
     ] },
 };
 
+
+// ---- Italian Codice Fiscale / Partita IVA validators (checksum) ----
+export function validatePiva(v) {
+  const s = (v || "").replace(/\D/g, "");
+  if (s.length !== 11) return false;
+  let sum = 0;
+  for (let i = 0; i < 11; i++) {
+    let d = +s[i];
+    if (i % 2 === 0) sum += d;
+    else { d *= 2; if (d > 9) d -= 9; sum += d; }
+  }
+  return sum % 10 === 0;
+}
+
+const _CF_ODD = { '0':1,'1':0,'2':5,'3':7,'4':9,'5':13,'6':15,'7':17,'8':19,'9':21,'A':1,'B':0,'C':5,'D':7,'E':9,'F':13,'G':15,'H':17,'I':19,'J':21,'K':2,'L':4,'M':18,'N':20,'O':11,'P':3,'Q':6,'R':8,'S':12,'T':14,'U':16,'V':10,'W':22,'X':25,'Y':24,'Z':23 };
+const _CF_EVEN = { '0':0,'1':1,'2':2,'3':3,'4':4,'5':5,'6':6,'7':7,'8':8,'9':9,'A':0,'B':1,'C':2,'D':3,'E':4,'F':5,'G':6,'H':7,'I':8,'J':9,'K':10,'L':11,'M':12,'N':13,'O':14,'P':15,'Q':16,'R':17,'S':18,'T':19,'U':20,'V':21,'W':22,'X':23,'Y':24,'Z':25 };
+
+export function validateCF(v) {
+  const cf = (v || "").trim().toUpperCase();
+  if (/^\d{11}$/.test(cf)) return validatePiva(cf);
+  if (!/^[A-Z0-9]{16}$/.test(cf)) return false;
+  if (!/^[A-Z]{6}\d{2}[A-Z]\d{2}[A-Z]\d{3}[A-Z]$/.test(cf)) return false;
+  let sum = 0;
+  for (let i = 0; i < 15; i++) { const ch = cf[i]; sum += (i % 2 === 0 ? _CF_ODD[ch] : _CF_EVEN[ch]); }
+  return String.fromCharCode(65 + (sum % 26)) === cf[15];
+}

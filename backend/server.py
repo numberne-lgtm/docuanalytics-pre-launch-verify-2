@@ -11,6 +11,7 @@ from datetime import datetime, timezone, timedelta
 from typing import Optional
 
 from fastapi import FastAPI, APIRouter, HTTPException, Request, Header
+from fastapi.responses import StreamingResponse
 from dotenv import load_dotenv, dotenv_values
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -297,14 +298,23 @@ async def analyze(req: AnalyzeReq, request: Request):
 Analizza questo documento (tipo indicato: {label}).
 Rispondi SOLO con un oggetto JSON valido, senza testo prima o dopo, con questa struttura:
 {{
-  "doc_type": "tipo di documento rilevato (es. Fattura, Contratto, Visura, F24, Busta Paga)",
+  "doc_type": "tipo di documento rilevato (es. Fattura, Contratto, Visura Camerale, F24, Busta Paga)",
+  "category": "una tra: invoice | f24 | visura | contract | other",
   "summary": "riassunto in 1-2 frasi in italiano",
   "fields": [{{"label": "nome campo", "value": "valore estratto"}}],
   "audit": [{{"level": "ok|warning|error", "message": "esito controllo/red-flag in italiano"}}],
+  "structured": {{ }},
   "full_text": "testo completo estratto dal documento"
 }}
-Estrai tutti i dati chiave (importi, date, partite IVA, IBAN, parti coinvolte, codici tributo, saldi, totali).
-Nella sezione audit, esegui controlli di quadratura (es. saldo F24, netto busta paga), segnala clausole vessatorie, IBAN esteri, visto di conformità IVA sopra 5.000 euro, o eventuali anomalie."""
+Il campo "structured" DEVE contenere SOLO l'oggetto corrispondente alla "category" rilevata, con questi schemi:
+- se category="invoice": {{"supplier":{{"name":"","piva":"","codice_fiscale":"","address":""}},"customer":{{"name":"","piva":"","codice_fiscale":"","address":""}},"document":{{"number":"","date":"","type":""}},"totals":{{"imponibile":"","imposta":"","totale":"","currency":"EUR"}},"vat_lines":[{{"aliquota":"","imponibile":"","imposta":"","natura":""}}],"iban":"","line_items":[{{"description":"","quantity":"","unit_price":"","total":"","vat_rate":""}}]}}
+- se category="f24": {{"taxpayer":{{"codice_fiscale":"","name":""}},"sections":[{{"section":"Erario|INPS|Regioni|IMU|Altri","entries":[{{"codice_tributo":"","anno":"","importo_debito":"","importo_credito":""}}]}}],"due_date":"","total_debito":"","total_credito":"","saldo":""}}
+- se category="visura": {{"company":{{"denominazione":"","rea":"","piva":"","codice_fiscale":"","pec":""}},"share_capital":"","legal_form":"","registered_office":"","ateco_codes":[{{"code":"","description":""}}],"legal_representatives":[{{"name":"","role":"","codice_fiscale":""}}]}}
+- se category="contract": {{"parties":[{{"name":"","role":"","piva_cf":""}}],"effective_date":"","expiration_date":"","duration":"","penalty_clauses":[{{"clause":"","description":""}}],"key_obligations":[""],"reminders":[{{"label":"","date":""}}]}}
+- se category="other": {{}}
+Usa stringhe vuote per i campi non presenti. Gli importi come stringhe numeriche in formato italiano (es. "1.220,00"). Le date in formato "GG/MM/AAAA".
+Estrai tutti i dati chiave (importi, date, partite IVA, codici fiscali, IBAN, parti coinvolte, codici tributo, saldi, totali, REA, codici ATECO, clausole).
+Nella sezione audit, esegui controlli di quadratura (es. saldo F24, netto busta paga, totale = imponibile + imposta), segnala clausole vessatorie, IBAN esteri, visto di conformità IVA sopra 5.000 euro, o eventuali anomalie."""
 
         _use_claude = (req.model or "gemini").lower() == "claude"
         used_provider = "gemini"
@@ -396,6 +406,67 @@ async def list_analyses(user_id: Optional[str] = None, request: Request = None):
             "created_at": a.get("created_at"),
         })
     return {"analyses": items}
+
+
+# ---------------- Export Engine (Italian accounting & legal) ----------------
+import export_engine as _xe
+
+
+class ValidateReq(BaseModel):
+    items: list = Field(default_factory=list)  # [{"kind": "piva|cf", "value": "..."}]
+
+
+class ExportReq(BaseModel):
+    structured: dict = Field(default_factory=dict)
+    category: Optional[str] = "other"
+    doc_type: Optional[str] = ""
+    filename: Optional[str] = "documento"
+    software: Optional[str] = "zucchetti"
+    fmt: Optional[str] = "xlsx"  # xlsx | csv
+
+
+def _safe_name(name):
+    base = re.sub(r"[^A-Za-z0-9._-]+", "_", (name or "documento")).strip("_")
+    return base or "documento"
+
+
+@api.post("/validate")
+async def validate_fields(req: ValidateReq):
+    results = [_xe.validate_field(it.get("kind"), it.get("value")) | {"value": it.get("value")}
+               for it in req.items]
+    return {"results": results}
+
+
+@api.post("/export/fatturapa")
+async def export_fatturapa(req: ExportReq):
+    try:
+        xml_bytes = _xe.build_fatturapa_xml(req.structured)
+    except Exception as e:
+        raise _generic_500("fatturapa export", e)
+    fname = f"{_safe_name(req.filename)}_FatturaPA.xml"
+    return StreamingResponse(
+        iter([xml_bytes]), media_type="application/xml",
+        headers={"Content-Disposition": f'attachment; filename="{fname}"'})
+
+
+@api.post("/export/accounting")
+async def export_accounting(req: ExportReq):
+    try:
+        if (req.fmt or "xlsx").lower() == "csv":
+            data = _xe.build_accounting_csv(req.structured, req.category, req.software)
+            media = "text/csv"
+            ext = "csv"
+        else:
+            data = _xe.build_accounting_workbook(req.structured, req.category, req.software, req.doc_type)
+            media = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            ext = "xlsx"
+    except Exception as e:
+        raise _generic_500("accounting export", e)
+    sw = _xe.SOFTWARE_LABELS.get((req.software or "").lower(), req.software or "template")
+    fname = f"{_safe_name(req.filename)}_{_safe_name(sw)}.{ext}"
+    return StreamingResponse(
+        iter([data]), media_type=media,
+        headers={"Content-Disposition": f'attachment; filename="{fname}"'})
 
 
 # ---------------- Payments (raw Stripe SDK; account uses Managed Payments) ----------------
