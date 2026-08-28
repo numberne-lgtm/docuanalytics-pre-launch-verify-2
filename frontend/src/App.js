@@ -12,7 +12,7 @@ import {
   Users, Briefcase, Files, Server, ArrowRight, Mail
 } from "lucide-react";
 import { BlogIndex, BlogPost } from "./Blog";
-import { MT, MARK, SECTORS } from "./content";
+import { MT, MARK, SECTORS, DEMO } from "./content";
 
 /* string -> lucide icon map for data-driven marketing sections */
 const ICONS = {
@@ -656,6 +656,7 @@ function Home() {
               <span className="hero-badge flex aic gap" key={id}><Icon size={15} /> {content.docTypes[id]}</span>
             ))}
           </div>
+          <HeroDemo />
         </section>
 
         {/* Privacy banner + trust badges */}
@@ -883,6 +884,86 @@ function Results({ result, analysisId, notify, credits, onTopup, onAgain }) {
     </section>
   );
 }
+
+function HeroDemo() {
+  const { lang } = useI18n();
+  const d = DEMO[lang] || DEMO.it;
+  const [phase, setPhase] = useState("idle"); // idle -> doc -> analyzing -> results -> copilot
+  const [pct, setPct] = useState(0);
+  useEffect(() => {
+    let alive = true; const timers = [];
+    const wait = (ms) => new Promise((r) => { const id = setTimeout(r, ms); timers.push(id); });
+    (async function loop() {
+      while (alive) {
+        setPhase("idle"); setPct(0); await wait(1300); if (!alive) break;
+        setPhase("doc"); await wait(800); if (!alive) break;
+        setPhase("analyzing");
+        for (let i = 0; i <= 100; i += 5) { if (!alive) break; setPct(i); await wait(55); }
+        await wait(300); if (!alive) break;
+        setPhase("results"); await wait(1100); if (!alive) break;
+        setPhase("copilot"); await wait(2400);
+      }
+    })();
+    return () => { alive = false; timers.forEach(clearTimeout); };
+  }, []);
+  const pLabel = pct < 35 ? d.pRead : pct < 70 ? d.pExtract : d.pCheck;
+  const showResults = phase === "results" || phase === "copilot";
+  return (
+    <div className="hero-demo" data-testid="hero-demo" aria-hidden="true">
+      <div className="hd-bar"><span className="hd-dot" /><span className="hd-dot" /><span className="hd-dot" /><span className="hd-addr">app.docuanalytics.online</span></div>
+      <div className="hd-app">
+        <aside className="hd-side">
+          <div className="hd-brand">Docu<span className="grad">Analytics</span></div>
+          {d.nav.map((n, i) => <div key={n} className={"hd-nav" + (i === 1 ? " active" : "")}>{n}</div>)}
+        </aside>
+        <div className="hd-main">
+          <div className="hd-top"><strong>{d.analyze}</strong><span className="hd-credits">{d.credits}: <b>3</b></span></div>
+          <div className="hd-grid">
+            <div className="hd-card">
+              <div className="hd-ct">{d.newTtl}</div><div className="hd-cs">{d.newSub}</div>
+              {phase === "idle" && (
+                <div className="hd-upload"><Upload size={26} color="var(--accent)" /><strong>{d.drop}</strong><small>{d.or}</small></div>
+              )}
+              {phase === "doc" && (
+                <div className="hd-doc"><div className="hd-doc-h">{d.invoice}</div><div className="hd-l" /><div className="hd-l s" /><div className="hd-l" /><div className="hd-l" /><div className="hd-total">{d.total}</div></div>
+              )}
+              {phase === "analyzing" && (
+                <div className="hd-doc">
+                  <div className="hd-prog-lbl"><span>{pLabel}</span><span>{pct}%</span></div>
+                  <div className="hd-bar2"><div className="hd-fill" style={{ width: pct + "%" }} /></div>
+                  <div className="hd-l" style={{ marginTop: 14 }} /><div className="hd-l s" /><div className="hd-l" />
+                </div>
+              )}
+              {showResults && (
+                <div className="hd-doc"><div className="hd-doc-h">{d.invoice}</div><div className="hd-l" /><div className="hd-l s" /><div className="hd-l" /><div className="hd-total">{d.total}</div></div>
+              )}
+            </div>
+            <div className="hd-card">
+              <div className="hd-rt"><span className="hd-ct">{d.result}</span>
+                <span className={"hd-badge" + (showResults ? " ok" : "")}>{showResults ? d.done : d.waiting}</span></div>
+              <div className="hd-cs">{d.resultSub}</div>
+              {showResults ? (
+                <div className="hd-res">
+                  <div className="hd-item"><span className="hd-chk"><CheckCircle2 size={12} /></span>{d.amount}<b>{d.total}</b></div>
+                  <div className="hd-item"><span className="hd-chk"><CheckCircle2 size={12} /></span>{d.date}<b>28/08/2026</b></div>
+                  <div className="hd-item"><span className="hd-chk"><CheckCircle2 size={12} /></span>{d.fiscal}<b>{d.complete}</b></div>
+                  <div className="hd-red"><b><AlertTriangle size={12} /> {d.redflag}</b><p>{d.redflagP}</p></div>
+                  {phase === "copilot" && (
+                    <div className="hd-cop"><div className="hd-q">{d.q}</div><div className="hd-a"><b>Copilot:</b> {d.a}</div></div>
+                  )}
+                </div>
+              ) : (
+                <div className="hd-empty"><Bot size={30} color="var(--text-muted)" /></div>
+              )}
+            </div>
+          </div>
+          <div className="hd-caption">{d.caption}</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 
 function BenefitsStrip() {
   const m = useMark();

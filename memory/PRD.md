@@ -1,6 +1,10 @@
 # DocuAnalytics AI — PRD & Stato Progetto
 
-## AGGIORNAMENTO 2026-06 (3) — Audit di sicurezza crediti/registrazioni (deploy accodato)
+## AGGIORNAMENTO 2026-06 (4) — Hero demo animata + chiarimento API key
+- **Hero demo animata**: componente React `HeroDemo` in App.js (tema scuro on-brand), testi `DEMO` in content.js (5 lingue), CSS `.hero-demo/.hd-*`. Loop: upload → documento (fattura esempio €1.240,00) → barra avanzamento (lettura/estrazione/controllo) → risultati (3 dati + Red-Flag) → Copilot Q&A. Dati FITTIZI ed etichettati. Inserita nella hero sotto i badge documenti. Verificata via screenshot (render + on-brand). In PREVIEW → richiede deploy per andare live.
+- **Chiarimento API key** (dubbio utente): le chiavi del sito (Stripe/PayPal/LLM/JWT/Mongo) sono già configurate lato backend e protette; l'utente non deve fornirle. L'unica chiave nuova è RESEND_API_KEY, necessaria SOLO per attivare la verifica email (flag `EMAIL_VERIFICATION_ENABLED`).
+- IN ATTESA dall'utente: RESEND_API_KEY + verifica dominio docuanalytics.online in Resend per attivare la verifica email; conferma deploy hero demo.
+
 Richiesta utente: protezione API key al 100% + sicurezza su crediti e registrazioni ("ci sono bug").
 - **API key**: audit conferma già protette al 100% (nessun segreto al frontend/hardcoded/loggato/in risposta). Nessuna azione.
 - **SEC-002 (BOLA) — RISOLTO**: identità autoritativa dal JWT (`_auth_user_id`) su analyze, chat, payments/checkout, crypto/order, paypal/order, paypal/subscription/activate, subscriptions/cancel. GET /subscriptions/{id} e /referral/{id} ora richiedono auth (ignorano l'uuid nel path). Il frontend inviava già `Authorization: Bearer` → nessuna modifica FE.
