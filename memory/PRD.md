@@ -1,6 +1,17 @@
 # DocuAnalytics AI — PRD & Stato Progetto
 
-## AGGIORNAMENTO 2026-06 (2) — FASE 2 + FASE 3 + A/B (in preview, deploy accodato)
+## AGGIORNAMENTO 2026-06 (3) — Audit di sicurezza crediti/registrazioni (deploy accodato)
+Richiesta utente: protezione API key al 100% + sicurezza su crediti e registrazioni ("ci sono bug").
+- **API key**: audit conferma già protette al 100% (nessun segreto al frontend/hardcoded/loggato/in risposta). Nessuna azione.
+- **SEC-002 (BOLA) — RISOLTO**: identità autoritativa dal JWT (`_auth_user_id`) su analyze, chat, payments/checkout, crypto/order, paypal/order, paypal/subscription/activate, subscriptions/cancel. GET /subscriptions/{id} e /referral/{id} ora richiedono auth (ignorano l'uuid nel path). Il frontend inviava già `Authorization: Bearer` → nessuna modifica FE.
+- **Anti-farming crediti — RISOLTO (low-friction)**: cap sessioni anonime per IP (MAX_ANON_PER_IP_DAY=25), blocco auto-referral stesso-IP, rate-limit register (5/h/IP). IP risolto dall'hop fidato di X-Forwarded-For (`_client_ip` con TRUSTED_PROXY_HOPS=2, verificato: Cloudflare+ingress) → spoofing dell'header non bypassa più le difese.
+- **Brute force login — RISOLTO**: rate-limit per IP (10/5min) E per account/email (8/15min, a prova di IP-spoofing).
+- **Hardening P3 — FATTO**: webhook Stripe firma obbligatoria (unsigned→400), messaggi errore generici (`_generic_500`), CORS ristretto ai domini reali.
+- **Verifica email (Resend) — PRONTA ma OFF**: scaffolding completo dietro flag `EMAIL_VERIFICATION_ENABLED=false` (register→credits 0 + email di conferma, GET /api/auth/verify accredita FREE_CREDITS, resend-verification, login bloccato se non verificato). Da attivare quando l'utente fornisce RESEND_API_KEY + dominio verificato in Resend. Dipendenza `resend` aggiunta.
+- TEST: iteration_13.json — 25/25 audit + 4/4 PoC anti-spoofing PASS; regressione flussi legittimi 100% (anon analyze/chat, register, login, checkout, paypal order, copilot, export). Utenti di test ripuliti.
+- Minori accettati/da valutare: /api/paypal/capture non autenticato (basso rischio: order_id server-side + re-check paid + idempotenza); GET /session/{id} espone email (info disclosure minore); rate-limiter in-memory si resetta al restart (mitigato dal limite per-account su login).
+- DEPLOY: accodato (backend + .env non-segreti). Nessuna modifica a segreti/API/FE.
+
 - **FASE 2 — Landing per settore**: nuove route `/commercialisti`, `/avvocati`, `/notai`, `/cfo`, `/hr`. Componente `SectorLanding({slug})` in App.js, contenuti in `content.js` SECTORS (5 settori × 5 lingue: meta_title/meta_desc/problem/solution/useCases/benefits/example). Ogni landing: header + hero (H1 = nome settore + value-prop, problema, soluzione, CTA→home #upload), Casi d'uso + Vantaggi, Esempio pratico, Sicurezza, Recensioni, altre landing, CTA finale. SEO: title+meta description dinamici per settore. Le card #settori della home navigano alle 5 landing (aziende → #upload). Aggiunte 5 URL a sitemap.xml con hreflang.
 - **FASE 3 — Analytics funnel (GA4)**: helper `track()` + eventi `experiment_impression`, `cta_click`, `view_pricing` (con src), `view_item` (landing settore), `document_analyzed`, `sign_up`, `login`, `copilot_used`, `begin_checkout` (stripe/paypal), `purchase` (stripe/paypal/paypal_sub). L'utente può costruire i funnel in GA4 con questi eventi.
 - **A/B test Hero**: `useHeroVariant()` assegna 50/50 A|B sticky in localStorage `da_hero_ab`; `<h1 data-testid="hero-h1" data-variant>`; variante inclusa in `cta_click` e `sign_up` per misurare l'impatto sulle registrazioni. Variante B: "L'AI che trova errori e rischi nei tuoi documenti / Analisi automatica e strutturata in pochi secondi".

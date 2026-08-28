@@ -47,6 +47,19 @@ PAYPAL_BASE = "https://api-m.paypal.com" if PAYPAL_MODE == "live" else "https://
 # Admin token for manual credit grants (test/support). Set ADMIN_TOKEN in .env.
 ADMIN_TOKEN = _ENV_FILE.get('ADMIN_TOKEN') or os.environ.get('ADMIN_TOKEN')
 
+# Email verification (anti-abuse). OFF until Resend is configured + sending domain verified.
+EMAIL_VERIFICATION_ENABLED = (_ENV_FILE.get('EMAIL_VERIFICATION_ENABLED') or os.environ.get('EMAIL_VERIFICATION_ENABLED') or 'false').strip().lower() == 'true'
+RESEND_API_KEY = _ENV_FILE.get('RESEND_API_KEY') or os.environ.get('RESEND_API_KEY')
+SENDER_EMAIL = _ENV_FILE.get('SENDER_EMAIL') or os.environ.get('SENDER_EMAIL') or 'onboarding@resend.dev'
+PUBLIC_BASE_URL = (_ENV_FILE.get('PUBLIC_BASE_URL') or os.environ.get('PUBLIC_BASE_URL') or 'https://docuanalytics.online').rstrip('/')
+
+# Anti-abuse tuning (defense-in-depth; email verification is the primary control).
+MAX_ANON_PER_IP_DAY = int(_ENV_FILE.get('MAX_ANON_PER_IP_DAY') or os.environ.get('MAX_ANON_PER_IP_DAY') or 25)
+# Number of TRUSTED proxies that append to X-Forwarded-For (edge CDN + internal ingress).
+# The real client IP is the (TRUSTED_PROXY_HOPS+1)-th entry from the right; anything a client
+# injects appears further left and is ignored. Verified in this infra: 2 (Cloudflare + ingress).
+TRUSTED_PROXY_HOPS = int(_ENV_FILE.get('TRUSTED_PROXY_HOPS') or os.environ.get('TRUSTED_PROXY_HOPS') or 2)
+
 FREE_CREDITS = 3
 
 # Server-side catalog (amounts in EUR, float). Never trust the client.
@@ -120,6 +133,87 @@ async def add_credits(user_id: str, amount: int):
     await db.users.update_one({"user_id": user_id}, {"$inc": {"credits": amount}}, upsert=False)
 
 
+# ---------------- Security helpers ----------------
+import time as _time
+_RL = {}  # in-memory sliding-window rate limiter (per-process, defense-in-depth)
+
+
+def _client_ip(request: Request) -> str:
+    """Resolve the real client IP from X-Forwarded-For, trusting only the hops our
+    infra appends. A client can inject leftmost XFF values, so we count from the right:
+    real client = the entry just before our TRUSTED_PROXY_HOPS trusted proxies."""
+    xff = request.headers.get("x-forwarded-for", "")
+    if xff:
+        parts = [p.strip() for p in xff.split(",") if p.strip()]
+        idx = TRUSTED_PROXY_HOPS + 1
+        if len(parts) >= idx:
+            return parts[-idx]
+        return parts[0]
+    return request.client.host if request.client else "unknown"
+
+
+def _rate_limit(key: str, max_calls: int, window_s: int):
+    now = _time.time()
+    bucket = [t for t in _RL.get(key, []) if now - t < window_s]
+    if len(bucket) >= max_calls:
+        raise HTTPException(429, "Troppe richieste. Riprova tra poco.")
+    bucket.append(now)
+    _RL[key] = bucket
+
+
+async def _auth_user_id(request: Request, body_user_id: Optional[str]) -> str:
+    """Authoritative identity for credit/money actions.
+    - If a valid Bearer token is present, it is the source of truth (body id ignored).
+    - Otherwise the body id is accepted ONLY if it is an anonymous (not-registered) user,
+      so nobody can act on a registered account by guessing its UUID."""
+    auth = request.headers.get("Authorization", "")
+    if auth.startswith("Bearer "):
+        token = auth[7:]
+        try:
+            payload = pyjwt.decode(token, JWT_SECRET, algorithms=[JWT_ALG])
+            return payload["sub"]
+        except pyjwt.PyJWTError:
+            raise HTTPException(401, "Sessione non valida. Effettua di nuovo l'accesso.")
+    if not body_user_id:
+        raise HTTPException(400, "Sessione mancante.")
+    u = await db.users.find_one({"user_id": body_user_id}, {"_id": 0})
+    if u and (u.get("email") or u.get("password_hash")):
+        raise HTTPException(401, "Accesso richiesto per questo account.")
+    return body_user_id
+
+
+def _generic_500(context: str, e: Exception):
+    """Log full detail server-side, return a safe generic message to the client."""
+    logger.exception(f"{context}: {e}")
+    return HTTPException(500, "Si è verificato un errore. Riprova tra poco.")
+
+
+async def _send_email_bg(to_email: str, subject: str, html: str):
+    if not RESEND_API_KEY:
+        logger.info(f"[email disabled] would send '{subject}' to {to_email}")
+        return
+    try:
+        import resend
+        resend.api_key = RESEND_API_KEY
+        await asyncio.to_thread(resend.Emails.send, {
+            "from": SENDER_EMAIL, "to": [to_email], "subject": subject, "html": html,
+        })
+    except Exception as e:
+        logger.error(f"send email failed: {e}")
+
+
+def _verify_email_html(link: str) -> str:
+    return (
+        "<div style=\"font-family:Arial,sans-serif;max-width:480px;margin:0 auto;color:#152033\">"
+        "<h2 style=\"color:#315efb\">DocuAnalytics AI</h2>"
+        "<p>Conferma il tuo indirizzo email per attivare i tuoi 3 crediti gratuiti.</p>"
+        f"<p><a href=\"{link}\" style=\"display:inline-block;background:#315efb;color:#fff;"
+        "text-decoration:none;padding:12px 22px;border-radius:8px;font-weight:700\">Conferma email</a></p>"
+        f"<p style=\"font-size:12px;color:#667085\">Oppure copia questo link:<br>{link}</p>"
+        "</div>"
+    )
+
+
 def _extract_json(text: str):
     if not text:
         return None
@@ -143,8 +237,17 @@ async def root():
 
 
 @api.post("/session")
-async def session(req: SessionReq):
+async def session(req: SessionReq, request: Request):
+    # Reusing an existing id returns it as-is (no new free grant).
+    if req.user_id:
+        existing = await db.users.find_one({"user_id": req.user_id}, {"_id": 0})
+        if existing:
+            return {"user_id": existing["user_id"], "credits": existing["credits"], "email": existing.get("email")}
+    # Creating a NEW anonymous user grants free credits -> cap new grants per IP.
+    ip = _client_ip(request)
+    _rate_limit(f"sess:{ip}", MAX_ANON_PER_IP_DAY, 86400)
     u = await get_or_create_user(req.user_id)
+    await db.users.update_one({"user_id": u["user_id"]}, {"$set": {"signup_ip": ip}})
     return {"user_id": u["user_id"], "credits": u["credits"], "email": u.get("email")}
 
 
@@ -157,8 +260,9 @@ async def get_session(user_id: str):
 
 
 @api.post("/analyze")
-async def analyze(req: AnalyzeReq):
-    u = await db.users.find_one({"user_id": req.user_id}, {"_id": 0})
+async def analyze(req: AnalyzeReq, request: Request):
+    uid = await _auth_user_id(request, req.user_id)
+    u = await db.users.find_one({"user_id": uid}, {"_id": 0})
     if not u:
         raise HTTPException(404, "User not found")
     if u["credits"] <= 0:
@@ -176,7 +280,7 @@ async def analyze(req: AnalyzeReq):
     try:
         from emergentintegrations.llm.chat import LlmChat, UserMessage, FileContentWithMimeType
     except Exception as e:
-        raise HTTPException(500, f"AI library error: {e}")
+        raise _generic_500("AI library import", e)
 
     # write temp file for Gemini file input (supports images + pdf)
     suffix = os.path.splitext(req.filename)[1] or ".bin"
@@ -205,8 +309,7 @@ Nella sezione audit, esegui controlli di quadratura (es. saldo F24, netto busta 
                        system_message="Estrai dati strutturati dai documenti e rispondi solo in JSON valido.").with_model("gemini", "gemini-2.5-flash")
         resp = await chat.send_message(UserMessage(text=prompt, file_contents=[file_content]))
     except Exception as e:
-        logger.exception("analyze failed")
-        raise HTTPException(500, f"Analisi non riuscita: {e}")
+        raise _generic_500("analyze", e)
     finally:
         try:
             os.unlink(tmp.name)
@@ -220,12 +323,12 @@ Nella sezione audit, esegui controlli di quadratura (es. saldo F24, netto busta 
         "full_text": text,
     }
 
-    await db.users.update_one({"user_id": req.user_id}, {"$inc": {"credits": -1}})
-    u2 = await db.users.find_one({"user_id": req.user_id}, {"_id": 0})
+    await db.users.update_one({"user_id": uid}, {"$inc": {"credits": -1}})
+    u2 = await db.users.find_one({"user_id": uid}, {"_id": 0})
 
     analysis_id = str(uuid.uuid4())
     await db.analyses.insert_one({
-        "analysis_id": analysis_id, "user_id": req.user_id, "doc_type": req.doc_type,
+        "analysis_id": analysis_id, "user_id": uid, "doc_type": req.doc_type,
         "filename": req.filename, "result": data,
         "created_at": datetime.now(timezone.utc).isoformat(),
     })
@@ -233,11 +336,12 @@ Nella sezione audit, esegui controlli di quadratura (es. saldo F24, netto busta 
 
 
 @api.post("/chat")
-async def chat_copilot(req: ChatReq):
+async def chat_copilot(req: ChatReq, request: Request):
+    uid = await _auth_user_id(request, req.user_id)
     a = await db.analyses.find_one({"analysis_id": req.analysis_id}, {"_id": 0})
     if not a:
         raise HTTPException(404, "Analisi non trovata")
-    if a.get("user_id") != req.user_id:
+    if a.get("user_id") != uid:
         raise HTTPException(403, "Accesso negato")
     context = a["result"].get("full_text") or json.dumps(a["result"], ensure_ascii=False)
     resp = ""
@@ -247,7 +351,7 @@ async def chat_copilot(req: ChatReq):
                        system_message=f"Sei un copilot AI. Rispondi in italiano basandoti SOLO su questo documento:\n\n{context[:12000]}").with_model("gemini", "gemini-2.5-flash")
         resp = await chat.send_message(UserMessage(text=req.question))
     except Exception as e:
-        raise HTTPException(500, f"Copilot error: {e}")
+        raise _generic_500("copilot", e)
     return {"answer": resp if isinstance(resp, str) else str(resp)}
 
 
@@ -297,6 +401,7 @@ def _create_stripe_session(pkg, req):
 
 @api.post("/payments/checkout")
 async def checkout(req: CheckoutReq, request: Request):
+    req.user_id = await _auth_user_id(request, req.user_id)
     pkg = PACKAGES.get(req.package_id)
     if not pkg:
         raise HTTPException(400, "Pacchetto non valido")
@@ -306,8 +411,7 @@ async def checkout(req: CheckoutReq, request: Request):
     try:
         session = _create_stripe_session(pkg, req)
     except Exception as e:
-        logger.exception("stripe checkout failed")
-        raise HTTPException(500, f"Errore checkout: {e}")
+        raise _generic_500("stripe checkout", e)
 
     pkg = PACKAGES.get(req.package_id)
     await db.payment_transactions.insert_one({
@@ -385,14 +489,14 @@ async def stripe_webhook(request: Request):
     payload = await request.body()
     sig = request.headers.get("stripe-signature", "")
     secret = _ENV_FILE.get("STRIPE_WEBHOOK_SECRET") or os.environ.get("STRIPE_WEBHOOK_SECRET", "")
+    if not secret:
+        logger.error("stripe webhook secret not configured")
+        raise HTTPException(503, "Webhook non configurato")
     try:
-        if secret:
-            event = stripe.Webhook.construct_event(payload, sig, secret)
-        else:
-            event = json.loads(payload.decode())
+        event = stripe.Webhook.construct_event(payload, sig, secret)
     except Exception as e:
-        logger.warning(f"webhook parse error: {e}")
-        raise HTTPException(400, "Invalid webhook")
+        logger.warning(f"stripe webhook signature invalid: {e}")
+        raise HTTPException(400, "Firma webhook non valida")
     obj = event.get("data", {}).get("object", {})
     etype = event.get("type")
 
@@ -449,7 +553,9 @@ class SubCancelReq(BaseModel):
 
 
 @api.get("/subscriptions/{user_id}")
-async def list_subscriptions(user_id: str):
+async def list_subscriptions(user_id: str, request: Request):
+    me = await get_current_user(request)
+    user_id = me["user_id"]  # authoritative: ignore path param
     subs = await db.subscriptions.find({"user_id": user_id}, {"_id": 0}).to_list(50)
 
     def _enrich(sdoc):
@@ -474,11 +580,12 @@ async def list_subscriptions(user_id: str):
 
 
 @api.post("/subscriptions/cancel")
-async def cancel_subscription(req: SubCancelReq):
+async def cancel_subscription(req: SubCancelReq, request: Request):
+    uid = await _auth_user_id(request, req.user_id)
     sdoc = await db.subscriptions.find_one({"subscription_id": req.subscription_id}, {"_id": 0})
     if not sdoc:
         raise HTTPException(404, "Abbonamento non trovato")
-    if sdoc.get("user_id") != req.user_id:
+    if sdoc.get("user_id") != uid:
         raise HTTPException(403, "Accesso negato")
     if sdoc.get("provider") == "paypal":
         try:
@@ -495,7 +602,7 @@ async def cancel_subscription(req: SubCancelReq):
     try:
         stripe.Subscription.modify(req.subscription_id, cancel_at_period_end=True)
     except Exception as e:
-        raise HTTPException(500, f"Errore annullamento: {e}")
+        raise _generic_500("subscription cancel", e)
     await db.subscriptions.update_one(
         {"subscription_id": req.subscription_id},
         {"$set": {"status": "canceling", "updated_at": datetime.now(timezone.utc).isoformat()}},
@@ -518,7 +625,8 @@ async def crypto_info():
 
 
 @api.post("/crypto/order")
-async def crypto_order(req: CryptoOrderReq):
+async def crypto_order(req: CryptoOrderReq, request: Request):
+    req.user_id = await _auth_user_id(request, req.user_id)
     pkg = PACKAGES.get(req.package_id)
     if not pkg:
         raise HTTPException(400, "Pacchetto non valido")
@@ -562,7 +670,8 @@ async def paypal_config():
 
 
 @api.post("/paypal/order")
-async def paypal_order(req: PaypalOrderReq):
+async def paypal_order(req: PaypalOrderReq, request: Request):
+    req.user_id = await _auth_user_id(request, req.user_id)
     pkg = PACKAGES.get(req.package_id)
     if not pkg:
         raise HTTPException(400, "Pacchetto non valido")
@@ -686,7 +795,8 @@ async def paypal_sub_plan(req: PaypalSubReq):
 
 
 @api.post("/paypal/subscription/activate")
-async def paypal_sub_activate(req: PaypalSubActivateReq):
+async def paypal_sub_activate(req: PaypalSubActivateReq, request: Request):
+    req.user_id = await _auth_user_id(request, req.user_id)
     token = await _paypal_token()
     async with httpx.AsyncClient(timeout=30) as c:
         r = await c.get(f"{PAYPAL_BASE}/v1/billing/subscriptions/{req.subscription_id}", headers=_pp_headers(token))
@@ -884,18 +994,42 @@ class LoginReq(BaseModel):
     password: str
 
 
+async def _apply_referral(inviter_code: Optional[str], invitee_id: str, invitee_ip: Optional[str], now: str):
+    if not inviter_code:
+        return
+    inviter = await db.users.find_one({"referral_code": inviter_code.strip().upper()}, {"_id": 0})
+    if not inviter or inviter["user_id"] == invitee_id:
+        return
+    # anti-abuse: same signup IP => likely self-referral, record link but skip payout
+    if invitee_ip and inviter.get("signup_ip") and inviter["signup_ip"] == invitee_ip:
+        logger.info("referral bonus skipped (same signup IP)")
+        await db.users.update_one({"user_id": invitee_id}, {"$set": {"referred_by": inviter["user_id"]}})
+        return
+    if await db.referrals.find_one({"invitee": invitee_id}):
+        return  # idempotent: one payout per invitee
+    await add_credits(inviter["user_id"], REFERRAL_BONUS)
+    await add_credits(invitee_id, REFERRAL_BONUS)
+    await db.users.update_one({"user_id": invitee_id}, {"$set": {"referred_by": inviter["user_id"]}})
+    await db.referrals.insert_one({"inviter": inviter["user_id"], "invitee": invitee_id,
+                                   "bonus": REFERRAL_BONUS, "created_at": now})
+
+
 @api.post("/auth/register")
-async def register(req: RegisterReq):
+async def register(req: RegisterReq, request: Request):
+    ip = _client_ip(request)
+    _rate_limit(f"reg:{ip}", 5, 3600)  # max 5 registrations/hour/IP
     email = req.email.strip().lower()
-    if "@" not in email or len(req.password) < 6:
+    if "@" not in email or "." not in email.split("@")[-1] or len(req.password) < 6:
         raise HTTPException(400, "Email non valida o password troppo corta (min 6 caratteri).")
     if await db.users.find_one({"email": email}):
         raise HTTPException(409, "Email già registrata. Accedi.")
 
     ref_code = _gen_ref_code()
     now = datetime.now(timezone.utc).isoformat()
+    verify_on = EMAIL_VERIFICATION_ENABLED and bool(RESEND_API_KEY)
+    # New accounts get free credits only when NOT gated by email verification.
+    initial_credits = 0 if verify_on else FREE_CREDITS
 
-    # Upgrade the existing anonymous user (keeps its credits) if provided & not yet an account.
     existing = None
     if req.user_id:
         existing = await db.users.find_one({"user_id": req.user_id}, {"_id": 0})
@@ -903,38 +1037,83 @@ async def register(req: RegisterReq):
             existing = None  # already an account -> create a fresh one instead
 
     if existing:
-        await db.users.update_one({"user_id": req.user_id}, {"$set": {
+        set_fields = {
             "email": email, "password_hash": _hash_pw(req.password),
             "name": req.name or email.split("@")[0], "referral_code": ref_code,
-            "updated_at": now}})
+            "signup_ip": ip, "updated_at": now,
+        }
+        if verify_on:
+            set_fields.update({"email_verified": False, "credits": 0})
+        await db.users.update_one({"user_id": req.user_id}, {"$set": set_fields})
         user_id = req.user_id
     else:
         user_id = str(uuid.uuid4())
         await db.users.insert_one({
             "user_id": user_id, "email": email, "password_hash": _hash_pw(req.password),
-            "name": req.name or email.split("@")[0], "credits": FREE_CREDITS,
-            "referral_code": ref_code, "created_at": now})
+            "name": req.name or email.split("@")[0], "credits": initial_credits,
+            "referral_code": ref_code, "signup_ip": ip,
+            "email_verified": (not verify_on), "created_at": now})
 
-    # Referral bonus: +5 to both, once, if a valid inviter code is provided.
-    if req.ref:
-        inviter = await db.users.find_one({"referral_code": req.ref.strip().upper()}, {"_id": 0})
-        if inviter and inviter["user_id"] != user_id:
-            await add_credits(inviter["user_id"], REFERRAL_BONUS)
-            await add_credits(user_id, REFERRAL_BONUS)
-            await db.users.update_one({"user_id": user_id}, {"$set": {"referred_by": inviter["user_id"]}})
-            await db.referrals.insert_one({"inviter": inviter["user_id"], "invitee": user_id,
-                                           "bonus": REFERRAL_BONUS, "created_at": now})
+    if verify_on:
+        vtoken = uuid.uuid4().hex
+        await db.email_verifications.insert_one({
+            "token": vtoken, "user_id": user_id, "email": email,
+            "ref": (req.ref or None), "ip": ip, "used": False, "created_at": now})
+        link = f"{PUBLIC_BASE_URL}/api/auth/verify?token={vtoken}"
+        asyncio.create_task(_send_email_bg(email, "Conferma la tua email — DocuAnalytics AI", _verify_email_html(link)))
+        return {"verification_required": True, "email": email}
 
+    # No verification gate: grant referral now.
+    await _apply_referral(req.ref, user_id, ip, now)
     u = await db.users.find_one({"user_id": user_id}, {"_id": 0})
     return {"token": _make_token(user_id, email), "user": _public_user(u)}
 
 
-@api.post("/auth/login")
-async def login(req: LoginReq):
+@api.get("/auth/verify")
+async def verify_email(token: str):
+    from fastapi.responses import RedirectResponse
+    rec = await db.email_verifications.find_one({"token": token})
+    if not rec or rec.get("used"):
+        return RedirectResponse(url=f"{PUBLIC_BASE_URL}/?verify=invalid", status_code=302)
+    await db.email_verifications.update_one({"token": token}, {"$set": {"used": True}})
+    now = datetime.now(timezone.utc).isoformat()
+    u = await db.users.find_one({"user_id": rec["user_id"]}, {"_id": 0})
+    if u and not u.get("email_verified"):
+        await db.users.update_one({"user_id": rec["user_id"]},
+                                  {"$set": {"email_verified": True, "credits": FREE_CREDITS, "updated_at": now}})
+        await _apply_referral(rec.get("ref"), rec["user_id"], rec.get("ip"), now)
+    return RedirectResponse(url=f"{PUBLIC_BASE_URL}/?verify=ok", status_code=302)
+
+
+@api.post("/auth/resend-verification")
+async def resend_verification(req: LoginReq, request: Request):
+    _rate_limit(f"resend:{_client_ip(request)}", 5, 3600)
     email = req.email.strip().lower()
+    u = await db.users.find_one({"email": email}, {"_id": 0})
+    if not u or not _verify_pw(req.password, u.get("password_hash", "")):
+        raise HTTPException(401, "Email o password errati.")
+    if u.get("email_verified"):
+        return {"status": "already_verified"}
+    now = datetime.now(timezone.utc).isoformat()
+    vtoken = uuid.uuid4().hex
+    await db.email_verifications.insert_one({"token": vtoken, "user_id": u["user_id"],
+                                             "email": email, "ref": None, "ip": _client_ip(request),
+                                             "used": False, "created_at": now})
+    link = f"{PUBLIC_BASE_URL}/api/auth/verify?token={vtoken}"
+    asyncio.create_task(_send_email_bg(email, "Conferma la tua email — DocuAnalytics AI", _verify_email_html(link)))
+    return {"status": "sent"}
+
+
+@api.post("/auth/login")
+async def login(req: LoginReq, request: Request):
+    email = req.email.strip().lower()
+    _rate_limit(f"login:{_client_ip(request)}", 10, 300)      # 10 / 5 min / IP
+    _rate_limit(f"login_email:{email}", 8, 900)               # 8 / 15 min / account (IP-spoof proof)
     u = await db.users.find_one({"email": email}, {"_id": 0})
     if not u or not u.get("password_hash") or not _verify_pw(req.password, u["password_hash"]):
         raise HTTPException(401, "Email o password errati.")
+    if EMAIL_VERIFICATION_ENABLED and bool(RESEND_API_KEY) and u.get("email_verified") is False:
+        raise HTTPException(403, "Email non ancora verificata. Controlla la tua casella.")
     if not u.get("referral_code"):
         code = _gen_ref_code()
         await db.users.update_one({"user_id": u["user_id"]}, {"$set": {"referral_code": code}})
@@ -949,10 +1128,9 @@ async def auth_me(request: Request):
 
 
 @api.get("/referral/{user_id}")
-async def referral_info(user_id: str):
-    u = await db.users.find_one({"user_id": user_id}, {"_id": 0})
-    if not u:
-        raise HTTPException(404, "Utente non trovato")
+async def referral_info(user_id: str, request: Request):
+    u = await get_current_user(request)  # authoritative: ignore path param
+    user_id = u["user_id"]
     code = u.get("referral_code")
     if not code:
         code = _gen_ref_code()

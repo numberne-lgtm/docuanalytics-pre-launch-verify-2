@@ -1,0 +1,50 @@
+{
+  "summary": "Security-audit verification (SEC-002 BOLA, protected GETs, rate-limits, Stripe webhook signature, generic 500s) + full regression of legitimate flows (anonymous session/analyze/chat, register upgrade, login, checkout, paypal order) on the preview URL. Backend: 25/25 pytest cases PASS in /app/backend/tests/test_security_audit.py — all claimed fixes confirmed. Frontend: 3 Playwright runs PASS (homepage, pricing modal with 3 tabs, UI register+logout+login, referral modal with real code, real PNG invoice upload -> Gemini analysis rendered, credits 3->2, AI Copilot answered '1.952,00 EUR', CSV/JSON export visible). Only console errors are the expected/handled 401 on /api/subscriptions while anonymous. NEW FINDING: the new per-IP rate limits and the anti-abuse IP checks are keyed on the client-controlled X-Forwarded-For (leftmost value), so login brute-force limit, register limit, the anonymous free-credit cap (MAX_ANON_PER_IP_DAY) and the same-IP self-referral block are all trivially bypassable — PoC farmed referral credits (8 credits to both sides) from one client.",
+  "backend_issues": {
+    "critical": [
+      {"endpoint": "/api/auth/login, /api/auth/register, /api/session, referral anti-abuse", "issue": "_client_ip() returns xff.split(',')[0] i.e. the CLIENT-SUPPLIED first X-Forwarded-For value. Rotating the header defeats every new protection: 14/14 failed logins returned 401 with no 429 (brute-force limit bypassed); after exhausting the 5/h register quota for one spoofed IP, switching the header returned 400 instead of 429 (register limit bypassed); signup_ip is stored as the spoofed value, so MAX_ANON_PER_IP_DAY free-credit cap and the same-IP self-referral guard are also bypassable. PoC test_referral_abuse_poc.py: same client registered inviter+invitee with different spoofed IPs and both ended with 8 credits (referral bonus paid). Fix: take the RIGHTMOST/last-hop XFF entry (or a configured trusted-proxy count / request.client.host) after verifying what the ingress appends, and additionally rate-limit per email/account for login and per email domain for register.", "priority": "CRITICAL"}
+    ],
+    "minor": [
+      {"endpoint": "/api/paypal/capture", "issue": "No _auth_user_id / auth check; credits the user_id stored on the transaction. Exploitability is low (PayPal order ids are server-generated and the paid state is re-checked, plus idempotency guard) but it is the only money endpoint left unauthenticated."},
+      {"endpoint": "/api/session/{user_id}", "issue": "Unauthenticated GET returns credits + email for any known user_id (info disclosure by uuid; not enumerable in practice). Consider omitting email or requiring a token when the account is registered."},
+      {"endpoint": "-", "issue": "_RL rate limiter is in-process memory only: it resets on every backend restart/deploy and is not shared across workers/replicas, so effective limits are higher than documented."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_security_audit.py",
+    "/app/backend/tests/test_security_edge.py",
+    "/app/backend/tests/test_referral_abuse_poc.py",
+    "/app/test_reports/pytest/sec_audit.xml"
+  ],
+  "action_items": [
+    "CRITICAL: stop trusting the leftmost X-Forwarded-For in _client_ip(); use the last hop added by the ingress (verify with a probe) and/or bind login limits to the email/account, not only to the IP. Until fixed, brute-force protection, register cap, anonymous free-credit cap and self-referral protection are all bypassable and credits are farmable.",
+    "Consider adding auth (or a signed reference) to POST /api/paypal/capture.",
+    "Optionally hide email in GET /api/session/{user_id} for registered accounts.",
+    "Move the rate limiter to a shared store (Mongo TTL collection) so restarts/replicas don't reset the window.",
+    "Refactor: /app/backend/server.py is 1144 lines — split into routers (auth, payments, analyze)."
+  ],
+  "critical_code_review_comments": [
+    "server.py:137 _client_ip trusts the client-controlled first XFF value; every _rate_limit key and signup_ip derive from it -> all new IP-based defenses are spoofable (verified, see PoC).",
+    "_auth_user_id (server.py:153) is correct and correctly applied to analyze/chat/checkout/crypto/paypal/subscriptions-cancel; body user_id is properly ignored when a Bearer token is present (verified: spoofed body user_id ignored on checkout/paypal order).",
+    "GET /subscriptions/{id} and /referral/{id} correctly ignore the path uuid and use the token identity (verified 401 without token, 200 with token returning the token owner's data).",
+    "Stripe webhook now requires a valid signature (unsigned arbitrary JSON -> 400) and never credited the account (verified credits unchanged).",
+    "_generic_500 works: invalid base64 on /api/analyze returns 500 with the generic Italian message, no traceback/paths/library names leaked, and no credit consumed."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_security_audit.py",
+    "/app/backend/tests/test_security_edge.py",
+    "/app/backend/tests/test_referral_abuse_poc.py"
+  ],
+  "success_rate": {"backend": "100% (25/25 on the requested security+regression suite; 3/3 extra probes exposed the XFF-spoofing gap)", "frontend": "100% of smoke/e2e flows tested"},
+  "seed_data_creation": "Created temporary users test_sec_*/test_ui_*/test_ref_*/test_farm_*@example.com (password secret123) plus 1 analysis, 1 referral and 2 payment_transactions; ALL removed from MongoDB after testing (7 users deleted). No real payments completed (Stripe checkout session and PayPal order only created).",
+  "should_call_test_agent_after_fix": true,
+  "should_main_agent_self_test": false,
+  "test_credentials": "No fixed credentials needed; register any random email with password >= 6 chars. /app/memory/test_credentials.md is present and accurate.",
+  "context_for_next_testing_agent": "Run `cd /app/backend && python -m pytest tests/test_security_audit.py -v` for the full security+regression suite (one class, order matters: rate-limit tests are last and burn the per-IP budget; the limiter is in-memory so `sudo supervisorctl restart backend` resets it before a rerun). tests/test_security_edge.py and tests/test_referral_abuse_poc.py are EXPECTED TO FAIL until _client_ip is fixed — they are the XFF-spoofing PoCs (edge test asserts the desired secure behaviour). Frontend flows verified working: pricing modal, register/login/logout, referral modal, PNG upload -> analyze -> chat -> export. Remember to clean test_* users from Mongo after runs.",
+  "rca_of_the_issue": "The security patch added per-IP rate limits and IP-based anti-abuse (anon free-credit cap, same-IP self-referral block), but the IP is resolved from the first entry of the X-Forwarded-For header, which any client can inject. Because the ingress appends (not replaces) the header, the attacker-supplied value wins. Reproduction: POST /api/auth/login 14 times with rotating X-Forwarded-For -> all 401, never 429; register inviter and invitee from the same host with different spoofed XFF values -> referral bonus paid to both (8 credits each). Mitigation: derive the client IP from the last (ingress-appended) XFF hop or a trusted-proxy count, and add account/email-scoped limits for login and referral payouts."
+}
