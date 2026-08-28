@@ -1,5 +1,12 @@
 # DocuAnalytics AI — PRD & Stato Progetto
 
+## AGGIORNAMENTO 2026-06 (12) — Claude hint + Storico analisi + Confronto modelli ✅ TESTATO (100%)
+- **Claude Consigliato**: hint contestuale sotto il selettore (`data-testid="model-hint"`) — Claude "consigliato per contratti e testi lunghi", Gemini "veloce su fatture e documenti strutturati". 5 lingue.
+- **Storico Analisi**: nuovo `GET /api/analyses` (auth via `_auth_user_id`, max 50, ordinato per data) + `HistoryModal` aperto dal bottone header `nav-history`. Lista con tipo doc, badge modello, data (localizzata per lingua) ed espansione dettaglio campi.
+- **Confronto Modelli**: pulsante `compare-btn` in `Results` che rianalizza lo STESSO file (ancora in memoria nel browser — nessun file salvato sul server, privacy preservata) con l'altro modello e mostra `compare-panel` a due colonne con badge e campi. Consuma 1 credito.
+- Test: `iteration_15.json` → 5/5 scenari passati, nessun errore console. Fix minore applicato (locale data storico per lingua).
+- Note code-review (non bloccanti, backlog): App.js grande (~2080 righe, valutare split); compare no-op se file assente dopo reset; HistoryModal non distingue errore fetch da lista vuota.
+
 ## AGGIORNAMENTO 2026-06 (11) — Badge Modello + Claude su PDF + deploy ✅ TESTATO
 - **Claude su PDF**: i PDF vengono renderizzati in immagini (PyMuPDF `pymupdf==1.28.2`, max 5 pagine, matrix 2x) e inviati a Claude vision. Ora la scelta Gemini/Claude vale su TUTTI i documenti (immagini e PDF). Gemini resta default con attachment file nativo.
 - **Badge Modello**: `/api/analyze` salva e ritorna `ai_provider` ("gemini"/"claude"); `Results` mostra un chip `data-testid="model-badge"` (Claude Sonnet 5 arancio / Gemini blu) nella wow-bar. Stringa i18n `analyzed_by` in 5 lingue.

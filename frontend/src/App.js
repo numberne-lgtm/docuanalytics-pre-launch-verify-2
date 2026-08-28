@@ -9,7 +9,7 @@ import {
   Sparkles, Copy, Play, Lock, Facebook, Linkedin, Youtube, Globe,
   ShieldCheck, Trash2, BadgeCheck, Ban, ChevronDown,
   Clock, AlertTriangle, Search, Rocket, Scale, FileSignature, TrendingUp,
-  Users, Briefcase, Files, Server, ArrowRight, Mail
+  Users, Briefcase, Files, Server, ArrowRight, Mail, History
 } from "lucide-react";
 import { BlogIndex, BlogPost } from "./Blog";
 import { MT, MARK, SECTORS, DEMO } from "./content";
@@ -530,6 +530,9 @@ function Home() {
   const [docType, setDocType] = useState("auto");
   const [aiModel, setAiModel] = useState("gemini");
   const [usedProvider, setUsedProvider] = useState(null);
+  const [compare, setCompare] = useState(null);
+  const [comparing, setComparing] = useState(false);
+  const [histOpen, setHistOpen] = useState(false);
   const [file, setFile] = useState(null);
   const [drag, setDrag] = useState(false);
   const [stage, setStage] = useState(-1); // pipeline
@@ -602,7 +605,7 @@ function Home() {
   const analyze = async () => {
     if (!file) return;
     if (user.credits <= 0) { notify(t("n_credits_out")); openPricing("credits_out"); return; }
-    setAnalyzing(true); setResult(null); setStage(0);
+    setAnalyzing(true); setResult(null); setCompare(null); setStage(0);
     const timers = [0, 1, 2, 3].map((i) => setTimeout(() => setStage(i), i * 700));
     try {
       const b64 = await toBase64(file);
@@ -624,11 +627,33 @@ function Home() {
     }
   };
 
+  const compareWithOther = async () => {
+    if (!file) return;
+    const other = usedProvider === "claude" ? "gemini" : "claude";
+    if (user.credits <= 0) { notify(t("n_credits_out")); openPricing("credits_out"); return; }
+    setComparing(true);
+    try {
+      const b64 = await toBase64(file);
+      const { data } = await axios.post(`${API}/analyze`, {
+        user_id: user.user_id, doc_type: docType, filename: file.name,
+        mime_type: file.type || "application/octet-stream", file_base64: b64, model: other,
+      });
+      setCompare({ result: data.result, provider: data.ai_provider });
+      setUser((u) => ({ ...u, credits: data.credits }));
+      track("model_compared", { model: other });
+    } catch (e) {
+      const msg = e?.response?.data?.detail || t("n_analyze_fail");
+      notify(msg);
+      if (e?.response?.status === 402) setPricingOpen(true);
+    } finally { setComparing(false); }
+  };
+
   return (
     <div className="App">
       <Header credits={user.credits} authed={authed} user={user}
         onTopup={() => openPricing("header")} onAuth={() => setAuthOpen(true)}
-        onReferral={() => setRefOpen(true)} onLogout={() => { logout(); notify(t("n_disconnected")); }} />
+        onReferral={() => setRefOpen(true)} onLogout={() => { logout(); notify(t("n_disconnected")); }}
+        onHistory={() => setHistOpen(true)} />
 
       <main className="wrap">
         {/* Hero */}
@@ -717,6 +742,9 @@ function Home() {
                 onClick={() => setAiModel("claude")}><Bot size={14} /> Claude</button>
             </div>
           </div>
+          <p className="model-hint" data-testid="model-hint">
+            <Sparkles size={12} /> {aiModel === "claude" ? t("claude_hint") : t("gemini_hint")}
+          </p>
 
           <div className="center mt2">
             <button className="btn btn-primary btn-lg" data-testid="analyze-btn" disabled={!file || analyzing} onClick={analyze}>
@@ -739,6 +767,7 @@ function Home() {
         </section>
 
         {result && <Results result={result} analysisId={analysisId} notify={notify} aiModel={aiModel} provider={usedProvider}
+          compare={compare} comparing={comparing} onCompare={compareWithOther}
           credits={user.credits} onTopup={() => openPricing("after_analysis")}
           onAgain={() => { setFile(null); setResult(null); setStage(-1); scrollToId("upload"); }} />}
 
@@ -762,13 +791,14 @@ function Home() {
       {pricingOpen && <PricingModal user={user} onClose={() => setPricingOpen(false)} notify={notify} />}
       {authOpen && <AuthModal user={user} onClose={() => setAuthOpen(false)} onAuthed={login} notify={notify} />}
       {refOpen && <ReferralModal user={user} onClose={() => setRefOpen(false)} notify={notify} />}
+      {histOpen && <HistoryModal onClose={() => setHistOpen(false)} />}
       {guideOpen && <ServicesGuideModal onClose={() => setGuideOpen(false)} />}
       <Toast msg={toast} />
     </div>
   );
 }
 
-function Header({ credits, authed, user, onTopup, onAuth, onReferral, onLogout }) {
+function Header({ credits, authed, user, onTopup, onAuth, onReferral, onLogout, onHistory }) {
   const { t } = useI18n();
   return (
     <header className="header">
@@ -778,6 +808,7 @@ function Header({ credits, authed, user, onTopup, onAuth, onReferral, onLogout }
           <button className="btn btn-sm btn-ghost nav-anchor" data-testid="nav-how" onClick={() => scrollToId("come-funziona")}>{t("nav_how")}</button>
           <button className="btn btn-sm btn-ghost nav-anchor" data-testid="nav-price" onClick={() => scrollToId("prezzi")}>{t("nav_price")}</button>
           <Link to="/blog" className="btn btn-sm btn-ghost" data-testid="nav-blog"><BookOpen size={15} /> {t("blog_link")}</Link>
+          <button className="btn btn-sm btn-ghost nav-anchor" data-testid="nav-history" onClick={onHistory}><History size={15} /> {t("nav_history")}</button>
           <LanguageSwitcher />
           <span className="credits-badge" data-testid="credits-badge"><Zap size={15} /> {credits} {t("credits")}</span>
           <button className="btn btn-primary btn-sm" data-testid="topup-btn" onClick={onTopup}><CreditCard size={15} /> {t("topup")}</button>
@@ -796,7 +827,7 @@ function Header({ credits, authed, user, onTopup, onAuth, onReferral, onLogout }
   );
 }
 
-function Results({ result, analysisId, notify, credits, onTopup, onAgain, aiModel, provider }) {
+function Results({ result, analysisId, notify, credits, onTopup, onAgain, aiModel, provider, compare, comparing, onCompare }) {
   const { t } = useI18n();
   const [q, setQ] = useState("");
   const [msgs, setMsgs] = useState([]);
@@ -888,6 +919,36 @@ function Results({ result, analysisId, notify, credits, onTopup, onAgain, aiMode
           </div>
         </div>
       </div>
+
+      {/* Model comparison */}
+      <div className="compare-wrap" data-testid="compare-section">
+        {!compare && (
+          <button className="btn btn-ghost" data-testid="compare-btn" onClick={onCompare} disabled={comparing}>
+            {comparing ? <><Loader2 className="spinner" /> {t("comparing")}</>
+              : <><Bot size={16} /> {t("compare_btn")} {provider === "claude" ? "Gemini" : "Claude"}</>}
+          </button>
+        )}
+        {!compare && <p className="compare-note">{t("compare_note")}</p>}
+        {compare && (
+          <div className="glass pad" data-testid="compare-panel">
+            <div className="flex aic gap mb1"><Bot size={18} color="var(--accent)" /><strong>{t("compare_title")}</strong></div>
+            <div className="compare-grid">
+              {[{ r: result, p: provider }, { r: compare.result, p: compare.provider }].map((col, ci) => (
+                <div className="compare-col" key={ci}>
+                  <span className={"wow-chip model-badge " + (col.p === "claude" ? "mb-claude" : "mb-gemini")}>
+                    <Bot size={13} /> {col.p === "claude" ? "Claude Sonnet 5" : "Gemini"}
+                  </span>
+                  <p className="compare-sum">{col.r.doc_type} — {col.r.summary}</p>
+                  {(col.r.fields || []).map((f, i) => (
+                    <div className="field-row" key={i}><span className="k">{f.label}</span><span className="v">{String(f.value)}</span></div>
+                  ))}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
 
       <div className="after-cta glass pad" data-testid="after-analysis-cta">
         <div>
@@ -1815,6 +1876,71 @@ function ServicesGuideModal({ onClose }) {
     </div>
   );
 }
+
+function HistoryModal({ onClose }) {
+  const { t, lang } = useI18n();
+  const [items, setItems] = useState(null);
+  const [open, setOpen] = useState(null);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const uid = localStorage.getItem("da_uid");
+        const { data } = await axios.get(`${API}/analyses`, { params: { user_id: uid } });
+        setItems(data.analyses || []);
+      } catch { setItems([]); }
+    })();
+  }, []);
+
+  const LOCALE = { it: "it-IT", en: "en-US", es: "es-ES", de: "de-DE", fr: "fr-FR" };
+  const fmt = (iso) => { try { return new Date(iso).toLocaleString(LOCALE[lang] || "it-IT"); } catch { return ""; } };
+
+  return (
+    <div className="modal-bg" onClick={onClose}>
+      <div className="modal glass pad fade" onClick={(e) => e.stopPropagation()} data-testid="history-modal">
+        <div className="modal-head">
+          <h2 className="section-title flex aic gap"><History size={20} /> {t("history_title")}</h2>
+          <button className="close-x" data-testid="close-history" onClick={onClose}><X size={18} /></button>
+        </div>
+        {items === null && <div className="center pad"><Loader2 className="spinner" /></div>}
+        {items !== null && items.length === 0 && (
+          <p className="section-sub" data-testid="history-empty">{t("history_empty")}</p>
+        )}
+        {items !== null && items.length > 0 && (
+          <div className="hist-list" data-testid="history-list">
+            {items.map((a) => (
+              <div className="hist-item glass pad" key={a.analysis_id} data-testid="history-item">
+                <div className="hist-row" onClick={() => setOpen(open === a.analysis_id ? null : a.analysis_id)}>
+                  <div className="hist-main">
+                    <strong>{a.doc_type || "—"}</strong>
+                    <span className="hist-file">{a.filename}</span>
+                  </div>
+                  <div className="flex aic gap">
+                    <span className={"wow-chip model-badge " + (a.ai_provider === "claude" ? "mb-claude" : "mb-gemini")}>
+                      <Bot size={12} /> {a.ai_provider === "claude" ? "Claude" : "Gemini"}
+                    </span>
+                    <span className="hist-date">{fmt(a.created_at)}</span>
+                    <ChevronRight size={16} style={{ transform: open === a.analysis_id ? "rotate(90deg)" : "none", transition: "transform .15s" }} />
+                  </div>
+                </div>
+                {open === a.analysis_id && (
+                  <div className="hist-detail" data-testid="history-detail">
+                    <p className="compare-sum">{a.summary}</p>
+                    {(a.fields || []).map((f, i) => (
+                      <div className="field-row" key={i}><span className="k">{f.label}</span><span className="v">{String(f.value)}</span></div>
+                    ))}
+                    <p className="hist-count">{(a.fields || []).length} {t("hist_fields")}</p>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 
 function SectorLanding({ slug }) {
   const { t, lang } = useI18n();

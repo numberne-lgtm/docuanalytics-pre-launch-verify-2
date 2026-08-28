@@ -378,6 +378,26 @@ async def chat_copilot(req: ChatReq, request: Request):
     return {"answer": resp if isinstance(resp, str) else str(resp)}
 
 
+@api.get("/analyses")
+async def list_analyses(user_id: Optional[str] = None, request: Request = None):
+    uid = await _auth_user_id(request, user_id)
+    cur = db.analyses.find({"user_id": uid}, {"_id": 0}).sort("created_at", -1).limit(50)
+    items = []
+    async for a in cur:
+        r = a.get("result", {})
+        items.append({
+            "analysis_id": a.get("analysis_id"),
+            "doc_type": r.get("doc_type") or a.get("doc_type"),
+            "filename": a.get("filename"),
+            "summary": r.get("summary", ""),
+            "ai_provider": a.get("ai_provider", "gemini"),
+            "fields": r.get("fields", []),
+            "audit": r.get("audit", []),
+            "created_at": a.get("created_at"),
+        })
+    return {"analyses": items}
+
+
 # ---------------- Payments (raw Stripe SDK; account uses Managed Payments) ----------------
 import stripe
 stripe.api_key = STRIPE_API_KEY

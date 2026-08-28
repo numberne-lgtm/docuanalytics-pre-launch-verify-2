@@ -1,0 +1,29 @@
+{
+  "summary": "Frontend-only e2e testing (Playwright, 1920x1080, preview URL) of the 3 new features: (1) contextual AI model hint, (2) Analysis History modal, (3) Model Comparison. Generated a synthetic Italian invoice PNG (/tmp/fattura_test.png) and ran the full flow on a fresh anonymous session (3 free credits). ALL 5 requested scenarios PASSED: model-hint toggles correctly ('Consigliato per contratti e testi lunghi' / 'Veloce su fatture e documenti strutturati'); Gemini analysis -> model-badge 'Gemini' with 11 extracted fields; Claude analysis -> model-badge 'Claude Sonnet 5' with 10 fields + 5 audit checks; compare-btn shows 'Confronta con Claude' (and 'Confronta con Gemini' after a Claude run), shows spinner while comparing, then compare-panel renders 2 columns with correct badges (Gemini / Claude Sonnet 5) and field lists; history modal shows history-empty on a fresh session, and after 2 analyses shows history-list with 2 history-item entries (doc type 'Fattura', filename, correct Gemini/Claude badge, date); clicking an item expands history-detail with summary + extracted fields; close-history closes the modal. Credits decremented correctly 3 -> 2 (Gemini) -> 1 (compare) -> 0 (Claude). No console errors observed.",
+  "backend_issues": { "critical": [], "minor": [] },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {
+        "screen": "HistoryModal (history-item date)",
+        "issues": ["Date rendered via new Date(iso).toLocaleString() uses the browser locale, producing US format '8/28/2026, 10:24:54 PM' while the app UI language is Italian. Consider toLocaleString based on the active i18n lang."]
+      }
+    ]
+  },
+  "test_report_links": ["/app/test_reports/iteration_15.json"],
+  "action_items": ["Optional/minor: localize the history-item timestamp to the selected app language instead of the browser locale."],
+  "critical_code_review_comments": [
+    "App.js is 2081 lines - consider splitting components (Home, Results, HistoryModal, pricing/paypal) into separate modules.",
+    "compareWithOther() requires the original File object still in state; after a reload or reset the compare button silently no-ops (returns early when !file). Consider hiding/disabling compare-btn when no file is present.",
+    "HistoryModal swallows fetch errors in a bare catch and renders the empty state; an API failure is indistinguishable from 'no analyses'. Add an explicit error state with a data-testid."
+  ],
+  "updated_files": [],
+  "success_rate": { "backend": "not tested (skipped per request)", "frontend": "100% (5/5 scenarios passed)" },
+  "seed_data_creation": "Anonymous session auto-created by the app; 3 analyses recorded (2 Gemini incl. compare, 1 Claude) on a synthetic invoice image /tmp/fattura_test.png.",
+  "should_call_test_agent_after_fix": false,
+  "should_main_agent_self_test": true,
+  "test_credentials": "None needed - anonymous session with 3 free credits",
+  "context_for_next_testing_agent": "Playwright flow: set_input_files on [data-testid=file-input] with a generated invoice PNG, click model-gemini/model-claude, analyze-btn, then wait up to 120-150s for [data-testid=model-badge]. Claude analyses take ~20-40s. Each analysis and each compare consumes 1 credit; a fresh browser context resets localStorage 'da_uid' so credits reset to 3. Avoid backslashes inside f-strings in the automation script (tool-level syntax error). Credits-out -> pricing modal path was NOT explicitly re-verified this iteration.",
+  "rca_of_the_issue": "No functional defects found; only a minor i18n/date-locale inconsistency in the history modal."
+}
