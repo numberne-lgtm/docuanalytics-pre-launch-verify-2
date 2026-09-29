@@ -31,7 +31,10 @@ dist/
 dist
 
 # Environment files (comprehensive coverage)
-
+.env
+.env.*
+**/.env
+**/.env.*
 *token.json*
 *credentials.json*
 
@@ -72,6 +75,9 @@ agenthub/agents/youtube/db
 *.pack
 *.deb
 *.dylib
+
+# Legacy artifacts (old DocuMind bundles — not used by the app; contain no-longer-valid keys)
+_incoming/
 
 # Build caches
 .cache/
