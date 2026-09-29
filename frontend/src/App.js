@@ -9,7 +9,7 @@ import {
   Sparkles, Copy, Play, Lock, Facebook, Linkedin, Youtube, Globe,
   ShieldCheck, Trash2, BadgeCheck, Ban, ChevronDown,
   Clock, AlertTriangle, Search, Rocket, Scale, FileSignature, TrendingUp,
-  Users, Briefcase, Files, Server, ArrowRight, Mail, History, FileDown, FileCode, Pencil
+  Users, Briefcase, Files, Server, ArrowRight, Mail, History, FileDown, FileCode, Pencil, Bell, CalendarClock, Trash2
 } from "lucide-react";
 import { createPortal } from "react-dom";
 import { BlogIndex, BlogPost } from "./Blog";
@@ -561,6 +561,7 @@ function Home() {
   const [compare, setCompare] = useState(null);
   const [comparing, setComparing] = useState(false);
   const [histOpen, setHistOpen] = useState(false);
+  const [remOpen, setRemOpen] = useState(false);
   const [file, setFile] = useState(null);
   const [drag, setDrag] = useState(false);
   const [stage, setStage] = useState(-1); // pipeline
@@ -681,7 +682,7 @@ function Home() {
       <Header credits={user.credits} authed={authed} user={user}
         onTopup={() => openPricing("header")} onAuth={() => setAuthOpen(true)}
         onReferral={() => setRefOpen(true)} onLogout={() => { logout(); notify(t("n_disconnected")); }}
-        onHistory={() => setHistOpen(true)} />
+        onHistory={() => setHistOpen(true)} onReminders={() => setRemOpen(true)} />
 
       <main className="wrap">
         {/* Hero */}
@@ -796,6 +797,7 @@ function Home() {
 
         {result && <Results key={analysisId} result={result} analysisId={analysisId} notify={notify} aiModel={aiModel} provider={usedProvider}
           compare={compare} comparing={comparing} onCompare={compareWithOther} canCompare={!!file}
+          userEmail={user.email}
           credits={user.credits} onTopup={() => openPricing("after_analysis")}
           onAgain={() => { setFile(null); setResult(null); setStage(-1); scrollToId("upload"); }} />}
 
@@ -820,18 +822,19 @@ function Home() {
       {authOpen && <AuthModal user={user} onClose={() => setAuthOpen(false)} onAuthed={login} notify={notify} />}
       {refOpen && <ReferralModal user={user} onClose={() => setRefOpen(false)} notify={notify} />}
       {histOpen && <HistoryModal onClose={() => setHistOpen(false)} onReopen={(a) => {
-        setResult({ doc_type: a.doc_type, summary: a.summary, fields: a.fields || [], audit: a.audit || [] });
+        setResult({ doc_type: a.doc_type, summary: a.summary, fields: a.fields || [], audit: a.audit || [], structured: a.structured || {}, category: a.category || "other" });
         setAnalysisId(a.analysis_id); setUsedProvider(a.ai_provider);
         setFile(null); setCompare(null); setHistOpen(false);
         setTimeout(() => scrollToId("results"), 300);
       }} />}
+      {remOpen && <RemindersModal onClose={() => setRemOpen(false)} notify={notify} />}
       {guideOpen && <ServicesGuideModal onClose={() => setGuideOpen(false)} />}
       <Toast msg={toast} />
     </div>
   );
 }
 
-function Header({ credits, authed, user, onTopup, onAuth, onReferral, onLogout, onHistory }) {
+function Header({ credits, authed, user, onTopup, onAuth, onReferral, onLogout, onHistory, onReminders }) {
   const { t } = useI18n();
   return (
     <header className="header">
@@ -842,6 +845,7 @@ function Header({ credits, authed, user, onTopup, onAuth, onReferral, onLogout, 
           <button className="btn btn-sm btn-ghost nav-anchor" data-testid="nav-price" onClick={() => scrollToId("prezzi")}>{t("nav_price")}</button>
           <Link to="/blog" className="btn btn-sm btn-ghost" data-testid="nav-blog"><BookOpen size={15} /> {t("blog_link")}</Link>
           <button className="btn btn-sm btn-ghost nav-anchor" data-testid="nav-history" onClick={onHistory}><History size={15} /> {t("nav_history")}</button>
+          {authed && <button className="btn btn-sm btn-ghost nav-anchor" data-testid="nav-reminders" onClick={onReminders}><Bell size={15} /> {t("nav_reminders")}</button>}
           <LanguageSwitcher />
           <span className="credits-badge" data-testid="credits-badge"><Zap size={15} /> {credits} {t("credits")}</span>
           <button className="btn btn-primary btn-sm" data-testid="topup-btn" onClick={onTopup}><CreditCard size={15} /> {t("topup")}</button>
@@ -860,14 +864,37 @@ function Header({ credits, authed, user, onTopup, onAuth, onReferral, onLogout, 
   );
 }
 
-function Results({ result, analysisId, notify, credits, onTopup, onAgain, aiModel, provider, compare, comparing, onCompare, canCompare }) {
+function Results({ result, analysisId, notify, credits, onTopup, onAgain, aiModel, provider, compare, comparing, onCompare, canCompare, userEmail }) {
   const { t } = useI18n();
   const [q, setQ] = useState("");
   const [msgs, setMsgs] = useState([]);
   const [loading, setLoading] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
+  const [remSaved, setRemSaved] = useState(false);
+  const [remBusy, setRemBusy] = useState(false);
   const fieldsN = (result.fields || []).length;
   const checksN = (result.audit || []).length;
+
+  const deadline = (() => {
+    const s = result.structured || {};
+    if (result.category === "contract" && s.expiration_date) return { label: `Scadenza contratto`, due: s.expiration_date, doc: "Contratto" };
+    if (result.category === "f24" && s.due_date) return { label: `Versamento F24`, due: s.due_date, doc: "F24" };
+    return null;
+  })();
+
+  const createReminder = async () => {
+    setRemBusy(true);
+    try {
+      await axios.post(`${API}/reminders`, {
+        user_id: localStorage.getItem("da_uid"), analysis_id: analysisId,
+        doc_type: deadline.doc, label: deadline.label, due_date: deadline.due,
+      });
+      setRemSaved(true);
+      notify(t("reminder_created"));
+    } catch (e) {
+      notify(e?.response?.data?.detail || t("export_fail"));
+    } finally { setRemBusy(false); }
+  };
 
   const ask = async () => {
     if (!q.trim()) return;

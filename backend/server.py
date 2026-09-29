@@ -191,18 +191,20 @@ def _generic_500(context: str, e: Exception):
     return HTTPException(500, "Si è verificato un errore. Riprova tra poco.")
 
 
-async def _send_email_bg(to_email: str, subject: str, html: str):
+async def _send_email_bg(to_email: str, subject: str, html: str) -> bool:
     if not RESEND_API_KEY:
         logger.info(f"[email disabled] would send '{subject}' to {to_email}")
-        return
+        return False
     try:
         import resend
         resend.api_key = RESEND_API_KEY
         await asyncio.to_thread(resend.Emails.send, {
             "from": SENDER_EMAIL, "to": [to_email], "subject": subject, "html": html,
         })
+        return True
     except Exception as e:
         logger.error(f"send email failed: {e}")
+        return False
 
 
 def _verify_email_html(link: str) -> str:
@@ -403,6 +405,8 @@ async def list_analyses(user_id: Optional[str] = None, request: Request = None):
             "ai_provider": a.get("ai_provider", "gemini"),
             "fields": r.get("fields", []),
             "audit": r.get("audit", []),
+            "structured": r.get("structured", {}),
+            "category": r.get("category", "other"),
             "created_at": a.get("created_at"),
         })
     return {"analyses": items}
@@ -467,6 +471,119 @@ async def export_accounting(req: ExportReq):
     return StreamingResponse(
         iter([data]), media_type=media,
         headers={"Content-Disposition": f'attachment; filename="{fname}"'})
+
+
+# ---------------- Deadline Reminders (contracts / F24) ----------------
+REMINDER_DEFAULT_DAYS = [30, 7, 1]
+
+
+class ReminderReq(BaseModel):
+    user_id: Optional[str] = None
+    analysis_id: Optional[str] = None
+    doc_type: Optional[str] = ""
+    label: str
+    due_date: str
+    notify_days: Optional[list] = None
+
+
+def _to_iso_date(s):
+    iso = _xe._norm_date(s or "")
+    try:
+        return datetime.strptime(iso, "%Y-%m-%d").date()
+    except Exception:
+        return None
+
+
+def _reminder_email_html(label, doc_type, due_str, days_left):
+    when = "oggi" if days_left == 0 else (f"tra {days_left} giorni" if days_left > 0 else "scaduta")
+    dt = f" ({doc_type})" if doc_type else ""
+    return (
+        "<div style=\"font-family:Arial,sans-serif;max-width:480px;margin:0 auto;color:#152033\">"
+        "<h2 style=\"color:#315efb\">DocuAnalytics AI — Promemoria scadenza</h2>"
+        f"<p>La scadenza <b>{label}</b>{dt} è <b>{when}</b>.</p>"
+        f"<p style=\"font-size:15px\">Data scadenza: <b>{due_str}</b></p>"
+        "<p style=\"font-size:12px;color:#667085\">Ricevi questo promemoria perché lo hai attivato su DocuAnalytics AI.</p>"
+        "</div>"
+    )
+
+
+@api.post("/reminders")
+async def create_reminder(req: ReminderReq, request: Request):
+    uid = await _auth_user_id(request, req.user_id)
+    u = await db.users.find_one({"user_id": uid}, {"_id": 0})
+    if not u or not u.get("email"):
+        raise HTTPException(status_code=403, detail="Accedi con un account per creare promemoria via email.")
+    d = _to_iso_date(req.due_date)
+    if not d:
+        raise HTTPException(status_code=400, detail="Data di scadenza non valida.")
+    days = [int(x) for x in (req.notify_days or REMINDER_DEFAULT_DAYS) if str(x).strip().lstrip("-").isdigit()]
+    days = sorted({x for x in days if x >= 0}, reverse=True) or REMINDER_DEFAULT_DAYS
+    rid = str(uuid.uuid4())
+    await db.reminders.insert_one({
+        "reminder_id": rid, "user_id": uid, "email": u["email"],
+        "analysis_id": req.analysis_id, "doc_type": req.doc_type or "",
+        "label": (req.label or "Scadenza")[:200], "due_date": d.isoformat(),
+        "notify_days": days, "sent": [], "active": True,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    })
+    return {"reminder_id": rid, "due_date": d.isoformat(), "notify_days": days}
+
+
+@api.get("/reminders")
+async def list_reminders(user_id: Optional[str] = None, request: Request = None):
+    uid = await _auth_user_id(request, user_id)
+    today = datetime.now(timezone.utc).date()
+    out = []
+    async for r in db.reminders.find({"user_id": uid, "active": True}, {"_id": 0}).sort("due_date", 1):
+        try:
+            dl = (datetime.strptime(r["due_date"], "%Y-%m-%d").date() - today).days
+        except Exception:
+            dl = None
+        out.append({**r, "days_left": dl})
+    return {"reminders": out}
+
+
+@api.delete("/reminders/{reminder_id}")
+async def delete_reminder(reminder_id: str, user_id: Optional[str] = None, request: Request = None):
+    uid = await _auth_user_id(request, user_id)
+    await db.reminders.update_one({"reminder_id": reminder_id, "user_id": uid}, {"$set": {"active": False}})
+    return {"ok": True}
+
+
+async def _check_reminders():
+    today = datetime.now(timezone.utc).date()
+    async for r in db.reminders.find({"active": True}):
+        try:
+            due = datetime.strptime(r["due_date"], "%Y-%m-%d").date()
+        except Exception:
+            continue
+        days_left = (due - today).days
+        sent = set(r.get("sent", []))
+        changed = False
+        for d in r.get("notify_days", []):
+            if days_left == d and d not in sent and r.get("email"):
+                ok = await _send_email_bg(
+                    r["email"], f"Promemoria scadenza: {r.get('label', '')}",
+                    _reminder_email_html(r.get("label", ""), r.get("doc_type", ""), r["due_date"], days_left))
+                if ok:
+                    sent.add(d)
+                    changed = True
+        if changed:
+            await db.reminders.update_one({"reminder_id": r["reminder_id"]}, {"$set": {"sent": sorted(sent)}})
+
+
+async def _reminder_loop():
+    while True:
+        try:
+            await _check_reminders()
+        except Exception as e:
+            logger.error(f"reminder loop error: {e}")
+        await asyncio.sleep(12 * 3600)
+
+
+@app.on_event("startup")
+async def _start_reminder_scheduler():
+    asyncio.create_task(_reminder_loop())
 
 
 # ---------------- Payments (raw Stripe SDK; account uses Managed Payments) ----------------
