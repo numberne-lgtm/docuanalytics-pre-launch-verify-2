@@ -9,7 +9,7 @@ import {
   Sparkles, Copy, Play, Lock, Facebook, Linkedin, Youtube, Globe,
   ShieldCheck, Trash2, BadgeCheck, Ban, ChevronDown,
   Clock, AlertTriangle, Search, Rocket, Scale, FileSignature, TrendingUp,
-  Users, Briefcase, Files, Server, ArrowRight, Mail, History, FileDown, FileCode, Pencil, Bell, CalendarClock, Trash2
+  Users, Briefcase, Files, Server, ArrowRight, Mail, History, FileDown, FileCode, Pencil, Bell, CalendarClock
 } from "lucide-react";
 import { createPortal } from "react-dom";
 import { BlogIndex, BlogPost } from "./Blog";
@@ -965,6 +965,25 @@ function Results({ result, analysisId, notify, credits, onTopup, onAgain, aiMode
           </span>
         )}
       </div>
+
+      {deadline && (
+        <div className="deadline-card glass pad" data-testid="deadline-card">
+          <div className="dl-info">
+            <CalendarClock size={20} color="var(--accent)" />
+            <div>
+              <div className="dl-lbl">{t("deadline_label")}: <strong>{deadline.label}</strong></div>
+              <div className="dl-date">{deadline.due} · {t("reminder_notify_info")}</div>
+            </div>
+          </div>
+          {userEmail ? (
+            <button className="btn btn-primary btn-sm" data-testid="create-reminder-btn" onClick={createReminder} disabled={remBusy || remSaved}>
+              {remSaved ? <><CheckCircle2 size={15} /> {t("reminder_created")}</> : <><Bell size={15} /> {t("create_reminder")}</>}
+            </button>
+          ) : (
+            <span className="dl-login" data-testid="reminder-login-hint">{t("reminder_login")}</span>
+          )}
+        </div>
+      )}
 
       <div className="results-grid">
         <div className="glass pad">
@@ -2166,6 +2185,73 @@ function HistoryModal({ onClose, onReopen }) {
     </div>
   );
 }
+
+function RemindersModal({ onClose, notify }) {
+  const { t, lang } = useI18n();
+  const [items, setItems] = useState(null);
+
+  const load = async () => {
+    try {
+      const uid = localStorage.getItem("da_uid");
+      const { data } = await axios.get(`${API}/reminders`, { params: { user_id: uid } });
+      setItems(data.reminders || []);
+    } catch { setItems([]); }
+  };
+  useEffect(() => { load(); }, []);
+
+  const remove = async (id) => {
+    try {
+      await axios.delete(`${API}/reminders/${id}`, { params: { user_id: localStorage.getItem("da_uid") } });
+      setItems((arr) => (arr || []).filter((r) => r.reminder_id !== id));
+    } catch { notify(t("export_fail")); }
+  };
+
+  const LOCALE = { it: "it-IT", en: "en-US", es: "es-ES", de: "de-DE", fr: "fr-FR" };
+  const fmt = (iso) => { try { return new Date(iso + "T00:00:00").toLocaleDateString(LOCALE[lang] || "it-IT"); } catch { return iso; } };
+  const badge = (d) => {
+    if (d == null) return { cls: "mb-gemini", txt: "—" };
+    if (d < 0) return { cls: "mb-claude", txt: t("expired_lbl") };
+    if (d === 0) return { cls: "mb-claude", txt: t("today_lbl") };
+    return { cls: d <= 7 ? "mb-claude" : "mb-gemini", txt: `${d} ${t("days_short")}` };
+  };
+
+  return createPortal(
+    <div className="modal-bg" onClick={onClose}>
+      <div className="modal glass pad fade" onClick={(e) => e.stopPropagation()} data-testid="reminders-modal">
+        <div className="modal-head">
+          <h2 className="section-title flex aic gap"><Bell size={20} /> {t("reminders_title")}</h2>
+          <button className="close-x" data-testid="close-reminders" onClick={onClose}><X size={18} /></button>
+        </div>
+        {items === null && <div className="center pad"><Loader2 className="spinner" /></div>}
+        {items !== null && items.length === 0 && <p className="section-sub" data-testid="reminders-empty">{t("reminders_empty")}</p>}
+        {items !== null && items.length > 0 && (
+          <div className="hist-list" data-testid="reminders-list">
+            {items.map((r) => {
+              const b = badge(r.days_left);
+              return (
+                <div className="hist-item glass pad" key={r.reminder_id} data-testid="reminder-item">
+                  <div className="hist-row">
+                    <div className="hist-main">
+                      <strong>{r.label}</strong>
+                      <span className="hist-file">{r.doc_type} · {fmt(r.due_date)}</span>
+                    </div>
+                    <div className="flex aic gap">
+                      <span className={"wow-chip model-badge " + b.cls}><CalendarClock size={12} /> {b.txt}</span>
+                      <button className="close-x" data-testid="delete-reminder" onClick={() => remove(r.reminder_id)}><Trash2 size={15} /></button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>,
+    document.body
+  );
+}
+
+
 
 
 function SectorLanding({ slug }) {

@@ -1,5 +1,17 @@
 # DocuAnalytics AI — PRD & Stato Progetto
 
+## AGGIORNAMENTO 2026-09 (16) — Reminder Scadenze completati + fix build deploy ✅
+- **Reminder Scadenze** (contratti/F24): backend `POST/GET/DELETE /api/reminders` + scheduler asyncio (`_reminder_loop`, check ogni 12h) che invia email 30/7/1 giorni prima via Resend. `_send_email_bg` ora ritorna esito (non marca "inviato" se l'invio fallisce). CRUD + scheduler testati via curl (invio+marcatura OK con mittente verificato).
+- **Frontend Reminder**: card "Crea promemoria" in `Results` quando c'è una scadenza (contract.expiration_date / f24.due_date) e l'utente è loggato; modal "Scadenze" (`RemindersModal`) dal header con badge conto-alla-rovescia e delete. i18n 5 lingue.
+- **Resend**: key configurata; `SENDER_EMAIL=noreply@docuanalytics.it`. ⚠️ Dominio NON ancora verificato su Resend → gli invii dal dominio custom falliscono finché non si aggiungono i record DNS su Register.it. `EMAIL_VERIFICATION_ENABLED=false` (non attivata per non rompere la registrazione).
+- **FIX BUILD DEPLOY**: rimosso import duplicato `Trash2` (App.js:12) e definito `RemindersModal` mancante → il deploy era fallito su `yarn build`. Verificato `CI=false yarn build` → **Compiled successfully** (exit 0). Deploy ri-triggerato.
+- ⚠️ La UI Reminder non è ancora stata testata end-to-end via browser (solo build + backend curl).
+
+## AGGIORNAMENTO 2026-09 (15) — Sicurezza pre-push GitHub (audit + bonifica + purga storia)
+- `.gitignore` esteso (`.env`, `.env.*`, `**/.env`, `_incoming/`); `backend/.env` e `frontend/.env` ora IGNORED e non tracciati.
+- `_incoming/` (bundle legacy "DocuMind" con Stripe secret key hardcoded) rimosso dal tracking e **purgato da TUTTA la storia Git** (`git filter-branch` + gc). File fisici preservati (236). Storia e snapshot: **0 segreti**. Nessun remote, nessun push. Consigliata rotazione prudenziale della Stripe key legacy.
+
+
 ## AGGIORNAMENTO 2026-06 (14) — Italian Professional Accounting & Legal Export Engine ✅ TESTATO (95%→fix)
 - **Estrazione strutturata tipizzata**: il prompt di `/api/analyze` ora restituisce `category` (invoice/f24/visura/contract/other) e `structured` con schema dedicato per categoria (fattura: supplier/customer/document/totals/vat_lines/iban/line_items; F24: taxpayer/sections/codici tributo/saldi; visura: company/REA/ATECO/rappresentanti; contratto: parties/date/penali/reminder). Selettore categoria manuale nel drawer come fallback.
 - **Validatori CF/P.IVA** (checksum): `export_engine.py` (Python) + `content.js` (JS) — P.IVA algoritmo di controllo mod10, Codice Fiscale tabelle pari/dispari mod26. Validazione live nel Field Mapping.
