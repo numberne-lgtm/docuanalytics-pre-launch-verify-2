@@ -1192,6 +1192,7 @@ def _gen_ref_code() -> str:
 
 def _public_user(u: dict) -> dict:
     return {"user_id": u["user_id"], "email": u.get("email"), "name": u.get("name"),
+            "picture": u.get("picture"),
             "credits": u.get("credits", 0), "referral_code": u.get("referral_code")}
 
 
@@ -1350,6 +1351,78 @@ async def login(req: LoginReq, request: Request):
         await db.users.update_one({"user_id": u["user_id"]}, {"$set": {"referral_code": code}})
         u["referral_code"] = code
     return {"token": _make_token(u["user_id"], email), "user": _public_user(u)}
+
+
+# ---------------- Emergent-managed Google sign-in ----------------
+# REMINDER: DO NOT HARDCODE THE URL, OR ADD ANY FALLBACKS OR REDIRECT URLS, THIS BREAKS THE AUTH
+EMERGENT_SESSION_DATA_URL = "https://demobackend.emergentagent.com/auth/v1/env/oauth/session-data"
+
+
+class GoogleAuthReq(BaseModel):
+    session_id: str
+    user_id: Optional[str] = None   # anonymous uuid to upgrade (preserves free credits)
+    ref: Optional[str] = None       # referral code of the inviter
+
+
+@api.post("/auth/google")
+async def google_auth(req: GoogleAuthReq, request: Request):
+    """Exchange a one-time Emergent session_id for the Google profile (server-side only),
+    then upsert the user and issue the SAME app JWT that email/password login returns.
+    This keeps every existing endpoint (credits, payments, referrals) working unchanged."""
+    ip = _client_ip(request)
+    _rate_limit(f"gauth:{ip}", 20, 3600)
+    if not req.session_id:
+        raise HTTPException(400, "Sessione Google mancante.")
+    try:
+        async with httpx.AsyncClient(timeout=20) as c:
+            r = await c.get(EMERGENT_SESSION_DATA_URL, headers={"X-Session-ID": req.session_id})
+    except Exception as e:
+        raise _generic_500("google session-data", e)
+    if r.status_code != 200:
+        raise HTTPException(401, "Autenticazione Google non valida o scaduta.")
+    data = r.json()
+    email = (data.get("email") or "").strip().lower()
+    if not email:
+        raise HTTPException(401, "Profilo Google senza email.")
+    name = data.get("name") or email.split("@")[0]
+    picture = data.get("picture")
+    now = datetime.now(timezone.utc).isoformat()
+
+    # 1) Existing account by email -> treat as login (Google is just another entry point).
+    u = await db.users.find_one({"email": email}, {"_id": 0})
+    if u:
+        set_fields = {"updated_at": now, "auth_provider": u.get("auth_provider") or "google"}
+        if picture and not u.get("picture"):
+            set_fields["picture"] = picture
+        if not u.get("name"):
+            set_fields["name"] = name
+        if not u.get("referral_code"):
+            set_fields["referral_code"] = _gen_ref_code()
+        await db.users.update_one({"user_id": u["user_id"]}, {"$set": set_fields})
+        u = await db.users.find_one({"user_id": u["user_id"]}, {"_id": 0})
+        return {"token": _make_token(u["user_id"], email), "user": _public_user(u)}
+
+    # 2) New Google user. Google emails are already verified -> grant free credits.
+    ref_code = _gen_ref_code()
+    anon = None
+    if req.user_id:
+        anon = await db.users.find_one({"user_id": req.user_id}, {"_id": 0})
+        if anon and anon.get("email"):
+            anon = None  # already a real account -> create a fresh one instead
+    if anon:
+        await db.users.update_one({"user_id": req.user_id}, {"$set": {
+            "email": email, "name": name, "picture": picture, "email_verified": True,
+            "referral_code": ref_code, "auth_provider": "google", "signup_ip": ip, "updated_at": now}})
+        user_id = req.user_id
+    else:
+        user_id = str(uuid.uuid4())
+        await db.users.insert_one({
+            "user_id": user_id, "email": email, "name": name, "picture": picture,
+            "credits": FREE_CREDITS, "email_verified": True, "referral_code": ref_code,
+            "auth_provider": "google", "signup_ip": ip, "created_at": now})
+    await _apply_referral(req.ref, user_id, ip, now)
+    u = await db.users.find_one({"user_id": user_id}, {"_id": 0})
+    return {"token": _make_token(user_id, email), "user": _public_user(u)}
 
 
 @api.get("/auth/me")

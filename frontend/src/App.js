@@ -97,7 +97,7 @@ const T = {
     foot_desc: "Estrazione automatica ad alta precisione per studi legali, notai e commercialisti • Server UE • GDPR",
     foot_guide: "Guida ai servizi", foot_topup: "Ricarica Crediti",
     pric_title: "Ricarica Crediti", tab_card: "Carta / Stripe", tab_crypto: "Crypto (BTC/USDT)",
-    auth_login: "Accedi", auth_register: "Crea account", lang_label: "Lingua",
+    auth_login: "Accedi", auth_register: "Crea account", auth_google: "Continua con Google", auth_or: "oppure", lang_label: "Lingua",
     auth_submit_reg: "Registrati (+3 crediti gratis)", auth_pw_ph: "Password (min 6 caratteri)", auth_name_ph: "Nome (es. Studio Rossi)", auth_helper: "Registrandoti salvi i tuoi crediti e puoi accedere da qualsiasi dispositivo.", auth_bonus: "🎁 Invito valido: riceverai +5 crediti bonus!",
     ex_data: "Dati Estratti", no_fields: "Nessun campo strutturato rilevato.", no_anom: "Nessuna anomalia rilevata.", chat_empty: "Chiedi qualsiasi cosa sul documento, es. \"Qual è il totale da pagare?\"", chat_ph: "Fai una domanda...", exported: "Esportato", verified: "Verificato",
     pop: "POPOLARE", buy: "Acquista", per_month: "/mese", unlim_cr: "Crediti illimitati", cr: "crediti", your_subs: "I tuoi abbonamenti", cancelling: "in cancellazione", cancel: "Annulla", packs_ttl: "Pacchetti Crediti (pagamento singolo)", subs_ttl: "Abbonamenti Studio (rinnovo mensile automatico dei crediti)", stripe_note: "Pagamenti sicuri via Stripe (Managed Payments, IVA gestita da Stripe).", cr_step1: "1. Scegli pacchetto", cr_step2: "2. Scegli valuta", cr_order: "Registra ordine", copy_addr: "Copia indirizzo", unlim: "illimitati", cr_short: "cr",
@@ -133,7 +133,7 @@ const T = {
     foot_desc: "High-precision automatic extraction for law firms, notaries and accountants • EU servers • GDPR",
     foot_guide: "Services guide", foot_topup: "Buy Credits",
     pric_title: "Buy Credits", tab_card: "Card / Stripe", tab_crypto: "Crypto (BTC/USDT)",
-    auth_login: "Sign in", auth_register: "Create account", lang_label: "Language",
+    auth_login: "Sign in", auth_register: "Create account", auth_google: "Continue with Google", auth_or: "or", lang_label: "Language",
     auth_submit_reg: "Sign up (+3 free credits)", auth_pw_ph: "Password (min 6 characters)", auth_name_ph: "Name (e.g. Rossi Firm)", auth_helper: "By signing up you keep your credits and can log in from any device.", auth_bonus: "🎁 Valid invite: you will get +5 bonus credits!",
     ex_data: "Extracted Data", no_fields: "No structured field detected.", no_anom: "No anomalies detected.", chat_empty: "Ask anything about the document, e.g. \"What's the total to pay?\"", chat_ph: "Ask a question...", exported: "Exported", verified: "Verified",
     pop: "POPULAR", buy: "Buy", per_month: "/month", unlim_cr: "Unlimited credits", cr: "credits", your_subs: "Your subscriptions", cancelling: "cancelling", cancel: "Cancel", packs_ttl: "Credit Packs (one-time payment)", subs_ttl: "Firm Subscriptions (automatic monthly credit renewal)", stripe_note: "Secure payments via Stripe (Managed Payments, VAT handled by Stripe).", cr_step1: "1. Choose package", cr_step2: "2. Choose currency", cr_order: "Place order", copy_addr: "Copy address", unlim: "unlimited", cr_short: "cr",
@@ -169,7 +169,7 @@ const T = {
     foot_desc: "Extracción automática de alta precisión para bufetes, notarías y asesorías • Servidores UE • RGPD",
     foot_guide: "Guía de servicios", foot_topup: "Comprar Créditos",
     pric_title: "Comprar Créditos", tab_card: "Tarjeta / Stripe", tab_crypto: "Cripto (BTC/USDT)",
-    auth_login: "Acceder", auth_register: "Crear cuenta", lang_label: "Idioma",
+    auth_login: "Acceder", auth_register: "Crear cuenta", auth_google: "Continuar con Google", auth_or: "o", lang_label: "Idioma",
     auth_submit_reg: "Registrarse (+3 créditos gratis)", auth_pw_ph: "Contraseña (mín 6 caracteres)", auth_name_ph: "Nombre (p. ej. Despacho Rossi)", auth_helper: "Al registrarte conservas tus créditos y puedes acceder desde cualquier dispositivo.", auth_bonus: "🎁 Invitación válida: recibirás +5 créditos de bonificación!",
     ex_data: "Datos Extraídos", no_fields: "No se detectó ningún campo estructurado.", no_anom: "No se detectaron anomalías.", chat_empty: "Pregunta lo que quieras sobre el documento, p. ej. \"¿Cuál es el total a pagar?\"", chat_ph: "Haz una pregunta...", exported: "Exportado", verified: "Verificado",
     pop: "POPULAR", buy: "Comprar", per_month: "/mes", unlim_cr: "Créditos ilimitados", cr: "créditos", your_subs: "Tus suscripciones", cancelling: "cancelando", cancel: "Cancelar", packs_ttl: "Packs de Créditos (pago único)", subs_ttl: "Suscripciones de Despacho (renovación mensual automática de créditos)", stripe_note: "Pagos seguros vía Stripe (Managed Payments, IVA gestionado por Stripe).", cr_step1: "1. Elige el paquete", cr_step2: "2. Elige la moneda", cr_order: "Registrar pedido", copy_addr: "Copiar dirección", unlim: "ilimitados", cr_short: "cr",
@@ -205,7 +205,7 @@ const T = {
     foot_desc: "Hochpräzise automatische Extraktion für Kanzleien, Notare und Steuerberater • EU-Server • DSGVO",
     foot_guide: "Service-Leitfaden", foot_topup: "Guthaben kaufen",
     pric_title: "Guthaben kaufen", tab_card: "Karte / Stripe", tab_crypto: "Krypto (BTC/USDT)",
-    auth_login: "Anmelden", auth_register: "Konto erstellen", lang_label: "Sprache",
+    auth_login: "Anmelden", auth_register: "Konto erstellen", auth_google: "Mit Google fortfahren", auth_or: "oder", lang_label: "Sprache",
     auth_submit_reg: "Registrieren (+3 Gratis-Guthaben)", auth_pw_ph: "Passwort (min. 6 Zeichen)", auth_name_ph: "Name (z. B. Kanzlei Rossi)", auth_helper: "Mit der Registrierung behalten Sie Ihr Guthaben und können sich von jedem Gerät anmelden.", auth_bonus: "🎁 Gültige Einladung: Sie erhalten +5 Bonus-Guthaben!",
     ex_data: "Extrahierte Daten", no_fields: "Kein strukturiertes Feld erkannt.", no_anom: "Keine Anomalien erkannt.", chat_empty: "Fragen Sie alles zum Dokument, z. B. \"Wie hoch ist der zu zahlende Betrag?\"", chat_ph: "Stellen Sie eine Frage...", exported: "Exportiert", verified: "Verifiziert",
     pop: "BELIEBT", buy: "Kaufen", per_month: "/Monat", unlim_cr: "Unbegrenztes Guthaben", cr: "Guthaben", your_subs: "Ihre Abonnements", cancelling: "wird gekündigt", cancel: "Kündigen", packs_ttl: "Guthaben-Pakete (Einmalzahlung)", subs_ttl: "Kanzlei-Abos (automatische monatliche Guthaben-Verlängerung)", stripe_note: "Sichere Zahlungen über Stripe (Managed Payments, USt. von Stripe verwaltet).", cr_step1: "1. Paket wählen", cr_step2: "2. Währung wählen", cr_order: "Bestellung erfassen", copy_addr: "Adresse kopieren", unlim: "unbegrenzt", cr_short: "Gh",
@@ -241,7 +241,7 @@ const T = {
     foot_desc: "Extraction automatique haute précision pour cabinets d'avocats, notaires et experts-comptables • Serveurs UE • RGPD",
     foot_guide: "Guide des services", foot_topup: "Acheter des crédits",
     pric_title: "Acheter des crédits", tab_card: "Carte / Stripe", tab_crypto: "Crypto (BTC/USDT)",
-    auth_login: "Se connecter", auth_register: "Créer un compte", lang_label: "Langue",
+    auth_login: "Se connecter", auth_register: "Créer un compte", auth_google: "Continuer avec Google", auth_or: "ou", lang_label: "Langue",
     auth_submit_reg: "S'inscrire (+3 crédits gratuits)", auth_pw_ph: "Mot de passe (min 6 caractères)", auth_name_ph: "Nom (ex. Cabinet Rossi)", auth_helper: "En vous inscrivant, vous conservez vos crédits et pouvez vous connecter depuis n'importe quel appareil.", auth_bonus: "🎁 Invitation valide : vous recevrez +5 crédits bonus !",
     ex_data: "Données Extraites", no_fields: "Aucun champ structuré détecté.", no_anom: "Aucune anomalie détectée.", chat_empty: "Posez n'importe quelle question sur le document, ex. « Quel est le total à payer ? »", chat_ph: "Posez une question...", exported: "Exporté", verified: "Vérifié",
     pop: "POPULAIRE", buy: "Acheter", per_month: "/mois", unlim_cr: "Crédits illimités", cr: "crédits", your_subs: "Vos abonnements", cancelling: "en cours de résiliation", cancel: "Résilier", packs_ttl: "Packs de Crédits (paiement unique)", subs_ttl: "Abonnements Cabinet (renouvellement mensuel automatique des crédits)", stripe_note: "Paiements sécurisés via Stripe (Managed Payments, TVA gérée par Stripe).", cr_step1: "1. Choisissez le pack", cr_step2: "2. Choisissez la devise", cr_order: "Enregistrer la commande", copy_addr: "Copier l'adresse", unlim: "illimités", cr_short: "cr",
@@ -506,6 +506,30 @@ function useUser() {
     // capture referral code from URL (?ref=CODE)
     const ref = new URLSearchParams(window.location.search).get("ref");
     if (ref) localStorage.setItem("da_ref", ref);
+
+    // Emergent-managed Google sign-in: process the one-time session_id from the URL
+    // fragment FIRST, then clean it from the URL and establish the app session.
+    // REMINDER: DO NOT HARDCODE THE URL, OR ADD ANY FALLBACKS OR REDIRECT URLS, THIS BREAKS THE AUTH
+    const gm = (window.location.hash || "").match(/session_id=([^&]+)/);
+    if (gm) {
+      const session_id = decodeURIComponent(gm[1]);
+      axios.post(`${API}/auth/google`, {
+        session_id,
+        user_id: localStorage.getItem("da_uid") || undefined,
+        ref: localStorage.getItem("da_ref") || undefined,
+      }).then(({ data }) => {
+        window.history.replaceState(null, "", window.location.pathname + window.location.search);
+        localStorage.setItem("da_token", data.token);
+        localStorage.setItem("da_uid", data.user.user_id);
+        localStorage.removeItem("da_ref");
+        axios.defaults.headers.common["Authorization"] = `Bearer ${data.token}`;
+        setUser(data.user); setAuthed(true);
+      }).catch(() => {
+        window.history.replaceState(null, "", window.location.pathname + window.location.search);
+        initAnon();
+      });
+      return;
+    }
 
     const token = localStorage.getItem("da_token");
     if (token) {
@@ -2003,6 +2027,12 @@ function AuthModal({ user, onClose, onAuthed, notify }) {
     } finally { setLoading(false); }
   };
 
+  const googleSignIn = () => {
+    // REMINDER: DO NOT HARDCODE THE URL, OR ADD ANY FALLBACKS OR REDIRECT URLS, THIS BREAKS THE AUTH
+    const redirectUrl = window.location.origin + "/";
+    window.location.href = `https://auth.emergentagent.com/?redirect=${encodeURIComponent(redirectUrl)}`;
+  };
+
   return (
     <div className="modal-bg" onClick={onClose}>
       <div className="modal glass pad fade" style={{ maxWidth: 440 }} onClick={(e) => e.stopPropagation()} data-testid="auth-modal">
@@ -2015,6 +2045,11 @@ function AuthModal({ user, onClose, onAuthed, notify }) {
           <div className={`tab ${mode === "login" ? "active" : ""}`} data-testid="tab-login" onClick={() => setMode("login")}>{t("auth_login")}</div>
           <div className={`tab ${mode === "register" ? "active" : ""}`} data-testid="tab-register" onClick={() => setMode("register")}>{t("auth_register")}</div>
         </div>
+        <button className="btn btn-google" style={{ width: "100%" }} data-testid="auth-google" onClick={googleSignIn}>
+          <svg width="17" height="17" viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3c-1.6 4.7-6.1 8-11.3 8-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34 .9 29.3-1 24-1 11.8-1 2 8.8 2 21s9.8 22 22 22 22-9.8 22-22c0-1.5-.2-2.6-.4-3.5z"/><path fill="#FF3D00" d="M3.3 13.7l6.6 4.8C11.6 14.3 17.4 11 24 11c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34 4.9 29.3 3 24 3 15.9 3 8.8 7.6 3.3 13.7z"/><path fill="#4CAF50" d="M24 45c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 36.1 26.7 37 24 37c-5.2 0-9.6-3.3-11.2-8l-6.5 5C9.7 40.3 16.3 45 24 45z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.1-4.1 5.6l6.2 5.2C40.9 35.9 44 30.3 44 23c0-1.5-.2-2.6-.4-3.5z"/></svg>
+          {t("auth_google")}
+        </button>
+        <div className="auth-divider"><span>{t("auth_or")}</span></div>
         {mode === "register" && (
           <input className="input mb1" data-testid="auth-name" placeholder={t("auth_name_ph")} value={name} onChange={(e) => setName(e.target.value)} />
         )}

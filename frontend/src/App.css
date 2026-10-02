@@ -32,6 +32,10 @@ body{background:var(--bg-color);color:var(--text-primary);font-family:'Inter',sa
 /* Auth modal brand */
 .auth-logo{display:flex;justify-content:center;margin-bottom:.4rem}
 .auth-logo img{width:56px;height:56px;object-fit:contain;filter:drop-shadow(0 0 10px #22c7ff55)}
+.btn-google{display:flex;align-items:center;justify-content:center;gap:.6rem;background:#fff;color:#1f2430;border:1px solid #ffffff;font-weight:700;margin-bottom:.9rem}
+.btn-google:hover{background:#f1f3f6;transform:translateY(-1px)}
+.auth-divider{display:flex;align-items:center;gap:.7rem;margin:.2rem 0 .9rem;color:var(--text-muted);font-size:.74rem}
+.auth-divider::before,.auth-divider::after{content:"";flex:1;height:1px;background:var(--border-color)}
 .logo .dot{width:12px;height:12px;border-radius:50%;background:var(--accent);box-shadow:0 0 14px var(--accent)}
 .socials{display:flex;justify-content:center;flex-wrap:wrap;gap:.6rem;margin-top:1.2rem}
 .social-btn{display:inline-flex;align-items:center;justify-content:center;width:42px;height:42px;border-radius:50%;
