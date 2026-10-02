@@ -489,6 +489,8 @@ const DOC_TYPES = [
 
 const SECTOR_SLUGS = ["commercialisti", "avvocati", "notai", "cfo", "hr"];
 const PUBLIC_ORIGIN = "https://docuanalytics.online";
+const provLabel = (p) => ({ claude: "Claude Sonnet 5", openai: "ChatGPT", "openai-fast": "ChatGPT mini", gemini: "Gemini" }[p] || "Gemini");
+const provBadge = (p) => ({ claude: "mb-claude", openai: "mb-openai", "openai-fast": "mb-openai", gemini: "mb-gemini" }[p] || "mb-gemini");
 
 function useUser() {
   const [user, setUser] = useState({ user_id: null, credits: 0, email: null });
@@ -795,10 +797,14 @@ function Home() {
                 onClick={() => setAiModel("gemini")}><Sparkles size={14} /> Gemini</button>
               <button className={"model-opt" + (aiModel === "claude" ? " on" : "")} data-testid="model-claude"
                 onClick={() => setAiModel("claude")}><Bot size={14} /> Claude</button>
+              <button className={"model-opt" + (aiModel === "openai" ? " on" : "")} data-testid="model-openai"
+                onClick={() => setAiModel("openai")}><Bot size={14} /> ChatGPT</button>
+              <button className={"model-opt" + (aiModel === "openai-fast" ? " on" : "")} data-testid="model-openai-fast"
+                onClick={() => setAiModel("openai-fast")}><Zap size={14} /> ChatGPT mini</button>
             </div>
           </div>
           <p className="model-hint" data-testid="model-hint">
-            <Sparkles size={12} /> {aiModel === "claude" ? t("claude_hint") : t("gemini_hint")}
+            <Sparkles size={12} /> {aiModel === "claude" ? t("claude_hint") : aiModel === "openai" ? t("openai_hint") : aiModel === "openai-fast" ? t("openai_fast_hint") : t("gemini_hint")}
           </p>
 
           <div className="center mt2">
@@ -945,8 +951,8 @@ function Results({ result, analysisId, notify, credits, onTopup, onAgain, aiMode
   };
 
   const buildCompareRows = () => {
-    const m1 = provider === "claude" ? "Claude Sonnet 5" : "Gemini";
-    const m2 = compare.provider === "claude" ? "Claude Sonnet 5" : "Gemini";
+    const m1 = provLabel(provider);
+    const m2 = provLabel(compare.provider);
     const map1 = new Map((result.fields || []).map((f) => [f.label, f.value]));
     const map2 = new Map((compare.result.fields || []).map((f) => [f.label, f.value]));
     const labels = [...new Set([...map1.keys(), ...map2.keys()])];
@@ -984,8 +990,8 @@ function Results({ result, analysisId, notify, credits, onTopup, onAgain, aiMode
         <span className="wow-chip"><Sparkles size={13} /> {fieldsN} {t("wow_fields")}</span>
         <span className="wow-chip"><ShieldCheck size={13} /> {checksN} {t("wow_checks")}</span>
         {provider && (
-          <span className={"wow-chip model-badge " + (provider === "claude" ? "mb-claude" : "mb-gemini")} data-testid="model-badge" title={t("analyzed_by")}>
-            <Bot size={13} /> {provider === "claude" ? "Claude Sonnet 5" : "Gemini"}
+          <span className={"wow-chip model-badge " + provBadge(provider)} data-testid="model-badge" title={t("analyzed_by")}>
+            <Bot size={13} /> {provLabel(provider)}
           </span>
         )}
       </div>
@@ -1055,8 +1061,8 @@ function Results({ result, analysisId, notify, credits, onTopup, onAgain, aiMode
             <div className="compare-grid">
               {[{ r: result, p: provider }, { r: compare.result, p: compare.provider }].map((col, ci) => (
                 <div className="compare-col" key={ci}>
-                  <span className={"wow-chip model-badge " + (col.p === "claude" ? "mb-claude" : "mb-gemini")}>
-                    <Bot size={13} /> {col.p === "claude" ? "Claude Sonnet 5" : "Gemini"}
+                  <span className={"wow-chip model-badge " + provBadge(col.p)}>
+                    <Bot size={13} /> {provLabel(col.p)}
                   </span>
                   <p className="compare-sum">{col.r.doc_type} — {col.r.summary}</p>
                   {(col.r.fields || []).map((f, i) => (
@@ -2174,7 +2180,7 @@ function HistoryModal({ onClose, onReopen }) {
                   </div>
                   <div className="flex aic gap">
                     <span className={"wow-chip model-badge " + (a.ai_provider === "claude" ? "mb-claude" : "mb-gemini")}>
-                      <Bot size={12} /> {a.ai_provider === "claude" ? "Claude" : "Gemini"}
+                      <Bot size={12} /> {provLabel(a.ai_provider)}
                     </span>
                     <span className="hist-date">{fmt(a.created_at)}</span>
                     <ChevronRight size={16} style={{ transform: open === a.analysis_id ? "rotate(90deg)" : "none", transition: "transform .15s" }} />

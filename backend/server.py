@@ -136,6 +136,17 @@ async def add_credits(user_id: str, amount: int):
     await db.users.update_one({"user_id": user_id}, {"$inc": {"credits": amount}}, upsert=False)
 
 
+# AI model dispatch: maps the frontend model key -> (emergentintegrations provider, model id, label stored on analysis)
+def _resolve_model(m: Optional[str]):
+    mp = {
+        "gemini":      ("gemini", "gemini-2.5-flash", "gemini"),
+        "claude":      ("anthropic", "claude-sonnet-5", "claude"),
+        "openai":      ("openai", "gpt-5.6-terra", "openai"),       # ChatGPT advanced
+        "openai-fast": ("openai", "gpt-5.4-mini", "openai-fast"),   # ChatGPT fast/cheap
+    }
+    return mp.get((m or "gemini").lower(), mp["gemini"])
+
+
 # ---------------- Security helpers ----------------
 import time as _time
 _RL = {}  # in-memory sliding-window rate limiter (per-process, defense-in-depth)
@@ -318,30 +329,27 @@ Usa stringhe vuote per i campi non presenti. Gli importi come stringhe numeriche
 Estrai tutti i dati chiave (importi, date, partite IVA, codici fiscali, IBAN, parti coinvolte, codici tributo, saldi, totali, REA, codici ATECO, clausole).
 Nella sezione audit, esegui controlli di quadratura (es. saldo F24, netto busta paga, totale = imponibile + imposta), segnala clausole vessatorie, IBAN esteri, visto di conformità IVA sopra 5.000 euro, o eventuali anomalie."""
 
-        _use_claude = (req.model or "gemini").lower() == "claude"
-        used_provider = "gemini"
+        prov_sdk, model_id, used_provider = _resolve_model(req.model)
         chat = LlmChat(api_key=EMERGENT_LLM_KEY, session_id=f"analyze-{uuid.uuid4()}",
-                       system_message="Estrai dati strutturati dai documenti e rispondi solo in JSON valido.")
-        if _use_claude:
+                       system_message="Estrai dati strutturati dai documenti e rispondi solo in JSON valido.").with_model(prov_sdk, model_id)
+        if prov_sdk == "gemini":
+            file_content = FileContentWithMimeType(file_path=tmp.name, mime_type=req.mime_type)
+            resp = await chat.send_message(UserMessage(text=prompt, file_contents=[file_content]))
+        else:
+            # Claude & OpenAI use vision: send the image directly, or render PDF pages to PNG
             from emergentintegrations.llm.chat import ImageContent
             images_b64 = []
             if mime.startswith("image/"):
                 images_b64 = [raw_b64]
             elif mime == "application/pdf":
-                import fitz  # PyMuPDF: render PDF pages to PNG for Claude vision
+                import fitz  # PyMuPDF: render PDF pages to PNG for vision models
                 doc = fitz.open(tmp.name)
                 for page in doc[:5]:  # max 5 pages
                     pix = page.get_pixmap(matrix=fitz.Matrix(2, 2))
                     images_b64.append(base64.b64encode(pix.tobytes("png")).decode())
                 doc.close()
-            chat = chat.with_model("anthropic", "claude-sonnet-5")
-            used_provider = "claude"
             resp = await chat.send_message(UserMessage(
                 text=prompt, file_contents=[ImageContent(image_base64=b) for b in images_b64]))
-        else:
-            file_content = FileContentWithMimeType(file_path=tmp.name, mime_type=req.mime_type)
-            chat = chat.with_model("gemini", "gemini-2.5-flash")
-            resp = await chat.send_message(UserMessage(text=prompt, file_contents=[file_content]))
     except Exception as e:
         raise _generic_500("analyze", e)
     finally:
@@ -381,9 +389,9 @@ async def chat_copilot(req: ChatReq, request: Request):
     resp = ""
     try:
         from emergentintegrations.llm.chat import LlmChat, UserMessage
-        _prov = ("anthropic", "claude-sonnet-5") if (req.model or "gemini").lower() == "claude" else ("gemini", "gemini-2.5-flash")
+        prov_sdk, model_id, _ = _resolve_model(req.model)
         chat = LlmChat(api_key=EMERGENT_LLM_KEY, session_id=f"chat-{req.analysis_id}",
-                       system_message=f"Sei un copilot AI. Rispondi in italiano basandoti SOLO su questo documento:\n\n{context[:12000]}").with_model(*_prov)
+                       system_message=f"Sei un copilot AI. Rispondi in italiano basandoti SOLO su questo documento:\n\n{context[:12000]}").with_model(prov_sdk, model_id)
         resp = await chat.send_message(UserMessage(text=req.question))
     except Exception as e:
         raise _generic_500("copilot", e)

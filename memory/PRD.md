@@ -1,5 +1,20 @@
 # DocuAnalytics AI — PRD & Stato Progetto
 
+## AGGIORNAMENTO 2026-06 (20) — ChatGPT (OpenAI) come terzo provider ✅ TESTATO e2e (ADD ONLY)
+- Scelta utente: ENTRAMBI i modelli (avanzato + veloce), via CHIAVE EMERGENT (universale, già in backend/.env).
+- Backend (server.py): nuovo helper `_resolve_model()` mappa la chiave frontend → (provider emergentintegrations, model id, label):
+  gemini→gemini-2.5-flash · claude→claude-sonnet-5 · openai→gpt-5.6-terra (avanzato) · openai-fast→gpt-5.4-mini (veloce).
+  `/api/analyze` e `/api/chat` ora usano questo helper. Per Claude E OpenAI si usa il percorso VISION (immagine diretta
+  o pagine PDF renderizzate in PNG con PyMuPDF via ImageContent base64); Gemini resta su FileContentWithMimeType.
+- Frontend (App.js/App.css/content.js): selettore modello con 2 nuovi pulsanti `model-openai` (ChatGPT) e
+  `model-openai-fast` (ChatGPT mini), hint i18n (openai_hint/openai_fast_hint, 5 lingue), helper `provLabel/provBadge`
+  per etichette/badge coerenti in risultato, confronto modelli e storico. Badge verde `.mb-openai`. `.model-toggle`
+  ora `flex-wrap` per non sforare su mobile con 4 opzioni. Palette toggle attivo aggiornata a blu/ciano.
+- Test e2e curl (preview): analyze model=openai → provider=openai, category=invoice, 11 campi, totale 1.220,00 estratto,
+  credito scalato; Copilot (model=openai) risponde corretto "1.220,00 EUR"; analyze model=openai-fast → provider=openai-fast OK.
+- Nessuna regressione su Gemini/Claude (dispatch invariato per quei due).
+
+
 ## AGGIORNAMENTO 2026-06 (19) — Emergent-managed Google sign-in ✅ TESTATO 100% (ADD ONLY)
 - Aggiunto login "Continua con Google" (Emergent Auth) ACCANTO a email/password, senza rompere nulla.
 - Backend: nuovo `POST /api/auth/google` (server.py) — scambia il `session_id` monouso con Emergent session-data
