@@ -1,6 +1,6 @@
-/* DocuAnalytics service worker — basic offline cache for core assets */
-const CACHE = 'docuanalytics-v1';
-const CORE = ['/', '/index.html', '/manifest.json', '/logo.png'];
+/* DocuAnalytics service worker — network-first for fresh assets, cache fallback offline */
+const CACHE = 'docuanalytics-v2';
+const CORE = ['/', '/index.html', '/manifest.json'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -30,15 +30,13 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // cache-first for static assets, then update cache in background
+  // network-first for static assets: always fetch fresh when online, update cache,
+  // fall back to cache only when offline. Prevents stale bundles/logos in preview & prod.
   event.respondWith(
-    caches.match(request).then((cached) =>
-      cached ||
-      fetch(request).then((res) => {
-        const copy = res.clone();
-        caches.open(CACHE).then((c) => c.put(request, copy)).catch(() => {});
-        return res;
-      }).catch(() => cached)
-    )
+    fetch(request).then((res) => {
+      const copy = res.clone();
+      caches.open(CACHE).then((c) => c.put(request, copy)).catch(() => {});
+      return res;
+    }).catch(() => caches.match(request))
   );
 });
