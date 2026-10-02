@@ -717,7 +717,7 @@ function Home() {
             </div>
             <div className="hero-right">
               <div className="hero-logo-badge" aria-hidden="true">
-                <img src="/docuanalytics-ai-logo.png" alt="" width="68" height="68" />
+                <img src="/docuanalytics-ai-logo.png?v=2" alt="" width="68" height="68" />
               </div>
               <HeroDemo />
             </div>
@@ -840,7 +840,7 @@ function Header({ credits, authed, user, onTopup, onAuth, onReferral, onLogout, 
   return (
     <header className="header">
       <div className="header-inner">
-        <div className="logo"><img src="/docuanalytics-ai-logo.png" alt="DocuAnalytics AI" className="logo-img" /> Docu<span className="grad">Analytics</span> AI</div>
+        <div className="logo"><img src="/docuanalytics-ai-logo.png?v=2" alt="DocuAnalytics AI" className="logo-img" /> Docu<span className="grad">Analytics</span> AI</div>
         <nav className="nav">
           <button className="btn btn-sm btn-ghost nav-anchor" data-testid="nav-how" onClick={() => scrollToId("come-funziona")}>{t("nav_how")}</button>
           <button className="btn btn-sm btn-ghost nav-anchor" data-testid="nav-price" onClick={() => scrollToId("prezzi")}>{t("nav_price")}</button>
@@ -1947,7 +1947,7 @@ function Footer({ onTopup, onGuide }) {
     <footer className="footer">
       <div className="wrap">
         <div className="flex aic gap" style={{ justifyContent: "center", marginBottom: ".4rem" }}>
-          <img src="/docuanalytics-ai-logo.png" alt="DocuAnalytics AI" className="logo-img" />
+          <img src="/docuanalytics-ai-logo.png?v=2" alt="DocuAnalytics AI" className="logo-img" />
           <p style={{ fontWeight: 800 }}>DocuAnalytics Enterprise — AI Document Intelligence</p>
         </div>
         <p style={{ color: "var(--text-muted)", fontSize: ".82rem", marginTop: ".3rem" }}>{t("foot_desc")}</p>
@@ -2006,7 +2006,7 @@ function AuthModal({ user, onClose, onAuthed, notify }) {
   return (
     <div className="modal-bg" onClick={onClose}>
       <div className="modal glass pad fade" style={{ maxWidth: 440 }} onClick={(e) => e.stopPropagation()} data-testid="auth-modal">
-        <div className="auth-logo"><img src="/docuanalytics-ai-logo.png" alt="DocuAnalytics AI" /></div>
+        <div className="auth-logo"><img src="/docuanalytics-ai-logo.png?v=2" alt="DocuAnalytics AI" /></div>
         <div className="modal-head">
           <h2 className="section-title flex aic gap"><Lock size={20} /> {mode === "login" ? t("auth_login") : t("auth_register")}</h2>
           <button className="close-x" data-testid="close-auth" onClick={onClose}><X size={18} /></button>
@@ -2218,7 +2218,7 @@ function SectorLanding({ slug }) {
       <header className="header">
         <div className="header-inner">
           <Link to="/" className="logo" data-testid="sl-logo" style={{ textDecoration: "none", color: "inherit" }}>
-            <img src="/docuanalytics-ai-logo.png" alt="DocuAnalytics AI" className="logo-img" /> Docu<span className="grad">Analytics</span> AI
+            <img src="/docuanalytics-ai-logo.png?v=2" alt="DocuAnalytics AI" className="logo-img" /> Docu<span className="grad">Analytics</span> AI
           </Link>
           <nav className="nav">
             <Link to="/" className="btn btn-sm btn-ghost" data-testid="sl-back">{t("sl_back")}</Link>
