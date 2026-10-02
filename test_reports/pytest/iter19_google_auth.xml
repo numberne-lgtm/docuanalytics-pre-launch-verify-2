@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="6" time="5.647" timestamp="2026-10-02T06:29:37.052343+00:00" hostname="agent-env-89a0335f-1922-4f52-b705-74b0ac5657e3"><testcase classname="tests.test_google_auth" name="test_anonymous_session_grants_credits" time="0.324" /><testcase classname="tests.test_google_auth" name="test_login_returns_token_and_picture_field" time="0.520" /><testcase classname="tests.test_google_auth" name="test_auth_me_with_bearer_token" time="0.759" /><testcase classname="tests.test_google_auth" name="test_google_invalid_session_returns_401" time="2.046" /><testcase classname="tests.test_google_auth" name="test_google_empty_session_returns_400" time="0.179" /><testcase classname="tests.test_google_auth" name="test_register_fresh_user_autologin_with_credits" time="0.534"><failure message="AssertionError: assert 'test_759d28bc63@example.com' == 'TEST_759d28bc63@example.com'&#10;  &#10;  - TEST_759d28bc63@example.com&#10;  ? ^^^^&#10;  + test_759d28bc63@example.com&#10;  ? ^^^^">backend/tests/test_google_auth.py:75: in test_register_fresh_user_autologin_with_credits
+    assert user["email"] == email
+E   AssertionError: assert 'test_759d28bc63@example.com' == 'TEST_759d28bc63@example.com'
+E     
+E     - TEST_759d28bc63@example.com
+E     ? ^^^^
+E     + test_759d28bc63@example.com
+E     ? ^^^^</failure></testcase></testsuite></testsuites>

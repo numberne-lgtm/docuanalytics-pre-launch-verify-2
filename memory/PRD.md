@@ -1,5 +1,23 @@
 # DocuAnalytics AI — PRD & Stato Progetto
 
+## AGGIORNAMENTO 2026-06 (19) — Emergent-managed Google sign-in ✅ TESTATO 100% (ADD ONLY)
+- Aggiunto login "Continua con Google" (Emergent Auth) ACCANTO a email/password, senza rompere nulla.
+- Backend: nuovo `POST /api/auth/google` (server.py) — scambia il `session_id` monouso con Emergent session-data
+  (lato server, mai dal frontend), fa upsert utente per email, preserva i crediti dell'utente anonimo se `user_id`
+  passato, assegna 3 crediti gratuiti ai nuovi utenti Google (email già verificata), e rilascia lo STESSO JWT
+  dell'app di login email/password ({token, user}). 401 su session_id non valido. `_public_user` ora include `picture`.
+- Frontend: bottone `auth-google` nell'AuthModal (5 lingue, chiavi `auth_google`/`auth_or`) → redirect a
+  `https://auth.emergentagent.com/?redirect=<origin>/` (nessun fallback hardcoded). `useUser()` processa
+  `#session_id=` all'avvio, pulisce l'hash e stabilisce la sessione app. Nessuna API key richiesta (gestito da Emergent).
+- Test iteration_19: backend 6/6, frontend 100%, zero regressioni (email/password, anonimo, logout, crediti). 
+  Round-trip Google reale NON automatizzabile → va provato manualmente dall'utente.
+- NB: service worker precedentemente portato a network-first v2 (fix cache logo).
+
+## In sospeso — ChatGPT (OpenAI): utente ha scelto "entrambi i modelli (avanzato+veloce)" + "propria API key OpenAI".
+  BLOCCATO in attesa della OPENAI_API_KEY dell'utente. Playbook già acquisito (emergentintegrations LlmChat,
+  modelli es. gpt-5.6-terra avanzato + gpt-5.4-mini veloce; vision via ImageContent base64 per PDF→immagini).
+
+
 ## AGGIORNAMENTO 2026-06 (18) — Brand/UI/SEO refresh (nuovo logo DA) ✅ TESTATO 95% (ADD ONLY)
 - **Nuovo logo ufficiale DA** (scudo, monogramma DA viola→ciano, bordo oro). Da `image-2.jpeg` 1024² generati via chroma-key in `public/`: `docuanalytics-ai-logo.png` (trasparente, main/SEO), `logo.png` (navbar/footer), `favicon.ico` + `favicon-16/32/48`, `apple-touch-icon.png` (180, su navy), `icon-192/512.png` (any) + `icon-512-maskable.png` (safe zone su navy), `og-image.png` (1200×630, logo+wordmark su navy). Tutti 200.
 - **Palette → blu/ciano** (viola solo accento): `:root` `--primary:#2f6bff`, `--accent:#22c7ff`, `--bg-color:#070b16`, glow/radiali/header aggiornati. `theme_color/background_color` manifest = `#0a1022`.
