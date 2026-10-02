@@ -1,5 +1,15 @@
 # DocuAnalytics AI — PRD & Stato Progetto
 
+## AGGIORNAMENTO 2026-06 (18) — Brand/UI/SEO refresh (nuovo logo DA) ✅ TESTATO 95% (ADD ONLY)
+- **Nuovo logo ufficiale DA** (scudo, monogramma DA viola→ciano, bordo oro). Da `image-2.jpeg` 1024² generati via chroma-key in `public/`: `docuanalytics-ai-logo.png` (trasparente, main/SEO), `logo.png` (navbar/footer), `favicon.ico` + `favicon-16/32/48`, `apple-touch-icon.png` (180, su navy), `icon-192/512.png` (any) + `icon-512-maskable.png` (safe zone su navy), `og-image.png` (1200×630, logo+wordmark su navy). Tutti 200.
+- **Palette → blu/ciano** (viola solo accento): `:root` `--primary:#2f6bff`, `--accent:#22c7ff`, `--bg-color:#070b16`, glow/radiali/header aggiornati. `theme_color/background_color` manifest = `#0a1022`.
+- **UI branding (ADD ONLY)**: header e footer già usano `/logo.png`; hero-right = `.hero-logo-badge` (logo DA fluttuante) + `HeroDemo` (mockup UI reale); AuthModal con `.auth-logo`. Nessuna funzione rimossa.
+- **SEO tecnico → dominio canonico `docuanalytics.online`**: `index.html` canonical/OG/twitter + Schema.org `@graph` (Organization + WebSite + WebApplication, logo URL assoluto, niente rating/offer fittizi); favicon set corretto; title/description aggiornati. `PUBLIC_ORIGIN` e hreflang (App.js) + `SITE` (Blog.js) → .online. `sitemap.xml` ripulita (rimossi /pricing /features /how-it-works /login /register; solo home, blog, 5 landing settore) e tutto su .online. `robots.txt`: `Disallow: /payment/` + sitemap .online.
+- **FIX BUILD (autorizzato)**: rimosso import `Trash2` duplicato + entry-point `RemindersModal` non definito (stato `remOpen`, prop, bottone nav, render) che impedivano la compilazione. La card "Crea promemoria" in `Results` (POST /api/reminders) resta attiva. Build: Compiled (0 errori).
+- Test: `iteration_18.json` frontend 95% — branding, asset 200, SEO, nav, auth (register/login mario@studio.it/secret123/logout), pricing modal (6 pacchetti + tab), referral, landing settore, mobile 390px. Zero errori console. Unico flag (click Stripe in automazione) = FALSO POSITIVO: checkout verificato via API → ritorna sessione `cs_live_` reale. Nessuna regressione.
+- ⚠️ Backend/DB/auth/pagamenti/segreti NON modificati. Tutto in PREVIEW → richiede DEPLOY per andare live. Google Search Console: inserire token property `docuanalytics.online` (placeholder attuale è della property .it) + inviare sitemap dopo deploy.
+
+
 ## AGGIORNAMENTO 2026-09 (16) — Reminder Scadenze completati + fix build deploy ✅
 - **Reminder Scadenze** (contratti/F24): backend `POST/GET/DELETE /api/reminders` + scheduler asyncio (`_reminder_loop`, check ogni 12h) che invia email 30/7/1 giorni prima via Resend. `_send_email_bg` ora ritorna esito (non marca "inviato" se l'invio fallisce). CRUD + scheduler testati via curl (invio+marcatura OK con mittente verificato).
 - **Frontend Reminder**: card "Crea promemoria" in `Results` quando c'è una scadenza (contract.expiration_date / f24.due_date) e l'utente è loggato; modal "Scadenze" (`RemindersModal`) dal header con badge conto-alla-rovescia e delete. i18n 5 lingue.

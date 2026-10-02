@@ -1,0 +1,30 @@
+{
+  "summary": "Frontend-only regression + branding verification after DA brand/SEO refresh. All critical flows pass: homepage branding (new DA shield logo, blue/cyan palette, 'DocuAnalytics AI' wordmark) renders cleanly at 1920 and 390 widths with no console/page errors. Static SEO assets (favicon, docuanalytics-ai-logo.png, og-image.png, manifest.json, robots.txt, sitemap.xml, logo.png) all return 200. index.html canonical/OG/Schema @graph correctly reference https://docuanalytics.online. Header nav works (nav-how scrolls, Storico opens history modal, nav-blog routes to /blog, language IT visible). Auth flow works end-to-end: register fresh user -> auto-login with 3 Crediti; login with mario@studio.it/secret123 succeeds (shows 8 Crediti - account persisted from prior iteration); logout shows 'Disconnesso' toast and auth-btn reverts to 'Accedi'. AuthModal shows the new .auth-logo. Hero displays .hero-logo-badge with new DA shield plus HeroDemo mockup. Pricing modal (Ricarica) opens with Stripe/Crypto/PayPal tabs and 6 package cards (Starter/Professional/Enterprise + Studio Single/Pro/Enterprise Unlimited). Referral-btn appears post-login. Sector routes /commercialisti and /avvocati render. Mobile 390px: header stacks cleanly, no horizontal overflow. ZERO console errors across all pages. NO functional regression detected from the branding iteration.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "PricingModal (Ricarica)", "issue": "Stripe 'Acquista' button inside modal is click-intercepted by .modal-bg overlay element in automated clicks; even force=True + JS .click() did not fire a POST /api/payments/checkout in the test harness. Could be either (a) a real z-index/pointer-events CSS issue on .modal-bg where backdrop sits above package cards OR (b) only an automation artifact (user state in session). The modal RENDERS correctly - just the actionability is uncertain. Needs manual human-click verification to confirm cs_live_ checkout session is created. NOT a branding regression - likely pre-existing.", "selector": ".modal-bg / button:has-text('Acquista')", "priority": "MEDIUM"}
+    ],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [
+    "Manually click 'Acquista' on a Stripe package in the pricing modal to verify POST /api/payments/checkout returns a checkout_url and window.location.href redirects to a cs_live_ Stripe session. If click fails, inspect .modal-bg pointer-events / z-index stacking.",
+    "Optional: add explicit data-testid on the pricing-modal 'Acquista' buttons (e.g. data-testid=\"buy-stripe-{pack_id}\") to improve test automation reliability."
+  ],
+  "critical_code_review_comments": [
+    "Branding integration is clean: header/footer use /logo.png, hero uses .hero-logo-badge with /docuanalytics-ai-logo.png, auth modal uses .auth-logo. CSS variables --primary:#2f6bff and --accent:#22c7ff applied consistently.",
+    "SEO: canonical, OG, twitter, hreflang, and Schema.org @graph (Organization + WebSite + WebApplication) all consistently point to https://docuanalytics.online. robots.txt disallows /payment/. sitemap.xml trimmed.",
+    "App.js is ~2000+ lines - still monolithic (>700 line guideline); not a regression but worth noting for maintainability.",
+    "Modal close by Escape not wired on PricingModal / HistoryModal (only X button closes). Minor UX."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A (skipped)", "frontend": "95%"},
+  "test_credentials": "mario@studio.it / secret123 (confirmed working, 8 credits in DB from prior iterations)",
+  "seed_data_creation": "Registered one fresh throwaway user brandtest_<ts>@test.io during testing; mario@studio.it already existed.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Branding/SEO iteration passed with no regressions. If retesting, the one open item is manual Stripe-button verification in the pricing modal. All data-testid selectors from the task description work (hero-cta-try, nav-how, nav-price, nav-blog, nav-history, auth-btn, auth-modal, tab-login, tab-register, auth-email, auth-password, auth-submit, topup-btn, credits-badge, referral-btn present after login). The upload-zone/file-input/model-gemini/model-claude flow was not exercised with a real file in this iteration (deferred as Gemini is slow and LIVE Stripe is out of scope); existing export-engine iteration_17 already validated analyze flow.",
+  "rca of the issue": "N/A - no issue reproduced that requires RCA. The Acquista click non-fire in automation is most likely a modal-bg CSS stacking issue affecting Playwright, not a user-visible failure; needs a real-user click to confirm."
+}
