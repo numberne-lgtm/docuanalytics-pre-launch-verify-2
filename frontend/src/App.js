@@ -840,7 +840,7 @@ function Header({ credits, authed, user, onTopup, onAuth, onReferral, onLogout, 
   return (
     <header className="header">
       <div className="header-inner">
-        <div className="logo"><img src="/logo.png" alt="DocuAnalytics AI" className="logo-img" /> Docu<span className="grad">Analytics</span> AI</div>
+        <div className="logo"><img src="/docuanalytics-ai-logo.png" alt="DocuAnalytics AI" className="logo-img" /> Docu<span className="grad">Analytics</span> AI</div>
         <nav className="nav">
           <button className="btn btn-sm btn-ghost nav-anchor" data-testid="nav-how" onClick={() => scrollToId("come-funziona")}>{t("nav_how")}</button>
           <button className="btn btn-sm btn-ghost nav-anchor" data-testid="nav-price" onClick={() => scrollToId("prezzi")}>{t("nav_price")}</button>
@@ -1947,7 +1947,7 @@ function Footer({ onTopup, onGuide }) {
     <footer className="footer">
       <div className="wrap">
         <div className="flex aic gap" style={{ justifyContent: "center", marginBottom: ".4rem" }}>
-          <img src="/logo.png" alt="DocuAnalytics AI" className="logo-img" />
+          <img src="/docuanalytics-ai-logo.png" alt="DocuAnalytics AI" className="logo-img" />
           <p style={{ fontWeight: 800 }}>DocuAnalytics Enterprise — AI Document Intelligence</p>
         </div>
         <p style={{ color: "var(--text-muted)", fontSize: ".82rem", marginTop: ".3rem" }}>{t("foot_desc")}</p>
@@ -2218,7 +2218,7 @@ function SectorLanding({ slug }) {
       <header className="header">
         <div className="header-inner">
           <Link to="/" className="logo" data-testid="sl-logo" style={{ textDecoration: "none", color: "inherit" }}>
-            <img src="/logo.png" alt="DocuAnalytics AI" className="logo-img" /> Docu<span className="grad">Analytics</span> AI
+            <img src="/docuanalytics-ai-logo.png" alt="DocuAnalytics AI" className="logo-img" /> Docu<span className="grad">Analytics</span> AI
           </Link>
           <nav className="nav">
             <Link to="/" className="btn btn-sm btn-ghost" data-testid="sl-back">{t("sl_back")}</Link>
