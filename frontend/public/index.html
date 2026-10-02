@@ -3,51 +3,73 @@
     <head>
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <link rel="icon" type="image/png" href="%PUBLIC_URL%/logo.png" />
-        <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo.png" />
+        <link rel="icon" href="%PUBLIC_URL%/favicon.ico" sizes="any" />
+        <link rel="icon" type="image/png" sizes="32x32" href="%PUBLIC_URL%/favicon-32x32.png" />
+        <link rel="icon" type="image/png" sizes="16x16" href="%PUBLIC_URL%/favicon-16x16.png" />
+        <link rel="apple-touch-icon" sizes="180x180" href="%PUBLIC_URL%/apple-touch-icon.png" />
         <link rel="manifest" href="/manifest.json" />
-        <meta name="theme-color" content="#6B5CE7" />
+        <meta name="theme-color" content="#0a1022" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="DocuAnalytics" />
-        <link rel="apple-touch-icon" href="/icon-192.png" />
-        <meta name="description" content="Analisi documenti automatica con Intelligenza Artificiale: carica fatture, contratti, visure camerali ed F24 ed estrai i dati in 2 secondi. OCR, audit anti-errore e copilot AI per commercialisti, avvocati e notai." />
+        <meta name="description" content="Analizza documenti con DocuAnalytics AI. Estrai dati, individua anomalie e interagisci con i tuoi documenti tramite strumenti di intelligenza artificiale: fatture, contratti, visure camerali ed F24 per commercialisti, avvocati e notai." />
         <meta name="keywords" content="analisi documenti AI, estrazione dati documenti, OCR fatture, analisi contratti, visure camerali, modello F24, buste paga, document intelligence, software commercialisti, software studi legali" />
         <meta name="robots" content="index, follow" />
         <meta name="author" content="DocuAnalytics AI" />
-        <link rel="canonical" href="https://docuanalytics.it/" />
+        <link rel="canonical" href="https://docuanalytics.online/" />
 
-        <!-- Verifica Google Search Console (sostituisci con il token della property docuanalytics.it) -->
+        <!-- Verifica Google Search Console: sostituire con il token della property docuanalytics.online quando disponibile -->
         <meta name="google-site-verification" content="r1CIKibgwWarLWYMV5MwJQ8WduLubO-pC8GLvTkJ-U" />
 
         <!-- Open Graph / Facebook / LinkedIn -->
         <meta property="og:type" content="website" />
         <meta property="og:locale" content="it_IT" />
-        <meta property="og:url" content="https://docuanalytics.it/" />
+        <meta property="og:url" content="https://docuanalytics.online/" />
         <meta property="og:site_name" content="DocuAnalytics AI" />
-        <meta property="og:title" content="DocuAnalytics AI — Analisi Documenti Automatica con AI per Studi e Aziende" />
-        <meta property="og:description" content="Classificazione ed estrazione dati automatica da fatture, F24, visure e contratti in 2 secondi. Prova subito con 3 crediti gratis." />
-        <meta property="og:image" content="https://docuanalytics.it/og-image.png" />
+        <meta property="og:title" content="DocuAnalytics AI — Analisi Documentale con Intelligenza Artificiale" />
+        <meta property="og:description" content="Estrai dati, individua anomalie e interagisci con i tuoi documenti tramite l'AI: fatture, F24, visure e contratti. Prova subito con 3 crediti gratis." />
+        <meta property="og:image" content="https://docuanalytics.online/og-image.png" />
         <meta property="og:image:width" content="1200" />
         <meta property="og:image:height" content="630" />
 
         <!-- Twitter -->
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="DocuAnalytics AI — Analisi Documenti Automatica con AI" />
-        <meta name="twitter:description" content="Estrazione dati da fatture, F24, visure e contratti in 2 secondi. Prova con 3 crediti gratis." />
-        <meta name="twitter:image" content="https://docuanalytics.it/og-image.png" />
+        <meta name="twitter:title" content="DocuAnalytics AI — Analisi Documentale con Intelligenza Artificiale" />
+        <meta name="twitter:description" content="Estrazione dati e controlli da fatture, F24, visure e contratti con l'AI. Prova con 3 crediti gratis." />
+        <meta name="twitter:image" content="https://docuanalytics.online/og-image.png" />
 
         <!-- Dati strutturati Schema.org -->
         <script type="application/ld+json">
         {
           "@context": "https://schema.org",
-          "@type": "SoftwareApplication",
-          "name": "DocuAnalytics AI",
-          "url": "https://docuanalytics.it/",
-          "applicationCategory": "BusinessApplication",
-          "operatingSystem": "Web",
-          "description": "Piattaforma di analisi documenti automatica ed estrazione dati con Intelligenza Artificiale per fatture, contratti, visure ed F24.",
-          "offers": { "@type": "Offer", "price": "0", "priceCurrency": "EUR" },
-          "aggregateRating": { "@type": "AggregateRating", "ratingValue": "4.9", "reviewCount": "482" }
+          "@graph": [
+            {
+              "@type": "Organization",
+              "@id": "https://docuanalytics.online/#organization",
+              "name": "DocuAnalytics AI",
+              "alternateName": "DocuAnalytics",
+              "url": "https://docuanalytics.online/",
+              "logo": "https://docuanalytics.online/docuanalytics-ai-logo.png",
+              "image": "https://docuanalytics.online/docuanalytics-ai-logo.png"
+            },
+            {
+              "@type": "WebSite",
+              "@id": "https://docuanalytics.online/#website",
+              "name": "DocuAnalytics AI",
+              "url": "https://docuanalytics.online/",
+              "publisher": { "@id": "https://docuanalytics.online/#organization" },
+              "inLanguage": "it-IT"
+            },
+            {
+              "@type": "WebApplication",
+              "name": "DocuAnalytics AI",
+              "url": "https://docuanalytics.online/",
+              "applicationCategory": "BusinessApplication",
+              "operatingSystem": "Web",
+              "description": "Piattaforma di analisi documentale ed estrazione dati con Intelligenza Artificiale per fatture, contratti, visure ed F24.",
+              "publisher": { "@id": "https://docuanalytics.online/#organization" }
+            }
+          ]
         }
         </script>
 
@@ -76,7 +98,7 @@
         work correctly both with client-side routing and a non-root public URL.
         Learn how to configure a non-root public URL by running `npm run build`.
         -->
-        <title>DocuAnalytics AI — Analisi Documenti con Intelligenza Artificiale | Fatture, F24, Contratti</title>
+        <title>DocuAnalytics AI | Analisi Documentale con Intelligenza Artificiale</title>
         <script>window.addEventListener("error",function(e){if(e.error instanceof DOMException&&e.error.name==="DataCloneError"&&e.message&&e.message.includes("PerformanceServerTiming")){e.stopImmediatePropagation();e.preventDefault()}},true);</script>
         <script src="https://assets.emergent.sh/scripts/emergent-main.js"></script>
     </head>

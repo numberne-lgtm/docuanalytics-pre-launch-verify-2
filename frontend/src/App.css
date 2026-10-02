@@ -1,26 +1,37 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 
 :root{
-  --bg-color:#0a0a0f; --surface-color:#12121a; --surface-elevated:#1a1a2e;
-  --border-color:#ffffff14; --primary:#6c5ce7; --primary-light:#a29bfe; --accent:#00d2ff;
+  --bg-color:#070b16; --surface-color:#0e1322; --surface-elevated:#141c30;
+  --border-color:#ffffff14; --primary:#2f6bff; --primary-light:#7aa8ff; --accent:#22c7ff;
   --success:#00e676; --warning:#ffd600; --error:#ff5252;
   --text-primary:#f0f0f5; --text-secondary:#ffffffcc; --text-muted:#ffffff59;
   --gradient-primary:linear-gradient(135deg,var(--primary) 0%,var(--accent) 100%);
-  --glow:0 0 24px #6c5ce755; --radius:16px;
+  --glow:0 0 24px #2f6bff55; --radius:16px;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:var(--bg-color);color:var(--text-primary);font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased}
 .App{min-height:100vh;position:relative;overflow-x:hidden}
 .App::before{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;
-  background:radial-gradient(1000px 600px at 15% -10%,#6c5ce725,transparent),radial-gradient(900px 600px at 100% 0,#00d2ff1f,transparent)}
+  background:radial-gradient(1000px 600px at 15% -10%,#2f6bff25,transparent),radial-gradient(900px 600px at 100% 0,#22c7ff1f,transparent)}
 .wrap{max-width:1200px;margin:0 auto;padding:0 1.25rem;position:relative;z-index:1}
 ::selection{background:var(--accent);color:#001018}
 
 /* Header */
-.header{position:sticky;top:0;z-index:50;backdrop-filter:blur(16px);background:#0a0a0fcc;border-bottom:1px solid var(--border-color)}
+.header{position:sticky;top:0;z-index:50;backdrop-filter:blur(16px);background:#070b16cc;border-bottom:1px solid var(--border-color)}
 .header-inner{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:.7rem 1.25rem;max-width:1200px;margin:0 auto;flex-wrap:wrap}
 .logo{font-weight:900;font-size:1.35rem;letter-spacing:-.5px;display:flex;align-items:center;gap:.5rem}
-.logo-img{width:38px;height:38px;object-fit:contain;filter:drop-shadow(0 0 8px #00d2ff44)}
+.logo-img{width:38px;height:38px;object-fit:contain;filter:drop-shadow(0 0 8px #22c7ff55)}
+/* Brand logo badge in hero */
+.hero-right{position:relative}
+.hero-logo-badge{position:absolute;top:-26px;right:8px;z-index:3;width:92px;height:92px;display:flex;align-items:center;justify-content:center;
+  border-radius:22px;background:#0b1430cc;border:1px solid #2f6bff44;backdrop-filter:blur(8px);
+  box-shadow:0 10px 40px #2f6bff40;animation:badgeFloat 5s ease-in-out infinite}
+.hero-logo-badge img{width:68px;height:68px;object-fit:contain;filter:drop-shadow(0 0 10px #22c7ff66)}
+@keyframes badgeFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+@media(max-width:1000px){.hero-logo-badge{position:static;margin:0 auto 1rem;animation:none}}
+/* Auth modal brand */
+.auth-logo{display:flex;justify-content:center;margin-bottom:.4rem}
+.auth-logo img{width:56px;height:56px;object-fit:contain;filter:drop-shadow(0 0 10px #22c7ff55)}
 .logo .dot{width:12px;height:12px;border-radius:50%;background:var(--accent);box-shadow:0 0 14px var(--accent)}
 .socials{display:flex;justify-content:center;flex-wrap:wrap;gap:.6rem;margin-top:1.2rem}
 .social-btn{display:inline-flex;align-items:center;justify-content:center;width:42px;height:42px;border-radius:50%;

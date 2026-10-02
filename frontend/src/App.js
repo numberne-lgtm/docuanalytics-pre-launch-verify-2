@@ -9,7 +9,7 @@ import {
   Sparkles, Copy, Play, Lock, Facebook, Linkedin, Youtube, Globe,
   ShieldCheck, Trash2, BadgeCheck, Ban, ChevronDown,
   Clock, AlertTriangle, Search, Rocket, Scale, FileSignature, TrendingUp,
-  Users, Briefcase, Files, Server, ArrowRight, Mail, History, FileDown, FileCode, Pencil, Bell, CalendarClock, Trash2
+  Users, Briefcase, Files, Server, ArrowRight, Mail, History, FileDown, FileCode, Pencil, Bell, CalendarClock
 } from "lucide-react";
 import { createPortal } from "react-dom";
 import { BlogIndex, BlogPost } from "./Blog";
@@ -488,7 +488,7 @@ const DOC_TYPES = [
 ];
 
 const SECTOR_SLUGS = ["commercialisti", "avvocati", "notai", "cfo", "hr"];
-const PUBLIC_ORIGIN = "https://docuanalytics.it";
+const PUBLIC_ORIGIN = "https://docuanalytics.online";
 
 function useUser() {
   const [user, setUser] = useState({ user_id: null, credits: 0, email: null });
@@ -561,7 +561,6 @@ function Home() {
   const [compare, setCompare] = useState(null);
   const [comparing, setComparing] = useState(false);
   const [histOpen, setHistOpen] = useState(false);
-  const [remOpen, setRemOpen] = useState(false);
   const [file, setFile] = useState(null);
   const [drag, setDrag] = useState(false);
   const [stage, setStage] = useState(-1); // pipeline
@@ -589,8 +588,8 @@ function Home() {
     const langs = ["it", "en", "es", "de", "fr"];
     const links = [];
     const add = (hl, href) => { const l = document.createElement("link"); l.rel = "alternate"; l.hreflang = hl; l.href = href; l.setAttribute("data-hl", "1"); document.head.appendChild(l); links.push(l); };
-    langs.forEach((l) => add(l, l === "it" ? "https://docuanalytics.it/" : `https://docuanalytics.it/?lang=${l}`));
-    add("x-default", "https://docuanalytics.it/");
+    langs.forEach((l) => add(l, l === "it" ? "https://docuanalytics.online/" : `https://docuanalytics.online/?lang=${l}`));
+    add("x-default", "https://docuanalytics.online/");
     return () => links.forEach((l) => l.remove());
   }, []);
 
@@ -682,7 +681,7 @@ function Home() {
       <Header credits={user.credits} authed={authed} user={user}
         onTopup={() => openPricing("header")} onAuth={() => setAuthOpen(true)}
         onReferral={() => setRefOpen(true)} onLogout={() => { logout(); notify(t("n_disconnected")); }}
-        onHistory={() => setHistOpen(true)} onReminders={() => setRemOpen(true)} />
+        onHistory={() => setHistOpen(true)} />
 
       <main className="wrap">
         {/* Hero */}
@@ -717,6 +716,9 @@ function Home() {
               </div>
             </div>
             <div className="hero-right">
+              <div className="hero-logo-badge" aria-hidden="true">
+                <img src="/docuanalytics-ai-logo.png" alt="" width="68" height="68" />
+              </div>
               <HeroDemo />
             </div>
           </div>
@@ -827,14 +829,13 @@ function Home() {
         setFile(null); setCompare(null); setHistOpen(false);
         setTimeout(() => scrollToId("results"), 300);
       }} />}
-      {remOpen && <RemindersModal onClose={() => setRemOpen(false)} notify={notify} />}
       {guideOpen && <ServicesGuideModal onClose={() => setGuideOpen(false)} />}
       <Toast msg={toast} />
     </div>
   );
 }
 
-function Header({ credits, authed, user, onTopup, onAuth, onReferral, onLogout, onHistory, onReminders }) {
+function Header({ credits, authed, user, onTopup, onAuth, onReferral, onLogout, onHistory }) {
   const { t } = useI18n();
   return (
     <header className="header">
@@ -845,7 +846,6 @@ function Header({ credits, authed, user, onTopup, onAuth, onReferral, onLogout, 
           <button className="btn btn-sm btn-ghost nav-anchor" data-testid="nav-price" onClick={() => scrollToId("prezzi")}>{t("nav_price")}</button>
           <Link to="/blog" className="btn btn-sm btn-ghost" data-testid="nav-blog"><BookOpen size={15} /> {t("blog_link")}</Link>
           <button className="btn btn-sm btn-ghost nav-anchor" data-testid="nav-history" onClick={onHistory}><History size={15} /> {t("nav_history")}</button>
-          {authed && <button className="btn btn-sm btn-ghost nav-anchor" data-testid="nav-reminders" onClick={onReminders}><Bell size={15} /> {t("nav_reminders")}</button>}
           <LanguageSwitcher />
           <span className="credits-badge" data-testid="credits-badge"><Zap size={15} /> {credits} {t("credits")}</span>
           <button className="btn btn-primary btn-sm" data-testid="topup-btn" onClick={onTopup}><CreditCard size={15} /> {t("topup")}</button>
@@ -1221,7 +1221,7 @@ function HeroDemo() {
   );
   return (
     <div className="hero-demo" data-testid="hero-demo" aria-hidden="true">
-      <div className="hd-bar"><span className="hd-dot" /><span className="hd-dot" /><span className="hd-dot" /><span className="hd-addr">app.docuanalytics.it</span></div>
+      <div className="hd-bar"><span className="hd-dot" /><span className="hd-dot" /><span className="hd-dot" /><span className="hd-addr">app.docuanalytics.online</span></div>
       <div className="hd-app">
         <aside className="hd-side">
           <div className="hd-brand">Docu<span className="grad">Analytics</span></div>
@@ -1601,7 +1601,7 @@ function DemoPlayer() {
     <div className="glass demo-player" data-testid="tutorial-video">
       <div className="demo-chrome">
         <span className="dotc r" /><span className="dotc y" /><span className="dotc g" />
-        <span className="demo-url">docuanalytics.it — Demo</span>
+        <span className="demo-url">docuanalytics.online — Demo</span>
         <button className="demo-play" data-testid="demo-playpause" onClick={() => setPlaying((p) => !p)}>
           {playing ? "❚❚" : <Play size={14} />}
         </button>
@@ -2006,6 +2006,7 @@ function AuthModal({ user, onClose, onAuthed, notify }) {
   return (
     <div className="modal-bg" onClick={onClose}>
       <div className="modal glass pad fade" style={{ maxWidth: 440 }} onClick={(e) => e.stopPropagation()} data-testid="auth-modal">
+        <div className="auth-logo"><img src="/docuanalytics-ai-logo.png" alt="DocuAnalytics AI" /></div>
         <div className="modal-head">
           <h2 className="section-title flex aic gap"><Lock size={20} /> {mode === "login" ? t("auth_login") : t("auth_register")}</h2>
           <button className="close-x" data-testid="close-auth" onClick={onClose}><X size={18} /></button>

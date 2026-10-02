@@ -1,7 +1,7 @@
 {
-  "name": "DocuAnalytics",
+  "name": "DocuAnalytics AI",
   "short_name": "DocuAnalytics",
-  "description": "Analisi ed estrazione dati automatica da fatture, contratti, visure ed F24 con Intelligenza Artificiale.",
+  "description": "Analisi documentale ed estrazione dati da fatture, contratti, visure ed F24 con Intelligenza Artificiale.",
   "icons": [
     { "src": "icon-192.png", "type": "image/png", "sizes": "192x192", "purpose": "any" },
     { "src": "icon-512.png", "type": "image/png", "sizes": "512x512", "purpose": "any" },
@@ -9,7 +9,7 @@
   ],
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#000000",
-  "theme_color": "#6B5CE7",
+  "background_color": "#0a1022",
+  "theme_color": "#0a1022",
   "lang": "it"
 }

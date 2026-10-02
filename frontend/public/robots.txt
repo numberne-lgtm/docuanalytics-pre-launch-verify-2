@@ -1,4 +1,5 @@
 User-agent: *
 Allow: /
+Disallow: /payment/
 
-Sitemap: https://docuanalytics.it/sitemap.xml
+Sitemap: https://docuanalytics.online/sitemap.xml
