@@ -275,3 +275,10 @@ IMPLEMENTATO E TESTATO (19/19 backend + frontend E2E, 100%):
 - Floating "Parla con l'assistente" button (AssistantFab, inside Footer -> homepage + 5 sector pages) + footer link; UTM: utm_source=site, utm_medium=fab|footer, utm_campaign=<page>. i18n key assistant_cta (5 langs).
 - /admin/assistant (AdminAssistant.jsx): admin token typed by hand (sessionStorage only), noindex; KPIs, per-channel and per-day tables, register conversion; GET /api/assistant/stats?days=7|30|90.
 - Sitemap NOT updated (only at authorized deploy). Security copy NOT changed: proposal in /app/memory/security_copy_proposal.md awaiting approval.
+
+## 2026-10-09 — Security/privacy copy applied in PREVIEW (not deployed)
+- Truthful copy in 5 langs: security cards, privacy banner, trust badges, FAQ a1/a4, footer desc, HR sector, blog privacy; removed "482 recensioni"/rating; "2 secondi" -> "pochi secondi".
+- New /privacy page (PrivacyPage.jsx, IT) with DRAFT banner and placeholders [Ragione sociale, P.IVA, Indirizzo, data] — MUST be filled before deploy. Footer link "Privacy".
+- Deletion on request: NOT implemented in app; manual DB procedure documented in /app/memory/data_deletion_procedure.md. Retention policy undefined -> GDPR review required.
+- Real sign-up tracking (signup_completed) NOT implemented: needs 1-line backend change (EVENTS whitelist) — user forbade backend changes in this step.
+- Sitemap still NOT updated (/assistant, /privacy to add at authorized deploy).

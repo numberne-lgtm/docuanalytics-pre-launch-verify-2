@@ -1,4 +1,4 @@
-# Security & Privacy Copy Review — PROPOSAL ONLY (not applied)
+# Security & Privacy Copy Review — APPLIED IN PREVIEW 2026-10-09 (not deployed)
 Date: 2026-10-09. No site text has been changed. Real behaviour verified in code (backend/server.py):
 - File uploaded -> written to a temp file -> sent to the chosen AI provider (Google Gemini / Anthropic Claude / OpenAI) -> temp file deleted (`os.unlink`) at the end.
 - Extracted results (fields, audit, structured data AND `full_text` of the document) are SAVED in MongoDB `analyses` (user history; used by Copilot).

@@ -9,13 +9,14 @@ import {
   Sparkles, Copy, Play, Lock, Facebook, Linkedin, Youtube, Globe,
   ShieldCheck, Trash2, BadgeCheck, Ban, ChevronDown,
   Clock, AlertTriangle, Search, Rocket, Scale, FileSignature, TrendingUp,
-  Users, Briefcase, Files, Server, ArrowRight, Mail, History, FileDown, FileCode, Pencil, Bell, CalendarClock
+  Users, Briefcase, Files, Server, ArrowRight, Mail, History, Cpu, UserCheck, FileDown, FileCode, Pencil, Bell, CalendarClock
 } from "lucide-react";
 import { createPortal } from "react-dom";
 import { BlogIndex, BlogPost } from "./Blog";
 import AssistantPage from "./assistant/AssistantPage";
 import AdminAssistant from "./assistant/AdminAssistant";
 import { AssistantFab } from "./assistant/AssistantFab";
+import PrivacyPage from "./PrivacyPage";
 import { MT, MARK, SECTORS, DEMO, validatePiva, validateCF } from "./content";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -49,7 +50,7 @@ function setByPath(obj, path, value) {
 const ICONS = {
   Clock, AlertTriangle, Search, Rocket, Upload, Zap, Landmark, Scale,
   FileSignature, TrendingUp, Users, Briefcase, Files, Server, Ban, Trash2,
-  BadgeCheck, Lock, ShieldCheck, FileText, ScrollText, Building2, Wallet,
+  BadgeCheck, Lock, ShieldCheck, FileText, ScrollText, Building2, Wallet, History, Cpu, UserCheck,
 };
 
 /* smooth-scroll to a homepage section id (accounts for sticky header) */
@@ -96,8 +97,8 @@ const T = {
     tut_title: "Come Funziona — Tutorial", tut_sub: "Guarda la demo animata: analizza il tuo primo documento in meno di un minuto",
     ref_title: "Invita un collega, guadagnate entrambi", ref_sub_a: "Per ogni collega che si registra con il tuo link ricevete", ref_sub_b: "+5 crediti a testa", ref_sub_c: ". Senza limiti.",
     ref_cta_in: "Ottieni il tuo link invito", ref_cta_out: "Accedi e invita",
-    testi_title: "Cosa dicono gli Studi Professionali", testi_sub: "4.9/5 — Basato su 482 recensioni verificate",
-    foot_desc: "Estrazione automatica ad alta precisione per studi legali, notai e commercialisti • Server UE • GDPR",
+    testi_title: "Cosa dicono gli Studi Professionali",
+    foot_desc: "Estrazione automatica di dati per studi legali, notai e commercialisti",
     foot_guide: "Guida ai servizi", assistant_cta: "Parla con l'assistente", foot_topup: "Ricarica Crediti",
     pric_title: "Ricarica Crediti", tab_card: "Carta / Stripe", tab_crypto: "Crypto (BTC/USDT)",
     auth_login: "Accedi", auth_register: "Crea account", auth_google: "Continua con Google", auth_or: "oppure", lang_label: "Lingua",
@@ -109,12 +110,12 @@ const T = {
     rights: "Tutti i diritti riservati", blog_link: "Guide",
     n_credits_out: "Crediti esauriti. Ricarica per continuare.", n_pay_cancel: "Pagamento annullato.", n_disconnected: "Disconnesso.", n_pay_verify: "Verifica pagamento in corso...", n_analyze_fail: "Analisi non riuscita.", n_copilot_err: "Errore nel copilot.", n_addr_copied: "Indirizzo copiato", n_link_copied: "Link copiato!", n_pay_start_err: "Errore nell'avvio del pagamento.", n_crypto_err: "Errore ordine crypto.", n_cancel_ok: "Abbonamento in cancellazione.", n_cancel_err: "Errore annullamento abbonamento.", n_welcome: "Benvenuto", n_login_ok: "Accesso effettuato ✅",
     n_pay_ok: "✅ Pagamento riuscito! Crediti aggiunti:", n_sub_ok: "✅ Abbonamento attivo! Crediti/mese:", n_renew: "Rinnovo automatico.", n_pay_pending: "Verifica in corso, i crediti appariranno a breve.", n_pay_fail: "Pagamento non completato.", auth_err: "Errore. Riprova.",
-    priv_banner: "I tuoi documenti non vengono mai memorizzati. Ogni file viene elaborato in tempo reale e cancellato immediatamente dopo l'analisi: nessun dato resta sui nostri server.",
-    badge_nostore: "Documenti non memorizzati", badge_delete: "Cancellazione immediata post-analisi", badge_gdpr: "Conforme al GDPR", badge_https: "Trasmissione cifrata HTTPS", badge_noshare: "Nessuna condivisione con terze parti",
-    faq_title: "Domande frequenti", faq_q1: "I miei documenti sono al sicuro? Chi può accedervi?", faq_a1: "I tuoi documenti sono completamente al sicuro. DocuAnalytics non memorizza alcun file: ogni documento viene elaborato in tempo reale e cancellato permanentemente al termine dell'analisi, senza lasciare alcuna traccia sui nostri server. Nessun operatore umano né sistema automatico conserva o accede ai tuoi file. Pienamente conforme al GDPR.",
+    priv_banner: "Il file che carichi non viene conservato: è elaborato e cancellato al termine dell'analisi. Nel tuo storico restano solo i dati estratti.",
+    badge_nostore: "File non conservato", badge_delete: "File cancellato dopo l'analisi", badge_gdpr: "Storico visibile solo dal tuo account", badge_https: "Trasmissione cifrata HTTPS", badge_noshare: "Fornitori AI selezionati: Google, Anthropic, OpenAI",
+    faq_title: "Domande frequenti", faq_q1: "I miei documenti sono al sicuro? Chi può accedervi?", faq_a1: "Il file caricato viene elaborato tramite il motore AI scelto (Google, Anthropic o OpenAI) e cancellato dai nostri server al termine dell'analisi. I dati estratti e il testo del documento vengono salvati nel tuo storico, accessibile solo dal tuo account, per consultarli e usare il Copilot. La trasmissione avviene sempre su HTTPS. Dettagli nell'informativa privacy.",
     faq_q2: "Quanto costa? Ci sono piani gratuiti?", faq_a2: "Puoi iniziare gratis con 3 crediti inclusi, senza carta di credito. Successivamente scegli tra pacchetti a pagamento singolo (da 19€) o abbonamenti mensili per studi con crediti ricorrenti. Paghi solo ciò che usi.",
     faq_q3: "Quali tipi di file e documenti posso analizzare?", faq_a3: "Puoi caricare PDF, JPG e PNG fino a 10 MB. DocuAnalytics riconosce fatture elettroniche, F24, contratti, visure camerali, buste paga e documenti generici, con estrazione dati e audit anti-errore.",
-    faq_q4: "Quanto tempo richiede l'analisi di un documento?", faq_a4: "In media circa 2 secondi. L'AI classifica il documento, estrae tutti i campi chiave e genera l'audit e le risposte del Copilot quasi istantaneamente.",
+    faq_q4: "Quanto tempo richiede l'analisi di un documento?", faq_a4: "In genere pochi secondi. L'AI classifica il documento, estrae tutti i campi chiave e genera l'audit e le risposte del Copilot quasi istantaneamente.",
     pp_onetime: "Pacchetti", pp_subs: "Abbonamenti",
   },
   en: {
@@ -132,8 +133,8 @@ const T = {
     tut_title: "How It Works — Tutorial", tut_sub: "Watch the animated demo: analyze your first document in under a minute",
     ref_title: "Invite a colleague, you both earn", ref_sub_a: "For every colleague who signs up with your link you both get", ref_sub_b: "+5 credits each", ref_sub_c: ". No limits.",
     ref_cta_in: "Get your invite link", ref_cta_out: "Sign in to invite",
-    testi_title: "What Professional Firms Say", testi_sub: "4.9/5 — Based on 482 verified reviews",
-    foot_desc: "High-precision automatic extraction for law firms, notaries and accountants • EU servers • GDPR",
+    testi_title: "What Professional Firms Say",
+    foot_desc: "Automatic data extraction for law firms, notaries and accountants",
     foot_guide: "Services guide", assistant_cta: "Talk to the assistant", foot_topup: "Buy Credits",
     pric_title: "Buy Credits", tab_card: "Card / Stripe", tab_crypto: "Crypto (BTC/USDT)",
     auth_login: "Sign in", auth_register: "Create account", auth_google: "Continue with Google", auth_or: "or", lang_label: "Language",
@@ -145,12 +146,12 @@ const T = {
     rights: "All rights reserved", blog_link: "Guides",
     n_credits_out: "Out of credits. Top up to continue.", n_pay_cancel: "Payment cancelled.", n_disconnected: "Logged out.", n_pay_verify: "Verifying payment...", n_analyze_fail: "Analysis failed.", n_copilot_err: "Copilot error.", n_addr_copied: "Address copied", n_link_copied: "Link copied!", n_pay_start_err: "Error starting payment.", n_crypto_err: "Crypto order error.", n_cancel_ok: "Subscription cancelling.", n_cancel_err: "Subscription cancel error.", n_welcome: "Welcome", n_login_ok: "Signed in ✅",
     n_pay_ok: "✅ Payment successful! Credits added:", n_sub_ok: "✅ Subscription active! Credits/month:", n_renew: "Automatic renewal.", n_pay_pending: "Verification in progress, credits will appear shortly.", n_pay_fail: "Payment not completed.", auth_err: "Error. Please try again.",
-    priv_banner: "Your documents are never stored. Every file is processed in real time and deleted immediately after the analysis: no data remains on our servers.",
-    badge_nostore: "Documents not stored", badge_delete: "Instant deletion after analysis", badge_gdpr: "GDPR compliant", badge_https: "Encrypted HTTPS transmission", badge_noshare: "No third-party sharing",
-    faq_title: "Frequently asked questions", faq_q1: "Are my documents safe? Who can access them?", faq_a1: "Your documents are completely safe. DocuAnalytics does not store any file: every document is processed in real time and permanently deleted at the end of the analysis, leaving no trace on our servers. No human operator or automated system keeps or accesses your files. Fully GDPR compliant.",
+    priv_banner: "The file you upload is not kept: it is processed and deleted at the end of the analysis. Only the extracted data remains in your history.",
+    badge_nostore: "File not kept", badge_delete: "File deleted after analysis", badge_gdpr: "History visible only to your account", badge_https: "Encrypted HTTPS transmission", badge_noshare: "Selected AI providers: Google, Anthropic, OpenAI",
+    faq_title: "Frequently asked questions", faq_q1: "Are my documents safe? Who can access them?", faq_a1: "The uploaded file is processed by the AI engine you choose (Google, Anthropic or OpenAI) and deleted from our servers at the end of the analysis. The extracted data and the document text are saved in your history, accessible only from your account, so you can review them and use the Copilot. Transmission always uses HTTPS. Details in the privacy policy.",
     faq_q2: "How much does it cost? Is there a free plan?", faq_a2: "You can start for free with 3 included credits, no credit card required. After that, choose one-time packs (from €19) or monthly firm subscriptions with recurring credits. You only pay for what you use.",
     faq_q3: "Which file types and documents can I analyze?", faq_a3: "You can upload PDF, JPG and PNG files up to 10 MB. DocuAnalytics recognizes e-invoices, tax forms, contracts, company records, payslips and generic documents, with data extraction and error-check audit.",
-    faq_q4: "How long does it take to analyze a document?", faq_a4: "About 2 seconds on average. The AI classifies the document, extracts all key fields and generates the audit and Copilot answers almost instantly.",
+    faq_q4: "How long does it take to analyze a document?", faq_a4: "Usually a few seconds. The AI classifies the document, extracts all key fields and generates the audit and Copilot answers almost instantly.",
     pp_onetime: "Packs", pp_subs: "Subscriptions",
   },
   es: {
@@ -168,8 +169,8 @@ const T = {
     tut_title: "Cómo Funciona — Tutorial", tut_sub: "Mira la demo animada: analiza tu primer documento en menos de un minuto",
     ref_title: "Invita a un colega, ganáis los dos", ref_sub_a: "Por cada colega que se registre con tu enlace recibís", ref_sub_b: "+5 créditos cada uno", ref_sub_c: ". Sin límites.",
     ref_cta_in: "Obtén tu enlace de invitación", ref_cta_out: "Accede e invita",
-    testi_title: "Lo que dicen los despachos profesionales", testi_sub: "4.9/5 — Basado en 482 reseñas verificadas",
-    foot_desc: "Extracción automática de alta precisión para bufetes, notarías y asesorías • Servidores UE • RGPD",
+    testi_title: "Lo que dicen los despachos profesionales",
+    foot_desc: "Extracción automática de datos para bufetes, notarías y asesorías",
     foot_guide: "Guía de servicios", assistant_cta: "Habla con el asistente", foot_topup: "Comprar Créditos",
     pric_title: "Comprar Créditos", tab_card: "Tarjeta / Stripe", tab_crypto: "Cripto (BTC/USDT)",
     auth_login: "Acceder", auth_register: "Crear cuenta", auth_google: "Continuar con Google", auth_or: "o", lang_label: "Idioma",
@@ -181,12 +182,12 @@ const T = {
     rights: "Todos los derechos reservados", blog_link: "Guías",
     n_credits_out: "Créditos agotados. Recarga para continuar.", n_pay_cancel: "Pago cancelado.", n_disconnected: "Sesión cerrada.", n_pay_verify: "Verificando el pago...", n_analyze_fail: "El análisis ha fallado.", n_copilot_err: "Error en el copilot.", n_addr_copied: "Dirección copiada", n_link_copied: "¡Enlace copiado!", n_pay_start_err: "Error al iniciar el pago.", n_crypto_err: "Error en el pedido cripto.", n_cancel_ok: "Suscripción en cancelación.", n_cancel_err: "Error al cancelar la suscripción.", n_welcome: "Bienvenido", n_login_ok: "Sesión iniciada ✅",
     n_pay_ok: "✅ ¡Pago realizado! Créditos añadidos:", n_sub_ok: "✅ ¡Suscripción activa! Créditos/mes:", n_renew: "Renovación automática.", n_pay_pending: "Verificación en curso, los créditos aparecerán pronto.", n_pay_fail: "Pago no completado.", auth_err: "Error. Inténtalo de nuevo.",
-    priv_banner: "Tus documentos nunca se almacenan. Cada archivo se procesa en tiempo real y se elimina de inmediato tras el análisis: ningún dato permanece en nuestros servidores.",
-    badge_nostore: "Documentos no almacenados", badge_delete: "Eliminación inmediata tras el análisis", badge_gdpr: "Conforme al RGPD", badge_https: "Transmisión cifrada HTTPS", badge_noshare: "Sin compartir con terceros",
-    faq_title: "Preguntas frecuentes", faq_q1: "¿Mis documentos están seguros? ¿Quién puede acceder a ellos?", faq_a1: "Tus documentos están completamente seguros. DocuAnalytics no almacena ningún archivo: cada documento se procesa en tiempo real y se elimina permanentemente al finalizar el análisis, sin dejar rastro en nuestros servidores. Ningún operador humano ni sistema automático conserva o accede a tus archivos. Totalmente conforme al RGPD.",
+    priv_banner: "El archivo que subes no se conserva: se procesa y se elimina al terminar el análisis. En tu historial solo quedan los datos extraídos.",
+    badge_nostore: "Archivo no conservado", badge_delete: "Archivo eliminado tras el análisis", badge_gdpr: "Historial visible solo desde tu cuenta", badge_https: "Transmisión cifrada HTTPS", badge_noshare: "Proveedores de IA seleccionados: Google, Anthropic, OpenAI",
+    faq_title: "Preguntas frecuentes", faq_q1: "¿Mis documentos están seguros? ¿Quién puede acceder a ellos?", faq_a1: "El archivo subido se procesa con el motor de IA que elijas (Google, Anthropic u OpenAI) y se elimina de nuestros servidores al terminar el análisis. Los datos extraídos y el texto del documento se guardan en tu historial, accesible solo desde tu cuenta, para consultarlos y usar el Copilot. La transmisión siempre es por HTTPS. Detalles en la política de privacidad.",
     faq_q2: "¿Cuánto cuesta? ¿Hay un plan gratuito?", faq_a2: "Puedes empezar gratis con 3 créditos incluidos, sin tarjeta. Después elige packs de pago único (desde 19€) o suscripciones mensuales para despachos con créditos recurrentes. Solo pagas lo que usas.",
     faq_q3: "¿Qué tipos de archivos y documentos puedo analizar?", faq_a3: "Puedes subir archivos PDF, JPG y PNG de hasta 10 MB. DocuAnalytics reconoce facturas electrónicas, modelos fiscales, contratos, registros mercantiles, nóminas y documentos genéricos, con extracción de datos y auditoría antierrores.",
-    faq_q4: "¿Cuánto tarda el análisis de un documento?", faq_a4: "Unos 2 segundos de media. La IA clasifica el documento, extrae todos los campos clave y genera la auditoría y las respuestas del Copilot casi al instante.",
+    faq_q4: "¿Cuánto tarda el análisis de un documento?", faq_a4: "Normalmente unos segundos. La IA clasifica el documento, extrae todos los campos clave y genera la auditoría y las respuestas del Copilot casi al instante.",
     pp_onetime: "Packs", pp_subs: "Suscripciones",
   },
   de: {
@@ -204,8 +205,8 @@ const T = {
     tut_title: "So funktioniert's — Tutorial", tut_sub: "Sehen Sie die animierte Demo: analysieren Sie Ihr erstes Dokument in unter einer Minute",
     ref_title: "Laden Sie eine Kollegin ein – beide profitieren", ref_sub_a: "Für jede Person, die sich mit Ihrem Link registriert, erhalten Sie beide", ref_sub_b: "+5 Guthaben je", ref_sub_c: ". Ohne Limit.",
     ref_cta_in: "Einladungslink erhalten", ref_cta_out: "Anmelden und einladen",
-    testi_title: "Was Fachkanzleien sagen", testi_sub: "4.9/5 — Basierend auf 482 verifizierten Bewertungen",
-    foot_desc: "Hochpräzise automatische Extraktion für Kanzleien, Notare und Steuerberater • EU-Server • DSGVO",
+    testi_title: "Was Fachkanzleien sagen",
+    foot_desc: "Automatische Datenextraktion für Kanzleien, Notare und Steuerberater",
     foot_guide: "Service-Leitfaden", assistant_cta: "Mit dem Assistenten sprechen", foot_topup: "Guthaben kaufen",
     pric_title: "Guthaben kaufen", tab_card: "Karte / Stripe", tab_crypto: "Krypto (BTC/USDT)",
     auth_login: "Anmelden", auth_register: "Konto erstellen", auth_google: "Mit Google fortfahren", auth_or: "oder", lang_label: "Sprache",
@@ -217,12 +218,12 @@ const T = {
     rights: "Alle Rechte vorbehalten", blog_link: "Ratgeber",
     n_credits_out: "Guthaben aufgebraucht. Bitte aufladen.", n_pay_cancel: "Zahlung abgebrochen.", n_disconnected: "Abgemeldet.", n_pay_verify: "Zahlung wird überprüft...", n_analyze_fail: "Analyse fehlgeschlagen.", n_copilot_err: "Copilot-Fehler.", n_addr_copied: "Adresse kopiert", n_link_copied: "Link kopiert!", n_pay_start_err: "Fehler beim Starten der Zahlung.", n_crypto_err: "Fehler bei Krypto-Bestellung.", n_cancel_ok: "Abonnement wird gekündigt.", n_cancel_err: "Fehler bei Abo-Kündigung.", n_welcome: "Willkommen", n_login_ok: "Angemeldet ✅",
     n_pay_ok: "✅ Zahlung erfolgreich! Guthaben gutgeschrieben:", n_sub_ok: "✅ Abo aktiv! Guthaben/Monat:", n_renew: "Automatische Verlängerung.", n_pay_pending: "Überprüfung läuft, das Guthaben erscheint in Kürze.", n_pay_fail: "Zahlung nicht abgeschlossen.", auth_err: "Fehler. Bitte erneut versuchen.",
-    priv_banner: "Ihre Dokumente werden niemals gespeichert. Jede Datei wird in Echtzeit verarbeitet und unmittelbar nach der Analyse gelöscht: keine Daten verbleiben auf unseren Servern.",
-    badge_nostore: "Dokumente nicht gespeichert", badge_delete: "Sofortige Löschung nach der Analyse", badge_gdpr: "DSGVO-konform", badge_https: "Verschlüsselte HTTPS-Übertragung", badge_noshare: "Keine Weitergabe an Dritte",
-    faq_title: "Häufige Fragen", faq_q1: "Sind meine Dokumente sicher? Wer kann darauf zugreifen?", faq_a1: "Ihre Dokumente sind vollständig sicher. DocuAnalytics speichert keine Datei: Jedes Dokument wird in Echtzeit verarbeitet und nach Abschluss der Analyse dauerhaft gelöscht, ohne Spuren auf unseren Servern zu hinterlassen. Kein menschlicher Bediener und kein automatisches System speichert oder greift auf Ihre Dateien zu. Vollständig DSGVO-konform.",
+    priv_banner: "Die hochgeladene Datei wird nicht aufbewahrt: Sie wird verarbeitet und nach der Analyse gelöscht. In Ihrem Verlauf bleiben nur die extrahierten Daten.",
+    badge_nostore: "Datei nicht aufbewahrt", badge_delete: "Datei nach der Analyse gelöscht", badge_gdpr: "Verlauf nur für Ihr Konto sichtbar", badge_https: "Verschlüsselte HTTPS-Übertragung", badge_noshare: "Ausgewählte KI-Anbieter: Google, Anthropic, OpenAI",
+    faq_title: "Häufige Fragen", faq_q1: "Sind meine Dokumente sicher? Wer kann darauf zugreifen?", faq_a1: "Die hochgeladene Datei wird mit der gewählten KI-Engine (Google, Anthropic oder OpenAI) verarbeitet und nach der Analyse von unseren Servern gelöscht. Die extrahierten Daten und der Dokumenttext werden in Ihrem Verlauf gespeichert, nur über Ihr Konto zugänglich, damit Sie sie einsehen und den Copilot nutzen können. Die Übertragung erfolgt immer über HTTPS. Details in der Datenschutzerklärung.",
     faq_q2: "Was kostet es? Gibt es einen kostenlosen Plan?", faq_a2: "Sie können kostenlos mit 3 enthaltenen Guthaben starten, ohne Kreditkarte. Danach wählen Sie Einmal-Pakete (ab 19 €) oder monatliche Kanzlei-Abos mit wiederkehrendem Guthaben. Sie zahlen nur, was Sie nutzen.",
     faq_q3: "Welche Dateitypen und Dokumente kann ich analysieren?", faq_a3: "Sie können PDF-, JPG- und PNG-Dateien bis 10 MB hochladen. DocuAnalytics erkennt E-Rechnungen, Steuerformulare, Verträge, Registerauszüge, Gehaltsabrechnungen und generische Dokumente, mit Datenextraktion und Fehler-Audit.",
-    faq_q4: "Wie lange dauert die Analyse eines Dokuments?", faq_a4: "Im Durchschnitt etwa 2 Sekunden. Die KI klassifiziert das Dokument, extrahiert alle wichtigen Felder und erstellt Audit und Copilot-Antworten nahezu sofort.",
+    faq_q4: "Wie lange dauert die Analyse eines Dokuments?", faq_a4: "In der Regel wenige Sekunden. Die KI klassifiziert das Dokument, extrahiert alle wichtigen Felder und erstellt Audit und Copilot-Antworten nahezu sofort.",
     pp_onetime: "Pakete", pp_subs: "Abos",
   },
   fr: {
@@ -240,8 +241,8 @@ const T = {
     tut_title: "Comment ça marche — Tutoriel", tut_sub: "Regardez la démo animée : analysez votre premier document en moins d'une minute",
     ref_title: "Invitez un confrère, gagnez tous les deux", ref_sub_a: "Pour chaque confrère qui s'inscrit avec votre lien, vous recevez", ref_sub_b: "+5 crédits chacun", ref_sub_c: ". Sans limite.",
     ref_cta_in: "Obtenez votre lien d'invitation", ref_cta_out: "Connectez-vous pour inviter",
-    testi_title: "Ce que disent les cabinets", testi_sub: "4.9/5 — Sur la base de 482 avis vérifiés",
-    foot_desc: "Extraction automatique haute précision pour cabinets d'avocats, notaires et experts-comptables • Serveurs UE • RGPD",
+    testi_title: "Ce que disent les cabinets",
+    foot_desc: "Extraction automatique de données pour cabinets d'avocats, notaires et experts-comptables",
     foot_guide: "Guide des services", assistant_cta: "Parler à l'assistant", foot_topup: "Acheter des crédits",
     pric_title: "Acheter des crédits", tab_card: "Carte / Stripe", tab_crypto: "Crypto (BTC/USDT)",
     auth_login: "Se connecter", auth_register: "Créer un compte", auth_google: "Continuer avec Google", auth_or: "ou", lang_label: "Langue",
@@ -253,12 +254,12 @@ const T = {
     rights: "Tous droits réservés", blog_link: "Guides",
     n_credits_out: "Crédits épuisés. Rechargez pour continuer.", n_pay_cancel: "Paiement annulé.", n_disconnected: "Déconnecté.", n_pay_verify: "Vérification du paiement...", n_analyze_fail: "Échec de l'analyse.", n_copilot_err: "Erreur du copilot.", n_addr_copied: "Adresse copiée", n_link_copied: "Lien copié !", n_pay_start_err: "Erreur au démarrage du paiement.", n_crypto_err: "Erreur de commande crypto.", n_cancel_ok: "Abonnement en cours de résiliation.", n_cancel_err: "Erreur de résiliation de l'abonnement.", n_welcome: "Bienvenue", n_login_ok: "Connexion réussie ✅",
     n_pay_ok: "✅ Paiement réussi ! Crédits ajoutés :", n_sub_ok: "✅ Abonnement actif ! Crédits/mois :", n_renew: "Renouvellement automatique.", n_pay_pending: "Vérification en cours, les crédits apparaîtront bientôt.", n_pay_fail: "Paiement non terminé.", auth_err: "Erreur. Réessayez.",
-    priv_banner: "Vos documents ne sont jamais stockés. Chaque fichier est traité en temps réel et supprimé immédiatement après l'analyse : aucune donnée ne reste sur nos serveurs.",
-    badge_nostore: "Documents non stockés", badge_delete: "Suppression immédiate après analyse", badge_gdpr: "Conforme au RGPD", badge_https: "Transmission chiffrée HTTPS", badge_noshare: "Aucun partage avec des tiers",
-    faq_title: "Questions fréquentes", faq_q1: "Mes documents sont-ils en sécurité ? Qui peut y accéder ?", faq_a1: "Vos documents sont totalement en sécurité. DocuAnalytics ne stocke aucun fichier : chaque document est traité en temps réel et définitivement supprimé à la fin de l'analyse, sans laisser aucune trace sur nos serveurs. Aucun opérateur humain ni système automatique ne conserve ni n'accède à vos fichiers. Entièrement conforme au RGPD.",
+    priv_banner: "Le fichier importé n'est pas conservé : il est traité puis supprimé à la fin de l'analyse. Seules les données extraites restent dans votre historique.",
+    badge_nostore: "Fichier non conservé", badge_delete: "Fichier supprimé après l'analyse", badge_gdpr: "Historique visible uniquement depuis votre compte", badge_https: "Transmission chiffrée HTTPS", badge_noshare: "Fournisseurs d'IA sélectionnés : Google, Anthropic, OpenAI",
+    faq_title: "Questions fréquentes", faq_q1: "Mes documents sont-ils en sécurité ? Qui peut y accéder ?", faq_a1: "Le fichier importé est traité par le moteur d'IA choisi (Google, Anthropic ou OpenAI) puis supprimé de nos serveurs à la fin de l'analyse. Les données extraites et le texte du document sont enregistrés dans votre historique, accessible uniquement depuis votre compte, pour les consulter et utiliser le Copilot. La transmission se fait toujours en HTTPS. Détails dans la politique de confidentialité.",
     faq_q2: "Combien ça coûte ? Y a-t-il une offre gratuite ?", faq_a2: "Vous pouvez commencer gratuitement avec 3 crédits inclus, sans carte bancaire. Ensuite, choisissez des packs à paiement unique (à partir de 19 €) ou des abonnements mensuels pour cabinets avec crédits récurrents. Vous ne payez que ce que vous utilisez.",
     faq_q3: "Quels types de fichiers et de documents puis-je analyser ?", faq_a3: "Vous pouvez importer des fichiers PDF, JPG et PNG jusqu'à 10 Mo. DocuAnalytics reconnaît les factures électroniques, formulaires fiscaux, contrats, extraits Kbis, bulletins de paie et documents génériques, avec extraction de données et audit anti-erreur.",
-    faq_q4: "Combien de temps prend l'analyse d'un document ?", faq_a4: "Environ 2 secondes en moyenne. L'IA classe le document, extrait tous les champs clés et génère l'audit et les réponses du Copilot presque instantanément.",
+    faq_q4: "Combien de temps prend l'analyse d'un document ?", faq_a4: "Généralement quelques secondes. L'IA classe le document, extrait tous les champs clés et génère l'audit et les réponses du Copilot presque instantanément.",
     pp_onetime: "Packs", pp_subs: "Abonnements",
   },
 };
@@ -284,7 +285,7 @@ const CONTENT = {
     services: [
       { t: "F24 & Fatture Elettroniche", d: "Quadratura automatica Debito/Credito/Saldo, avviso visto conformità IVA sopra €5.000, controllo IBAN esteri e Prima Nota per Zucchetti/TeamSystem." },
       { t: "Contratti & Visure Camerali", d: "Rilevamento clausole vessatorie (Art. 1341 c.c.), preavvisi recesso, verifica antiriciclaggio KYC/AML con estrazione REA, soci e amministratori." },
-      { t: "Buste Paga & HR", d: "Quadratura Lordo/INPS/IRPEF/Netto, TFR maturato, compliance GDPR & EU AI Act con server 100% in UE e crittografia AES 256-bit." },
+      { t: "Buste Paga & HR", d: "Quadratura Lordo/INPS/IRPEF/Netto, verifica del TFR maturato." },
     ],
     features: [
       { tag: "AUDIT", t: "Rilevatore Red-Flag AI", d: "Un secondo cervello AI che controlla i tuoi documenti e segnala automaticamente i rischi prima che diventino un problema.", points: ["Quadratura automatica di F24, fatture e buste paga (Debito/Credito/Netto)", "Allerta clausole vessatorie nei contratti (Art. 1341 c.c.)", "Rilevamento IBAN esteri e anomalie antiriciclaggio (AML)", "Avviso visto di conformità IVA per crediti superiori a €5.000"] },
@@ -293,7 +294,7 @@ const CONTENT = {
     tutorial: [
       { t: "Carica il documento", d: "Trascina o seleziona una fattura, un F24, un contratto, una visura o una busta paga (PDF, JPG, PNG)." },
       { t: "Scegli il tipo (opzionale)", d: "Seleziona la categoria del documento per un'estrazione ancora più precisa, oppure lascia che l'AI la rilevi da sola." },
-      { t: "Analizza con l'AI", d: "In circa 2 secondi ottieni tutti i dati strutturati (importi, date, P.IVA, IBAN, totali) e l'audit anti-errore." },
+      { t: "Analizza con l'AI", d: "In pochi secondi ottieni tutti i dati strutturati (importi, date, P.IVA, IBAN, totali) e l'audit anti-errore." },
       { t: "Chiedi al Copilot", d: "Fai domande sul documento in linguaggio naturale e ricevi risposte immediate e contestuali." },
       { t: "Esporta i dati", d: "Scarica i risultati in CSV o JSON, pronti per il tuo gestionale (Zucchetti, TeamSystem, ecc.)." },
     ],
@@ -301,13 +302,13 @@ const CONTENT = {
       { n: "Avv. Alessandro Rossi", s: "Studio Legale Rossi & Associati • Milano", t: "Ha rivoluzionato il nostro studio. L'estrazione da contratti e visure è accurata al 99%. Risparmiamo 12 ore a settimana." },
       { n: "Dott.ssa Elena Conti", s: "Conti & Partners • Roma", t: "La quadratura automatica dei saldi F24 e delle fatture ci ha azzerato gli errori di digitazione manuale." },
       { n: "Dott. Marco Bianchi", s: "Studio Tributario Bianchi • Torino", t: "I 3 crediti gratuiti mi hanno convinto. Abbiamo acquistato il Pack Professional: assistenza ed export impeccabili." },
-      { n: "Chiara Ferrari", s: "HR Manager • Bologna", t: "Analizzare le buste paga ora richiede 2 secondi. Piattaforma affidabile ed intuitiva." },
+      { n: "Chiara Ferrari", s: "HR Manager • Bologna", t: "Analizzare le buste paga ora richiede pochi secondi. Piattaforma affidabile ed intuitiva." },
     ],
     guide: [
       { t: "F24 & Fatture Elettroniche", items: ["Estrazione automatica di codici tributo, importi, scadenze e saldi", "Quadratura Debito / Credito / Saldo finale con avviso in caso di squadratura", "Rilevamento visto di conformità per crediti IVA superiori a €5.000", "Controllo IBAN esteri e Prima Nota per Zucchetti / TeamSystem / Datev"] },
       { t: "Contratti & Documenti Legali", items: ["Individuazione clausole vessatorie (Art. 1341 c.c.)", "Estrazione parti, oggetto, durata, corrispettivi e termini di recesso", "Segnalazione preavvisi e scadenze contrattuali critiche", "Riepilogo in linguaggio chiaro delle clausole complesse"] },
       { t: "Visure Camerali", items: ["Estrazione numero REA, P.IVA, sede, capitale sociale e PEC", "Elenco soci, amministratori e poteri di firma", "Verifiche antiriciclaggio (KYC / AML) e titolare effettivo", "Stato attività e procedure in corso"] },
-      { t: "Buste Paga & HR", items: ["Quadratura Lordo / INPS / IRPEF / Netto in busta", "Calcolo e verifica TFR maturato", "Compliance GDPR ed EU AI Act con dati trattati 100% in UE", "Crittografia AES 256-bit dei documenti"] },
+      { t: "Buste Paga & HR", items: ["Quadratura Lordo / INPS / IRPEF / Netto in busta", "Calcolo e verifica TFR maturato"] },
     ],
     demo: ["1. Carica il documento", "2. Analisi con l'Intelligenza Artificiale", "3. Dati estratti automaticamente", "4. AI Red-Flag Audit", "5. Chiedi all'AI Copilot"],
     demoData: { file: "Fattura_128_2026.pdf", up: "caricato · 214 KB", f: [["Numero", "128/2026"], ["Imponibile", "1.000,00 €"], ["IVA 22%", "220,00 €"], ["Totale", "1.220,00 €"], ["IBAN", "IT60X0542811101…"]], a: ["Quadratura IVA corretta (1.000 + 220 = 1.220 €)", "IBAN italiano valido", "Scadenza pagamento tra 15 giorni"], q: "Qual è il totale da pagare?", ans: ["Il totale da pagare è ", "1.220,00 €", ", con scadenza 30/04/2026."] },
@@ -318,7 +319,7 @@ const CONTENT = {
     services: [
       { t: "Tax Forms & E-Invoices", d: "Automatic Debit/Credit/Balance reconciliation, VAT compliance alerts above €5,000, foreign IBAN checks and ledger export for accounting software." },
       { t: "Contracts & Company Records", d: "Detection of unfair clauses, notice/withdrawal terms, AML/KYC checks with extraction of registration number, shareholders and directors." },
-      { t: "Payslips & HR", d: "Gross/Contributions/Tax/Net reconciliation, accrued severance, GDPR & EU AI Act compliance with 100% EU servers and AES 256-bit encryption." },
+      { t: "Payslips & HR", d: "Gross/Contributions/Tax/Net reconciliation, accrued severance check." },
     ],
     features: [
       { tag: "AUDIT", t: "AI Red-Flag Detector", d: "A second AI brain that checks your documents and automatically flags risks before they become a problem.", points: ["Automatic reconciliation of tax forms, invoices and payslips", "Unfair-clause alerts in contracts", "Foreign IBAN and anti-money-laundering (AML) anomaly detection", "VAT compliance alert for credits above €5,000"] },
@@ -327,7 +328,7 @@ const CONTENT = {
     tutorial: [
       { t: "Upload the document", d: "Drag or select an invoice, tax form, contract, company record or payslip (PDF, JPG, PNG)." },
       { t: "Choose the type (optional)", d: "Select the document category for even more precise extraction, or let the AI detect it automatically." },
-      { t: "Analyze with AI", d: "In about 2 seconds get all structured data (amounts, dates, VAT numbers, IBAN, totals) and the error-check audit." },
+      { t: "Analyze with AI", d: "In a few seconds get all structured data (amounts, dates, VAT numbers, IBAN, totals) and the error-check audit." },
       { t: "Ask the Copilot", d: "Ask questions about the document in natural language and get instant, contextual answers." },
       { t: "Export the data", d: "Download results as CSV or JSON, ready for your accounting software." },
     ],
@@ -335,13 +336,13 @@ const CONTENT = {
       { n: "Alessandro Rossi, Esq.", s: "Rossi & Partners Law Firm • Milan", t: "It transformed our firm. Extraction from contracts and records is 99% accurate. We save 12 hours a week." },
       { n: "Elena Conti, CPA", s: "Conti & Partners • Rome", t: "Automatic reconciliation of tax and invoice balances eliminated our manual data-entry errors." },
       { n: "Marco Bianchi, CPA", s: "Bianchi Tax Firm • Turin", t: "The 3 free credits won me over. We bought the Professional Pack: flawless support and export." },
-      { n: "Chiara Ferrari", s: "HR Manager • Bologna", t: "Analyzing payslips now takes 2 seconds. Reliable and intuitive platform." },
+      { n: "Chiara Ferrari", s: "HR Manager • Bologna", t: "Analyzing payslips now takes a few seconds. Reliable and intuitive platform." },
     ],
     guide: [
       { t: "Tax Forms & E-Invoices", items: ["Automatic extraction of tax codes, amounts, due dates and balances", "Debit / Credit / Final balance reconciliation with mismatch alerts", "Compliance-visa detection for VAT credits above €5,000", "Foreign IBAN checks and ledger export for accounting software"] },
       { t: "Contracts & Legal Documents", items: ["Detection of unfair clauses", "Extraction of parties, subject, duration, fees and withdrawal terms", "Alerts on critical notices and contract deadlines", "Plain-language summary of complex clauses"] },
       { t: "Company Records", items: ["Extraction of registration number, VAT, office, share capital and certified email", "List of shareholders, directors and signing powers", "AML / KYC checks and beneficial owner", "Business status and ongoing proceedings"] },
-      { t: "Payslips & HR", items: ["Gross / Contributions / Tax / Net reconciliation", "Accrued severance calculation and check", "GDPR & EU AI Act compliance, data processed 100% in the EU", "AES 256-bit document encryption"] },
+      { t: "Payslips & HR", items: ["Gross / Contributions / Tax / Net reconciliation", "Accrued severance calculation and check"] },
     ],
     demo: ["1. Upload the document", "2. Analysis with Artificial Intelligence", "3. Data extracted automatically", "4. AI Red-Flag Audit", "5. Ask the AI Copilot"],
     demoData: { file: "Invoice_128_2026.pdf", up: "uploaded · 214 KB", f: [["Number", "128/2026"], ["Taxable", "€1,000.00"], ["VAT 22%", "€220.00"], ["Total", "€1,220.00"], ["IBAN", "IT60X0542811101…"]], a: ["VAT reconciliation correct (1,000 + 220 = 1,220 €)", "Valid Italian IBAN", "Payment due in 15 days"], q: "What's the total to pay?", ans: ["The total to pay is ", "€1,220.00", ", due on 30/04/2026."] },
@@ -352,7 +353,7 @@ const CONTENT = {
     services: [
       { t: "Modelos Fiscales y Facturas", d: "Cuadre automático Debe/Haber/Saldo, avisos de cumplimiento de IVA por encima de 5.000 €, control de IBAN extranjeros y exportación contable." },
       { t: "Contratos y Registros Mercantiles", d: "Detección de cláusulas abusivas, plazos de preaviso/desistimiento, verificación AML/KYC con extracción de datos registrales, socios y administradores." },
-      { t: "Nóminas y RR. HH.", d: "Cuadre Bruto/Cotizaciones/IRPF/Neto, finiquito acumulado, cumplimiento RGPD y EU AI Act con servidores 100% en la UE y cifrado AES 256 bits." },
+      { t: "Nóminas y RR. HH.", d: "Cuadre Bruto/Cotizaciones/IRPF/Neto, verificación del finiquito acumulado." },
     ],
     features: [
       { tag: "AUDIT", t: "Detector de Alertas con IA", d: "Un segundo cerebro de IA que revisa tus documentos y señala automáticamente los riesgos antes de que sean un problema.", points: ["Cuadre automático de modelos fiscales, facturas y nóminas", "Alerta de cláusulas abusivas en contratos", "Detección de IBAN extranjeros y anomalías antiblanqueo (AML)", "Aviso de cumplimiento de IVA para créditos superiores a 5.000 €"] },
@@ -361,7 +362,7 @@ const CONTENT = {
     tutorial: [
       { t: "Sube el documento", d: "Arrastra o selecciona una factura, modelo fiscal, contrato, registro mercantil o nómina (PDF, JPG, PNG)." },
       { t: "Elige el tipo (opcional)", d: "Selecciona la categoría del documento para una extracción aún más precisa, o deja que la IA la detecte sola." },
-      { t: "Analiza con IA", d: "En unos 2 segundos obtienes todos los datos estructurados (importes, fechas, NIF, IBAN, totales) y la auditoría antierrores." },
+      { t: "Analiza con IA", d: "En unos segundos obtienes todos los datos estructurados (importes, fechas, NIF, IBAN, totales) y la auditoría antierrores." },
       { t: "Pregunta al Copilot", d: "Haz preguntas sobre el documento en lenguaje natural y recibe respuestas inmediatas y contextuales." },
       { t: "Exporta los datos", d: "Descarga los resultados en CSV o JSON, listos para tu software contable." },
     ],
@@ -369,13 +370,13 @@ const CONTENT = {
       { n: "Alessandro Rossi", s: "Bufete Rossi & Asociados • Milán", t: "Transformó nuestro despacho. La extracción de contratos y registros es 99% precisa. Ahorramos 12 horas a la semana." },
       { n: "Elena Conti", s: "Conti & Partners • Roma", t: "El cuadre automático de saldos fiscales y facturas eliminó nuestros errores de introducción manual." },
       { n: "Marco Bianchi", s: "Asesoría Tributaria Bianchi • Turín", t: "Los 3 créditos gratis me convencieron. Compramos el Pack Professional: soporte y exportación impecables." },
-      { n: "Chiara Ferrari", s: "Responsable de RR. HH. • Bolonia", t: "Analizar nóminas ahora tarda 2 segundos. Plataforma fiable e intuitiva." },
+      { n: "Chiara Ferrari", s: "Responsable de RR. HH. • Bolonia", t: "Analizar nóminas ahora tarda unos segundos. Plataforma fiable e intuitiva." },
     ],
     guide: [
       { t: "Modelos Fiscales y Facturas", items: ["Extracción automática de códigos, importes, vencimientos y saldos", "Cuadre Debe / Haber / Saldo final con aviso de descuadre", "Detección de visado de conformidad para créditos de IVA superiores a 5.000 €", "Control de IBAN extranjeros y exportación contable"] },
       { t: "Contratos y Documentos Legales", items: ["Identificación de cláusulas abusivas", "Extracción de partes, objeto, duración, importes y desistimiento", "Avisos de preavisos y vencimientos contractuales críticos", "Resumen en lenguaje claro de cláusulas complejas"] },
       { t: "Registros Mercantiles", items: ["Extracción de número registral, NIF, sede, capital social y email certificado", "Lista de socios, administradores y poderes de firma", "Verificaciones AML / KYC y titular real", "Estado de actividad y procedimientos en curso"] },
-      { t: "Nóminas y RR. HH.", items: ["Cuadre Bruto / Cotizaciones / IRPF / Neto", "Cálculo y verificación del finiquito acumulado", "Cumplimiento RGPD y EU AI Act, datos tratados 100% en la UE", "Cifrado AES 256 bits de los documentos"] },
+      { t: "Nóminas y RR. HH.", items: ["Cuadre Bruto / Cotizaciones / IRPF / Neto", "Cálculo y verificación del finiquito acumulado"] },
     ],
     demo: ["1. Sube el documento", "2. Análisis con Inteligencia Artificial", "3. Datos extraídos automáticamente", "4. Auditoría de alertas con IA", "5. Pregunta al Copilot de IA"],
     demoData: { file: "Factura_128_2026.pdf", up: "subido · 214 KB", f: [["Número", "128/2026"], ["Base", "1.000,00 €"], ["IVA 22%", "220,00 €"], ["Total", "1.220,00 €"], ["IBAN", "IT60X0542811101…"]], a: ["Cuadre de IVA correcto (1.000 + 220 = 1.220 €)", "IBAN italiano válido", "Vencimiento del pago en 15 días"], q: "¿Cuál es el total a pagar?", ans: ["El total a pagar es ", "1.220,00 €", ", con vencimiento 30/04/2026."] },
@@ -386,7 +387,7 @@ const CONTENT = {
     services: [
       { t: "Steuerformulare & E-Rechnungen", d: "Automatischer Soll/Haben/Saldo-Abgleich, USt-Compliance-Hinweise über 5.000 €, Prüfung ausländischer IBAN und Buchungsexport." },
       { t: "Verträge & Handelsregisterauszüge", d: "Erkennung unzulässiger Klauseln, Kündigungsfristen, AML/KYC-Prüfung mit Extraktion von Registernummer, Gesellschaftern und Geschäftsführern." },
-      { t: "Gehaltsabrechnungen & HR", d: "Brutto/Beiträge/Steuer/Netto-Abgleich, aufgelaufene Abfindung, DSGVO- & EU-AI-Act-Konformität mit 100% EU-Servern und AES-256-Bit-Verschlüsselung." },
+      { t: "Gehaltsabrechnungen & HR", d: "Brutto/Beiträge/Steuer/Netto-Abgleich, Prüfung der aufgelaufenen Abfindung." },
     ],
     features: [
       { tag: "AUDIT", t: "KI-Red-Flag-Detektor", d: "Ein zweites KI-Gehirn, das Ihre Dokumente prüft und Risiken automatisch meldet, bevor sie zum Problem werden.", points: ["Automatischer Abgleich von Steuerformularen, Rechnungen und Abrechnungen", "Warnung vor unzulässigen Klauseln in Verträgen", "Erkennung ausländischer IBAN und Geldwäsche-Anomalien (AML)", "USt-Compliance-Hinweis für Guthaben über 5.000 €"] },
@@ -395,7 +396,7 @@ const CONTENT = {
     tutorial: [
       { t: "Dokument hochladen", d: "Ziehen oder wählen Sie eine Rechnung, ein Steuerformular, einen Vertrag, einen Registerauszug oder eine Abrechnung (PDF, JPG, PNG)." },
       { t: "Typ wählen (optional)", d: "Wählen Sie die Dokumentkategorie für eine noch präzisere Extraktion, oder lassen Sie die KI sie automatisch erkennen." },
-      { t: "Mit KI analysieren", d: "In etwa 2 Sekunden erhalten Sie alle strukturierten Daten (Beträge, Daten, USt-IdNr., IBAN, Summen) und das Fehler-Audit." },
+      { t: "Mit KI analysieren", d: "In wenigen Sekunden erhalten Sie alle strukturierten Daten (Beträge, Daten, USt-IdNr., IBAN, Summen) und das Fehler-Audit." },
       { t: "Den Copilot fragen", d: "Stellen Sie Fragen zum Dokument in natürlicher Sprache und erhalten Sie sofortige, kontextbezogene Antworten." },
       { t: "Daten exportieren", d: "Laden Sie die Ergebnisse als CSV oder JSON herunter, bereit für Ihre Buchhaltungssoftware." },
     ],
@@ -403,13 +404,13 @@ const CONTENT = {
       { n: "RA Alessandro Rossi", s: "Kanzlei Rossi & Partner • Mailand", t: "Es hat unsere Kanzlei revolutioniert. Die Extraktion aus Verträgen und Auszügen ist zu 99% genau. Wir sparen 12 Stunden pro Woche." },
       { n: "StB Elena Conti", s: "Conti & Partner • Rom", t: "Der automatische Abgleich von Steuer- und Rechnungssalden hat unsere manuellen Eingabefehler eliminiert." },
       { n: "StB Marco Bianchi", s: "Steuerkanzlei Bianchi • Turin", t: "Die 3 Gratis-Guthaben haben mich überzeugt. Wir haben das Professional-Paket gekauft: tadelloser Support und Export." },
-      { n: "Chiara Ferrari", s: "HR-Managerin • Bologna", t: "Die Analyse von Abrechnungen dauert jetzt 2 Sekunden. Zuverlässige und intuitive Plattform." },
+      { n: "Chiara Ferrari", s: "HR-Managerin • Bologna", t: "Die Analyse von Abrechnungen dauert jetzt wenige Sekunden. Zuverlässige und intuitive Plattform." },
     ],
     guide: [
       { t: "Steuerformulare & E-Rechnungen", items: ["Automatische Extraktion von Steuercodes, Beträgen, Fristen und Salden", "Soll / Haben / Endsaldo-Abgleich mit Warnung bei Abweichung", "Erkennung des Konformitätsvermerks für USt-Guthaben über 5.000 €", "Prüfung ausländischer IBAN und Buchungsexport"] },
       { t: "Verträge & Rechtsdokumente", items: ["Erkennung unzulässiger Klauseln", "Extraktion von Parteien, Gegenstand, Laufzeit, Entgelten und Kündigung", "Warnungen zu kritischen Fristen und Vertragsterminen", "Zusammenfassung komplexer Klauseln in einfacher Sprache"] },
       { t: "Handelsregisterauszüge", items: ["Extraktion von Registernummer, USt-IdNr., Sitz, Stammkapital und zertifizierter E-Mail", "Liste der Gesellschafter, Geschäftsführer und Zeichnungsbefugnisse", "AML- / KYC-Prüfungen und wirtschaftlich Berechtigter", "Geschäftsstatus und laufende Verfahren"] },
-      { t: "Gehaltsabrechnungen & HR", items: ["Brutto / Beiträge / Steuer / Netto-Abgleich", "Berechnung und Prüfung der aufgelaufenen Abfindung", "DSGVO- & EU-AI-Act-Konformität, Daten zu 100% in der EU verarbeitet", "AES-256-Bit-Verschlüsselung der Dokumente"] },
+      { t: "Gehaltsabrechnungen & HR", items: ["Brutto / Beiträge / Steuer / Netto-Abgleich", "Berechnung und Prüfung der aufgelaufenen Abfindung"] },
     ],
     demo: ["1. Dokument hochladen", "2. Analyse mit Künstlicher Intelligenz", "3. Daten automatisch extrahiert", "4. KI-Red-Flag-Audit", "5. Den KI-Copilot fragen"],
     demoData: { file: "Rechnung_128_2026.pdf", up: "hochgeladen · 214 KB", f: [["Nummer", "128/2026"], ["Netto", "1.000,00 €"], ["USt. 22%", "220,00 €"], ["Summe", "1.220,00 €"], ["IBAN", "IT60X0542811101…"]], a: ["USt.-Abgleich korrekt (1.000 + 220 = 1.220 €)", "Gültige italienische IBAN", "Zahlung fällig in 15 Tagen"], q: "Wie hoch ist der zu zahlende Betrag?", ans: ["Der zu zahlende Betrag ist ", "1.220,00 €", ", fällig am 30.04.2026."] },
@@ -420,7 +421,7 @@ const CONTENT = {
     services: [
       { t: "Formulaires Fiscaux & Factures", d: "Rapprochement automatique Débit/Crédit/Solde, alertes de conformité TVA au-delà de 5 000 €, contrôle des IBAN étrangers et export comptable." },
       { t: "Contrats & Extraits Kbis", d: "Détection des clauses abusives, préavis/rétractation, vérification AML/KYC avec extraction du numéro d'immatriculation, associés et dirigeants." },
-      { t: "Bulletins de Paie & RH", d: "Rapprochement Brut/Cotisations/Impôt/Net, indemnités acquises, conformité RGPD & EU AI Act avec serveurs 100% UE et chiffrement AES 256 bits." },
+      { t: "Bulletins de Paie & RH", d: "Rapprochement Brut/Cotisations/Impôt/Net, vérification des indemnités acquises." },
     ],
     features: [
       { tag: "AUDIT", t: "Détecteur d'Alertes IA", d: "Un second cerveau IA qui vérifie vos documents et signale automatiquement les risques avant qu'ils ne deviennent un problème.", points: ["Rapprochement automatique des formulaires fiscaux, factures et bulletins", "Alerte des clauses abusives dans les contrats", "Détection des IBAN étrangers et anomalies anti-blanchiment (AML)", "Alerte de conformité TVA pour les crédits supérieurs à 5 000 €"] },
@@ -429,7 +430,7 @@ const CONTENT = {
     tutorial: [
       { t: "Importez le document", d: "Glissez ou sélectionnez une facture, un formulaire fiscal, un contrat, un extrait Kbis ou un bulletin (PDF, JPG, PNG)." },
       { t: "Choisissez le type (facultatif)", d: "Sélectionnez la catégorie du document pour une extraction encore plus précise, ou laissez l'IA la détecter seule." },
-      { t: "Analysez avec l'IA", d: "En environ 2 secondes, obtenez toutes les données structurées (montants, dates, n° TVA, IBAN, totaux) et l'audit anti-erreur." },
+      { t: "Analysez avec l'IA", d: "En quelques secondes, obtenez toutes les données structurées (montants, dates, n° TVA, IBAN, totaux) et l'audit anti-erreur." },
       { t: "Interrogez le Copilot", d: "Posez des questions sur le document en langage naturel et obtenez des réponses immédiates et contextuelles." },
       { t: "Exportez les données", d: "Téléchargez les résultats en CSV ou JSON, prêts pour votre logiciel comptable." },
     ],
@@ -437,13 +438,13 @@ const CONTENT = {
       { n: "Me Alessandro Rossi", s: "Cabinet Rossi & Associés • Milan", t: "Cela a révolutionné notre cabinet. L'extraction des contrats et extraits est précise à 99%. Nous gagnons 12 heures par semaine." },
       { n: "Elena Conti, Expert-comptable", s: "Conti & Partners • Rome", t: "Le rapprochement automatique des soldes fiscaux et des factures a éliminé nos erreurs de saisie manuelle." },
       { n: "Marco Bianchi, Expert-comptable", s: "Cabinet Fiscal Bianchi • Turin", t: "Les 3 crédits gratuits m'ont convaincu. Nous avons acheté le Pack Professional : support et export impeccables." },
-      { n: "Chiara Ferrari", s: "Responsable RH • Bologne", t: "Analyser les bulletins prend désormais 2 secondes. Plateforme fiable et intuitive." },
+      { n: "Chiara Ferrari", s: "Responsable RH • Bologne", t: "Analyser les bulletins prend désormais quelques secondes. Plateforme fiable et intuitive." },
     ],
     guide: [
       { t: "Formulaires Fiscaux & Factures", items: ["Extraction automatique des codes, montants, échéances et soldes", "Rapprochement Débit / Crédit / Solde final avec alerte en cas d'écart", "Détection du visa de conformité pour les crédits de TVA supérieurs à 5 000 €", "Contrôle des IBAN étrangers et export comptable"] },
       { t: "Contrats & Documents Juridiques", items: ["Identification des clauses abusives", "Extraction des parties, objet, durée, honoraires et rétractation", "Alertes sur les préavis et échéances contractuelles critiques", "Résumé en langage clair des clauses complexes"] },
       { t: "Extraits Kbis", items: ["Extraction du numéro d'immatriculation, TVA, siège, capital social et email certifié", "Liste des associés, dirigeants et pouvoirs de signature", "Vérifications AML / KYC et bénéficiaire effectif", "Statut de l'activité et procédures en cours"] },
-      { t: "Bulletins de Paie & RH", items: ["Rapprochement Brut / Cotisations / Impôt / Net", "Calcul et vérification des indemnités acquises", "Conformité RGPD & EU AI Act, données traitées 100% dans l'UE", "Chiffrement AES 256 bits des documents"] },
+      { t: "Bulletins de Paie & RH", items: ["Rapprochement Brut / Cotisations / Impôt / Net", "Calcul et vérification des indemnités acquises"] },
     ],
     demo: ["1. Importez le document", "2. Analyse avec l'Intelligence Artificielle", "3. Données extraites automatiquement", "4. Audit d'alertes IA", "5. Interrogez le Copilot IA"],
     demoData: { file: "Facture_128_2026.pdf", up: "importé · 214 KB", f: [["Numéro", "128/2026"], ["Base HT", "1 000,00 €"], ["TVA 22%", "220,00 €"], ["Total", "1 220,00 €"], ["IBAN", "IT60X0542811101…"]], a: ["Rapprochement TVA correct (1 000 + 220 = 1 220 €)", "IBAN italien valide", "Paiement dû dans 15 jours"], q: "Quel est le total à payer ?", ans: ["Le total à payer est ", "1 220,00 €", ", échéance le 30/04/2026."] },
@@ -735,10 +736,6 @@ function Home() {
                 </button>
               </div>
               <div className="hero-free" data-testid="hero-free-note"><CheckCircle2 size={15} color="var(--success)" /> {t("free_note")}</div>
-              <div className="hero-rating" data-testid="hero-rating">
-                <span className="stars">{[...Array(5)].map((_, k) => <Star key={k} size={14} fill="#ffd600" color="#ffd600" style={{ display: "inline" }} />)}</span>
-                <span>{t("rating_line")}</span>
-              </div>
               <div className="hero-badges">
                 {DOC_TYPES.map(({ id, Icon }) => (
                   <span className="hero-badge flex aic gap" key={id}><Icon size={15} /> {content.docTypes[id]}</span>
@@ -1701,7 +1698,6 @@ function Testimonials() {
     <section className="section">
       <div className="accent-bar" />
       <h2 className="section-title">{t("testi_title")}</h2>
-      <p className="section-sub mb1">⭐ {t("testi_sub")}</p>
       <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(240px,1fr))" }}>
         {revs.map((r, i) => (
           <div className="glass pad testi" key={i}>
@@ -1999,6 +1995,7 @@ function Footer({ onTopup, onGuide }) {
           <Link to="/blog" className="btn btn-sm btn-ghost" data-testid="footer-blog"><BookOpen size={14} /> {t("blog_link")}</Link>
           <button className="btn btn-sm btn-ghost" onClick={onGuide}><BookOpen size={14} /> {t("foot_guide")}</button>
           <a className="btn btn-sm btn-ghost" href="/assistant?utm_source=site&utm_medium=footer" data-testid="footer-assistant-link"><Bot size={14} /> {t("assistant_cta")}</a>
+          <Link to="/privacy" className="btn btn-sm btn-ghost" data-testid="footer-privacy-link"><ShieldCheck size={14} /> Privacy</Link>
           <a className="btn btn-sm btn-ghost" href="mailto:docuanalitics@gmail.com" data-testid="footer-contact"><Mail size={14} /> {t("contact")}</a>
           <button className="btn btn-primary btn-sm" onClick={onTopup}><CreditCard size={14} /> {t("foot_topup")}</button>
         </div>
@@ -2285,7 +2282,6 @@ function SectorLanding({ slug }) {
             <button className="btn btn-primary btn-lg" data-testid="sl-cta-try" onClick={goTry}><Bot size={18} /> {t("cta_try")}</button>
           </div>
           <div className="hero-free"><CheckCircle2 size={15} color="var(--success)" /> {t("free_note")}</div>
-          <div className="hero-rating"><span className="stars">{[...Array(5)].map((_, k) => <Star key={k} size={14} fill="#ffd600" color="#ffd600" style={{ display: "inline" }} />)}</span><span>{t("rating_line")}</span></div>
         </section>
 
         <section className="section" data-testid="sl-usecases">
@@ -2349,6 +2345,7 @@ function App() {
           {SECTOR_SLUGS.map((s) => <Route key={s} path={`/${s}`} element={<SectorLanding slug={s} />} />)}
           <Route path="/assistant" element={<AssistantPage />} />
           <Route path="/admin/assistant" element={<AdminAssistant />} />
+          <Route path="/privacy" element={<PrivacyPage />} />
           <Route path="*" element={<Home />} />
         </Routes>
       </BrowserRouter>
