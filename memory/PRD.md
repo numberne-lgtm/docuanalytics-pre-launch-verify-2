@@ -283,3 +283,10 @@ IMPLEMENTATO E TESTATO (19/19 backend + frontend E2E, 100%):
 - Real sign-up tracking (signup_completed) NOT implemented: needs 1-line backend change (EVENTS whitelist) — user forbade backend changes in this step.
 - Sitemap still NOT updated (/assistant, /privacy to add at authorized deploy).
 - 2026-10-09: /privacy controller filled in PREVIEW: Francesco Lampone (impresa individuale), P.IVA 03803270838, C.F. LMPFNC83E23A638T, Via Edoardo De Filippo 68, 98051 Barcellona Pozzo di Gotto (ME). Source: certificato attribuzione P.IVA 31/03/2025 (ATECO: procacciamento d'affari). PENDING owner checks: P.IVA status, ATECO update for DocuAnalytics, fiscal domicile update. Date = deploy date (placeholder). Draft banner kept.
+
+## 2026-10-09 — Admin privacy tools + sign-up tracking + retention proposal (PREVIEW ONLY)
+- backend/privacy_admin/router.py (/api/admin/privacy: config, lookup, requests, requests/{id}/execute, log, retention-simulation). Admin token; identity = requester email must equal account email + method + reference + attestation; confirm = re-typed email + "ELIMINA"; dry-run default; real deletion blocked unless ADMIN_DELETION_ENABLED=true (false in preview). Audit in privacy_audit_log, requests in privacy_requests (masked email + hash only).
+- Real deletion = delete analyses/reminders/email_verifications/referrals, anonymize user, keep payments (fiscal). NOT executed in tests (by design).
+- Sign-up tracking: CTA click sets localStorage da_from_assistant; App login() calls POST /api/assistant/signup; counted only if account created <48h, deduped (hash). Registration logic untouched. Limitation: anon session older than 48h upgraded to account is not counted (undercount).
+- /admin/privacy UI (AdminPrivacy.jsx); /admin/assistant shows "Registrazioni completate".
+- Retention proposal: /app/memory/retention_policy_proposal.md (options, no job). Tested: iteration_22 100%.
