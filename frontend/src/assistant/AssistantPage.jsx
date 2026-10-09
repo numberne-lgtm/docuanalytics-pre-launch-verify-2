@@ -166,10 +166,10 @@ export default function AssistantPage() {
           <img src="/docuanalytics-ai-logo.png?v=2" alt="" className="as-avatar" />
           <div className="as-bubble"><p>{WELCOME}</p></div>
         </div>
-        {!profile && msgs.length === 0 && <ProfilePicker onPick={pickProfile} />}
+        {!blocked && !profile && msgs.length === 0 && <ProfilePicker onPick={pickProfile} />}
         {msgs.map((m, i) => <Bubble key={i} m={m} idx={i} />)}
         {loading && <div className="as-typing" data-testid="assistant-loading"><Loader2 size={16} className="as-spin" /> Sto scrivendo…</div>}
-        {error && <div className="as-error" data-testid="assistant-error">{error}</div>}
+        {(error || (blocked && !loading)) && <div className="as-error" data-testid="assistant-error">{error || "L'assistente ha raggiunto il limite di utilizzo. Puoi comunque registrarti, provare gratis o vedere i prezzi qui sotto."}</div>}
         {!loading && !blocked && (profile || msgs.length > 0) && msgs.length < 4 && <Suggestions items={prof.qs} onAsk={ask} disabled={loading} />}
         <div ref={endRef} />
       </main>

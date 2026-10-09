@@ -260,3 +260,13 @@ IMPLEMENTATO E TESTATO (19/19 backend + frontend E2E, 100%):
 - **P3 CORRETTO**: confronto token admin constant-time (`hmac.compare_digest`).
 - **SEC-003 [MEDIUM] APERTO (decisione di prodotto)**: molti endpoint (analyze, chat, paypal order/capture/activate, subscriptions) identificano l'utente via `user_id` nel body invece che dal JWT → BOLA se un UUID altrui trapela. Fix corretto = enforce JWT e derivare user_id dal token, MA romperebbe il free-tier anonimo (3 crediti senza registrazione). Richiede decisione: mantenere anonimo o richiedere login per analizzare.
 - **P3 APERTI**: CORS `*` con allow_credentials=True (impostare origini esplicite); messaggi d'errore con testo eccezione grezzo su alcuni endpoint; fallback JWT_SECRET "change-me" (prod ha valore forte). NoSQL injection: NON APPLICABILE (query di uguaglianza, tipi Pydantic).
+
+## 2026-10-09 — FASE 1: Assistente AI commerciale (/assistant) — PREVIEW ONLY (not deployed)
+- Backend isolated module `backend/assistant/` (router.py, assistant_kb.md, generate_qr.py), mounted in server.py via `build_assistant_router(...)`.
+- Endpoints: GET /api/assistant/config, POST /api/assistant/chat (Gemini 2.5 Flash -> fallback gpt-5.4-mini), POST /api/assistant/event, GET /api/assistant/stats (X-Admin-Token).
+- Limits (.env): ASSISTANT_DAILY_BUDGET=100, ASSISTANT_SESSION_LIMIT=10, ASSISTANT_IP_HOURLY_LIMIT=20, ASSISTANT_MAX_REPLY_TOKENS=1500; msg max 500 chars, history 6 turns, honeypot `website`.
+- New collections: assistant_events (hashed session, event, utm only), assistant_usage (daily counter).
+- Frontend: src/assistant/AssistantPage.jsx + assistant.css, route /assistant; Home opens AuthModal on ?auth=register.
+- QR PNG/SVG + links.txt in frontend/public/assistant-qr/ (qr, linkedin, facebook, instagram, brochure, presentazione).
+- Tested: iteration_21 (100%), regression analysis/copilot/history/credits OK via curl.
+- Pending: user approval to deploy; homepage button to /assistant; sitemap entry; admin conversion dashboard UI.
