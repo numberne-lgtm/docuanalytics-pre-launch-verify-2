@@ -17,19 +17,19 @@ function QrKit() {
   return (
     <section className="ad-card" data-testid="admin-qr-kit">
       <h2><QrCode size={16} /> QR code e link condivisibili</h2>
-      <p className="ad-meta">Puntano a <b>{QR_BASE}</b>: funzioneranno dopo la pubblicazione su docuanalytics.online. PNG con logo (1512 px) per web e social, SVG vettoriale per la stampa.</p>
+      <p className="ad-meta">Puntano a <b>{QR_BASE}</b>: funzioneranno dopo la pubblicazione su docuanalytics.online. Colori ufficiali (blu #2f6bff, angoli navy #0a1022 su bianco) con logo al centro. PNG 2600 px a 300 dpi per web, social e stampa; SVG vettoriale per tipografia.</p>
       <div className="ad-qr-grid">
         {QR_CHANNELS.map(([id, label, src, med]) => {
           const url = `${QR_BASE}?utm_source=${src}&utm_medium=${med}&utm_campaign=assistant_launch`;
           const file = `/assistant-qr/docuanalytics-assistant-${id}`;
           return (
             <div className="ad-qr" key={id} data-testid={`admin-qr-${id}`}>
-              <img src={`${file}.png`} alt={`QR ${label}`} loading="lazy" />
+              <img src={`${file}.png?v=3`} alt={`QR ${label}`} loading="lazy" />
               <b>{label}</b>
               <code title={url}>utm_source={src}</code>
               <div className="ad-qr-actions">
-                <a className="as-btn" href={`${file}.png`} download data-testid={`admin-qr-${id}-png`}><Download size={13} /> PNG</a>
-                <a className="as-btn" href={`${file}.svg`} download data-testid={`admin-qr-${id}-svg`}><Download size={13} /> SVG</a>
+                <a className="as-btn" href={`${file}.png?v=3`} download={`docuanalytics-assistant-${id}.png`} data-testid={`admin-qr-${id}-png`}><Download size={13} /> PNG</a>
+                <a className="as-btn" href={`${file}.svg?v=3`} download={`docuanalytics-assistant-${id}.svg`} data-testid={`admin-qr-${id}-svg`}><Download size={13} /> SVG</a>
                 <button className="as-btn" onClick={() => copy(id, url)} data-testid={`admin-qr-${id}-copy`}><Copy size={13} /> {copied === id ? "Copiato" : "Link"}</button>
               </div>
             </div>

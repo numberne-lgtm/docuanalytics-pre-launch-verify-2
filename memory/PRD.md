@@ -291,3 +291,4 @@ IMPLEMENTATO E TESTATO (19/19 backend + frontend E2E, 100%):
 - /admin/privacy UI (AdminPrivacy.jsx); /admin/assistant shows "Registrazioni completate".
 - Retention proposal: /app/memory/retention_policy_proposal.md (options, no job). Tested: iteration_22 100%.
 - 2026-10-09: QR kit section added to /admin/assistant (preview): 6 channels, PNG/SVG download, copy link, links.txt. All 12 files decoded OK at 260px.
+- 2026-10-09: QR regenerated with brand colors (#2f6bff modules, #0a1022 finders, white bg), logo center (20%, ECC H) in PNG 2600px/300dpi and SVG (embedded logo). Robustness decode OK (blur, rotation, low contrast, dim, jpeg, 200px).
