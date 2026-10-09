@@ -73,6 +73,8 @@ def main():
         branded_svg(qr, OUT / f"docuanalytics-assistant-{name}.svg")
         branded_png(qr, OUT / f"docuanalytics-assistant-{name}.png")
         lines.append(f"{name}: {url}")
+    web = Image.open(OUT / "docuanalytics-assistant-qr.png")
+    web.resize((web.size[0] // 5, web.size[1] // 5), Image.LANCZOS).save(OUT / "docuanalytics-assistant-qr-web.png", optimize=True)
     (OUT / "links.txt").write_text("\n".join(lines) + "\n", encoding="utf-8")
     print("\n".join(lines))
 

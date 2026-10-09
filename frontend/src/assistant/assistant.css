@@ -105,3 +105,25 @@
 .ad-qr-actions{display:flex;gap:.3rem;flex-wrap:wrap;justify-content:center}
 .ad-qr-actions .as-btn{padding:.35rem .6rem;font-size:.72rem;text-decoration:none}
 .ad-link{display:inline-block;color:var(--accent)}
+.ap-card{display:grid;grid-template-columns:1fr auto;gap:2.5rem;align-items:center;padding:2.2rem 2.4rem;position:relative;overflow:hidden}
+.ap-card::before{content:"";position:absolute;right:-120px;top:-120px;width:360px;height:360px;border-radius:50%;background:radial-gradient(circle,#2f6bff33,transparent 70%);pointer-events:none}
+.ap-kicker{display:inline-flex;align-items:center;gap:.4rem;font-size:.75rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--accent);margin-bottom:.6rem}
+.ap-points{list-style:none;display:flex;flex-direction:column;gap:.45rem;margin:1.1rem 0 1.5rem}
+.ap-points li{display:flex;align-items:center;gap:.5rem;font-size:.9rem;color:var(--text-secondary)}
+.ap-points svg{color:var(--primary-light);flex-shrink:0}
+.ap-btn{display:inline-flex;align-items:center;gap:.5rem;text-decoration:none;transition:transform .2s ease,box-shadow .2s ease}
+.ap-btn:hover{transform:translateY(-2px)}
+.ap-qr{margin:0;background:#fff;border-radius:18px;padding:14px 14px 10px;display:flex;flex-direction:column;align-items:center;gap:.4rem;box-shadow:0 18px 50px #0a102299;position:relative;z-index:1}
+.ap-qr img{width:200px;height:200px;display:block}
+.ap-qr figcaption{display:flex;align-items:center;gap:.35rem;font-size:.72rem;font-weight:700;color:#0a1022}
+.ap-nudge{display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;margin:1rem 0 2rem;padding:.9rem 1.2rem;border:1px dashed #2f6bff55;border-radius:14px;background:#2f6bff0d;font-size:.9rem;color:var(--text-secondary)}
+.ap-nudge span{display:flex;align-items:center;gap:.5rem}
+.ap-nudge span svg{color:var(--accent)}
+.ap-nudge .btn{text-decoration:none}
+@media (max-width:760px){
+  .ap-card{grid-template-columns:1fr;gap:1.4rem;padding:1.6rem 1.3rem}
+  .ap-btn{width:100%;justify-content:center}
+  .ap-qr{flex-direction:row;justify-self:center;padding:10px 14px 10px 10px;gap:.7rem}
+  .ap-qr img{width:96px;height:96px}
+  .ap-qr figcaption{max-width:110px}
+}

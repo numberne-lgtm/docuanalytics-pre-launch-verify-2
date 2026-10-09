@@ -16,6 +16,7 @@ import { BlogIndex, BlogPost } from "./Blog";
 import AssistantPage from "./assistant/AssistantPage";
 import AdminAssistant from "./assistant/AdminAssistant";
 import { AssistantFab } from "./assistant/AssistantFab";
+import { AssistantPromo, AssistantNudge } from "./assistant/AssistantPromo";
 import { reportAssistantSignup } from "./assistant/signupTracking";
 import AdminPrivacy from "./AdminPrivacy";
 import PrivacyPage from "./PrivacyPage";
@@ -101,7 +102,7 @@ const T = {
     ref_cta_in: "Ottieni il tuo link invito", ref_cta_out: "Accedi e invita",
     testi_title: "Cosa dicono gli Studi Professionali",
     foot_desc: "Estrazione automatica di dati per studi legali, notai e commercialisti",
-    foot_guide: "Guida ai servizi", assistant_cta: "Parla con l'assistente", foot_topup: "Ricarica Crediti",
+    foot_guide: "Guida ai servizi", assistant_cta: "Parla con l'assistente", ap_kicker: "Assistente AI", ap_title: "Scopri DocuAnalytics con il nostro assistente AI", ap_desc: "Hai domande su funzionalità, crediti o piani? L'assistente ti risponde subito e ti aiuta a capire se DocuAnalytics fa per il tuo lavoro.", ap_p1: "Casi d'uso per avvocati, commercialisti e imprese", ap_p2: "Prezzi e crediti aggiornati", ap_p3: "Gratuito, senza registrazione", ap_btn: "Parla con l'assistente AI", ap_qr_hint: "Inquadra con lo smartphone", ap_nudge: "Hai una domanda su DocuAnalytics per il tuo settore?", foot_topup: "Ricarica Crediti",
     pric_title: "Ricarica Crediti", tab_card: "Carta / Stripe", tab_crypto: "Crypto (BTC/USDT)",
     auth_login: "Accedi", auth_register: "Crea account", auth_google: "Continua con Google", auth_or: "oppure", lang_label: "Lingua",
     auth_submit_reg: "Registrati (+3 crediti gratis)", auth_pw_ph: "Password (min 6 caratteri)", auth_name_ph: "Nome (es. Studio Rossi)", auth_helper: "Registrandoti salvi i tuoi crediti e puoi accedere da qualsiasi dispositivo.", auth_bonus: "🎁 Invito valido: riceverai +5 crediti bonus!",
@@ -137,7 +138,7 @@ const T = {
     ref_cta_in: "Get your invite link", ref_cta_out: "Sign in to invite",
     testi_title: "What Professional Firms Say",
     foot_desc: "Automatic data extraction for law firms, notaries and accountants",
-    foot_guide: "Services guide", assistant_cta: "Talk to the assistant", foot_topup: "Buy Credits",
+    foot_guide: "Services guide", assistant_cta: "Talk to the assistant", ap_kicker: "AI assistant", ap_title: "Discover DocuAnalytics with our AI assistant", ap_desc: "Questions about features, credits or plans? The assistant answers right away and helps you see if DocuAnalytics fits your work.", ap_p1: "Use cases for lawyers, accountants and businesses", ap_p2: "Up-to-date prices and credits", ap_p3: "Free, no sign-up needed", ap_btn: "Talk to the AI assistant", ap_qr_hint: "Scan with your smartphone", ap_nudge: "Have a question about DocuAnalytics for your sector?", foot_topup: "Buy Credits",
     pric_title: "Buy Credits", tab_card: "Card / Stripe", tab_crypto: "Crypto (BTC/USDT)",
     auth_login: "Sign in", auth_register: "Create account", auth_google: "Continue with Google", auth_or: "or", lang_label: "Language",
     auth_submit_reg: "Sign up (+3 free credits)", auth_pw_ph: "Password (min 6 characters)", auth_name_ph: "Name (e.g. Rossi Firm)", auth_helper: "By signing up you keep your credits and can log in from any device.", auth_bonus: "🎁 Valid invite: you will get +5 bonus credits!",
@@ -173,7 +174,7 @@ const T = {
     ref_cta_in: "Obtén tu enlace de invitación", ref_cta_out: "Accede e invita",
     testi_title: "Lo que dicen los despachos profesionales",
     foot_desc: "Extracción automática de datos para bufetes, notarías y asesorías",
-    foot_guide: "Guía de servicios", assistant_cta: "Habla con el asistente", foot_topup: "Comprar Créditos",
+    foot_guide: "Guía de servicios", assistant_cta: "Habla con el asistente", ap_kicker: "Asistente IA", ap_title: "Descubre DocuAnalytics con nuestro asistente IA", ap_desc: "¿Dudas sobre funciones, créditos o planes? El asistente responde al instante y te ayuda a ver si DocuAnalytics encaja con tu trabajo.", ap_p1: "Casos de uso para abogados, asesores y empresas", ap_p2: "Precios y créditos actualizados", ap_p3: "Gratis, sin registro", ap_btn: "Habla con el asistente IA", ap_qr_hint: "Escanea con tu smartphone", ap_nudge: "¿Tienes una pregunta sobre DocuAnalytics para tu sector?", foot_topup: "Comprar Créditos",
     pric_title: "Comprar Créditos", tab_card: "Tarjeta / Stripe", tab_crypto: "Cripto (BTC/USDT)",
     auth_login: "Acceder", auth_register: "Crear cuenta", auth_google: "Continuar con Google", auth_or: "o", lang_label: "Idioma",
     auth_submit_reg: "Registrarse (+3 créditos gratis)", auth_pw_ph: "Contraseña (mín 6 caracteres)", auth_name_ph: "Nombre (p. ej. Despacho Rossi)", auth_helper: "Al registrarte conservas tus créditos y puedes acceder desde cualquier dispositivo.", auth_bonus: "🎁 Invitación válida: recibirás +5 créditos de bonificación!",
@@ -209,7 +210,7 @@ const T = {
     ref_cta_in: "Einladungslink erhalten", ref_cta_out: "Anmelden und einladen",
     testi_title: "Was Fachkanzleien sagen",
     foot_desc: "Automatische Datenextraktion für Kanzleien, Notare und Steuerberater",
-    foot_guide: "Service-Leitfaden", assistant_cta: "Mit dem Assistenten sprechen", foot_topup: "Guthaben kaufen",
+    foot_guide: "Service-Leitfaden", assistant_cta: "Mit dem Assistenten sprechen", ap_kicker: "KI-Assistent", ap_title: "Entdecken Sie DocuAnalytics mit unserem KI-Assistenten", ap_desc: "Fragen zu Funktionen, Credits oder Tarifen? Der Assistent antwortet sofort und hilft Ihnen einzuschätzen, ob DocuAnalytics zu Ihrer Arbeit passt.", ap_p1: "Anwendungsfälle für Anwälte, Steuerberater und Unternehmen", ap_p2: "Aktuelle Preise und Credits", ap_p3: "Kostenlos, ohne Registrierung", ap_btn: "Mit dem KI-Assistenten sprechen", ap_qr_hint: "Mit dem Smartphone scannen", ap_nudge: "Eine Frage zu DocuAnalytics für Ihre Branche?", foot_topup: "Guthaben kaufen",
     pric_title: "Guthaben kaufen", tab_card: "Karte / Stripe", tab_crypto: "Krypto (BTC/USDT)",
     auth_login: "Anmelden", auth_register: "Konto erstellen", auth_google: "Mit Google fortfahren", auth_or: "oder", lang_label: "Sprache",
     auth_submit_reg: "Registrieren (+3 Gratis-Guthaben)", auth_pw_ph: "Passwort (min. 6 Zeichen)", auth_name_ph: "Name (z. B. Kanzlei Rossi)", auth_helper: "Mit der Registrierung behalten Sie Ihr Guthaben und können sich von jedem Gerät anmelden.", auth_bonus: "🎁 Gültige Einladung: Sie erhalten +5 Bonus-Guthaben!",
@@ -245,7 +246,7 @@ const T = {
     ref_cta_in: "Obtenez votre lien d'invitation", ref_cta_out: "Connectez-vous pour inviter",
     testi_title: "Ce que disent les cabinets",
     foot_desc: "Extraction automatique de données pour cabinets d'avocats, notaires et experts-comptables",
-    foot_guide: "Guide des services", assistant_cta: "Parler à l'assistant", foot_topup: "Acheter des crédits",
+    foot_guide: "Guide des services", assistant_cta: "Parler à l'assistant", ap_kicker: "Assistant IA", ap_title: "Découvrez DocuAnalytics avec notre assistant IA", ap_desc: "Des questions sur les fonctionnalités, les crédits ou les offres ? L'assistant répond tout de suite et vous aide à voir si DocuAnalytics convient à votre activité.", ap_p1: "Cas d'usage pour avocats, experts-comptables et entreprises", ap_p2: "Prix et crédits à jour", ap_p3: "Gratuit, sans inscription", ap_btn: "Parler à l'assistant IA", ap_qr_hint: "Scannez avec votre smartphone", ap_nudge: "Une question sur DocuAnalytics pour votre secteur ?", foot_topup: "Acheter des crédits",
     pric_title: "Acheter des crédits", tab_card: "Carte / Stripe", tab_crypto: "Crypto (BTC/USDT)",
     auth_login: "Se connecter", auth_register: "Créer un compte", auth_google: "Continuer avec Google", auth_or: "ou", lang_label: "Langue",
     auth_submit_reg: "S'inscrire (+3 crédits gratuits)", auth_pw_ph: "Mot de passe (min 6 caractères)", auth_name_ph: "Nom (ex. Cabinet Rossi)", auth_helper: "En vous inscrivant, vous conservez vos crédits et pouvez vous connecter depuis n'importe quel appareil.", auth_bonus: "🎁 Invitation valide : vous recevrez +5 crédits bonus !",
@@ -843,6 +844,7 @@ function Home() {
         <RedFlagSection onCta={() => scrollToId("upload")} />
         <CopilotSection onCta={() => scrollToId("upload")} />
         <SectorsSection onCta={() => scrollToId("upload")} />
+        <AssistantPromo t={t} />
         <Services onGuide={() => setGuideOpen(true)} />
         <Tutorials />
         <SecuritySection />
@@ -2330,6 +2332,7 @@ function SectorLanding({ slug }) {
           </div>
         </section>
 
+        <AssistantNudge t={t} slug={slug} />
         <TrialCTA onCta={goTry} />
       </main>
 
