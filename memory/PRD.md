@@ -282,3 +282,4 @@ IMPLEMENTATO E TESTATO (19/19 backend + frontend E2E, 100%):
 - Deletion on request: NOT implemented in app; manual DB procedure documented in /app/memory/data_deletion_procedure.md. Retention policy undefined -> GDPR review required.
 - Real sign-up tracking (signup_completed) NOT implemented: needs 1-line backend change (EVENTS whitelist) — user forbade backend changes in this step.
 - Sitemap still NOT updated (/assistant, /privacy to add at authorized deploy).
+- 2026-10-09: /privacy controller filled in PREVIEW: Francesco Lampone (impresa individuale), P.IVA 03803270838, C.F. LMPFNC83E23A638T, Via Edoardo De Filippo 68, 98051 Barcellona Pozzo di Gotto (ME). Source: certificato attribuzione P.IVA 31/03/2025 (ATECO: procacciamento d'affari). PENDING owner checks: P.IVA status, ATECO update for DocuAnalytics, fiscal domicile update. Date = deploy date (placeholder). Draft banner kept.

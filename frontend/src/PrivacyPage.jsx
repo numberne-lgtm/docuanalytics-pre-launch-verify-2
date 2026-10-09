@@ -6,7 +6,7 @@ const PH = ({ children }) => <mark className="pv-ph">{children}</mark>;
 
 const SECTIONS = [
   ["Titolare del trattamento", <p key="t">
-    <PH>[Ragione sociale]</PH>, P.IVA <PH>[P.IVA]</PH>, sede in <PH>[Indirizzo]</PH>. Contatto privacy: <a href="mailto:docuanalitics@gmail.com">docuanalitics@gmail.com</a>.</p>],
+    Francesco Lampone (impresa individuale), P.IVA 03803270838, C.F. LMPFNC83E23A638T, Via Edoardo De Filippo 68, 98051 Barcellona Pozzo di Gotto (ME), Italia. Contatto privacy: <a href="mailto:docuanalitics@gmail.com">docuanalitics@gmail.com</a>.</p>],
   ["Dati che trattiamo", <ul key="d">
     <li><b>Account</b>: email, nome, password (salvata solo in forma cifrata con hash), foto profilo se accedi con Google, codice invito.</li>
     <li><b>Utilizzo senza registrazione</b>: un identificativo anonimo salvato nel tuo browser per gestire i crediti gratuiti.</li>
@@ -49,9 +49,9 @@ export default function PrivacyPage() {
     <div className="App">
       <main className="wrap pv-page" data-testid="privacy-page">
         <Link to="/" className="pv-back" data-testid="privacy-home-link">← DocuAnalytics AI</Link>
-        <div className="pv-draft" data-testid="privacy-draft-banner"><AlertTriangle size={16} /> Bozza in revisione: dati del titolare da completare e politica di conservazione da validare prima della pubblicazione.</div>
+        <div className="pv-draft" data-testid="privacy-draft-banner"><AlertTriangle size={16} /> Bozza in revisione: dati del titolare da confermare e politica di conservazione da validare prima della pubblicazione.</div>
         <h1>Informativa privacy</h1>
-        <p className="pv-upd">Ultimo aggiornamento: <PH>[data di pubblicazione]</PH></p>
+        <p className="pv-upd">Ultimo aggiornamento: <PH>[data del deploy]</PH></p>
         {SECTIONS.map(([h, body]) => (
           <section key={h} className="pv-sec"><h2>{h}</h2>{body}</section>
         ))}
