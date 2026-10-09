@@ -14,6 +14,8 @@ import {
 import { createPortal } from "react-dom";
 import { BlogIndex, BlogPost } from "./Blog";
 import AssistantPage from "./assistant/AssistantPage";
+import AdminAssistant from "./assistant/AdminAssistant";
+import { AssistantFab } from "./assistant/AssistantFab";
 import { MT, MARK, SECTORS, DEMO, validatePiva, validateCF } from "./content";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -96,7 +98,7 @@ const T = {
     ref_cta_in: "Ottieni il tuo link invito", ref_cta_out: "Accedi e invita",
     testi_title: "Cosa dicono gli Studi Professionali", testi_sub: "4.9/5 — Basato su 482 recensioni verificate",
     foot_desc: "Estrazione automatica ad alta precisione per studi legali, notai e commercialisti • Server UE • GDPR",
-    foot_guide: "Guida ai servizi", foot_topup: "Ricarica Crediti",
+    foot_guide: "Guida ai servizi", assistant_cta: "Parla con l'assistente", foot_topup: "Ricarica Crediti",
     pric_title: "Ricarica Crediti", tab_card: "Carta / Stripe", tab_crypto: "Crypto (BTC/USDT)",
     auth_login: "Accedi", auth_register: "Crea account", auth_google: "Continua con Google", auth_or: "oppure", lang_label: "Lingua",
     auth_submit_reg: "Registrati (+3 crediti gratis)", auth_pw_ph: "Password (min 6 caratteri)", auth_name_ph: "Nome (es. Studio Rossi)", auth_helper: "Registrandoti salvi i tuoi crediti e puoi accedere da qualsiasi dispositivo.", auth_bonus: "🎁 Invito valido: riceverai +5 crediti bonus!",
@@ -132,7 +134,7 @@ const T = {
     ref_cta_in: "Get your invite link", ref_cta_out: "Sign in to invite",
     testi_title: "What Professional Firms Say", testi_sub: "4.9/5 — Based on 482 verified reviews",
     foot_desc: "High-precision automatic extraction for law firms, notaries and accountants • EU servers • GDPR",
-    foot_guide: "Services guide", foot_topup: "Buy Credits",
+    foot_guide: "Services guide", assistant_cta: "Talk to the assistant", foot_topup: "Buy Credits",
     pric_title: "Buy Credits", tab_card: "Card / Stripe", tab_crypto: "Crypto (BTC/USDT)",
     auth_login: "Sign in", auth_register: "Create account", auth_google: "Continue with Google", auth_or: "or", lang_label: "Language",
     auth_submit_reg: "Sign up (+3 free credits)", auth_pw_ph: "Password (min 6 characters)", auth_name_ph: "Name (e.g. Rossi Firm)", auth_helper: "By signing up you keep your credits and can log in from any device.", auth_bonus: "🎁 Valid invite: you will get +5 bonus credits!",
@@ -168,7 +170,7 @@ const T = {
     ref_cta_in: "Obtén tu enlace de invitación", ref_cta_out: "Accede e invita",
     testi_title: "Lo que dicen los despachos profesionales", testi_sub: "4.9/5 — Basado en 482 reseñas verificadas",
     foot_desc: "Extracción automática de alta precisión para bufetes, notarías y asesorías • Servidores UE • RGPD",
-    foot_guide: "Guía de servicios", foot_topup: "Comprar Créditos",
+    foot_guide: "Guía de servicios", assistant_cta: "Habla con el asistente", foot_topup: "Comprar Créditos",
     pric_title: "Comprar Créditos", tab_card: "Tarjeta / Stripe", tab_crypto: "Cripto (BTC/USDT)",
     auth_login: "Acceder", auth_register: "Crear cuenta", auth_google: "Continuar con Google", auth_or: "o", lang_label: "Idioma",
     auth_submit_reg: "Registrarse (+3 créditos gratis)", auth_pw_ph: "Contraseña (mín 6 caracteres)", auth_name_ph: "Nombre (p. ej. Despacho Rossi)", auth_helper: "Al registrarte conservas tus créditos y puedes acceder desde cualquier dispositivo.", auth_bonus: "🎁 Invitación válida: recibirás +5 créditos de bonificación!",
@@ -204,7 +206,7 @@ const T = {
     ref_cta_in: "Einladungslink erhalten", ref_cta_out: "Anmelden und einladen",
     testi_title: "Was Fachkanzleien sagen", testi_sub: "4.9/5 — Basierend auf 482 verifizierten Bewertungen",
     foot_desc: "Hochpräzise automatische Extraktion für Kanzleien, Notare und Steuerberater • EU-Server • DSGVO",
-    foot_guide: "Service-Leitfaden", foot_topup: "Guthaben kaufen",
+    foot_guide: "Service-Leitfaden", assistant_cta: "Mit dem Assistenten sprechen", foot_topup: "Guthaben kaufen",
     pric_title: "Guthaben kaufen", tab_card: "Karte / Stripe", tab_crypto: "Krypto (BTC/USDT)",
     auth_login: "Anmelden", auth_register: "Konto erstellen", auth_google: "Mit Google fortfahren", auth_or: "oder", lang_label: "Sprache",
     auth_submit_reg: "Registrieren (+3 Gratis-Guthaben)", auth_pw_ph: "Passwort (min. 6 Zeichen)", auth_name_ph: "Name (z. B. Kanzlei Rossi)", auth_helper: "Mit der Registrierung behalten Sie Ihr Guthaben und können sich von jedem Gerät anmelden.", auth_bonus: "🎁 Gültige Einladung: Sie erhalten +5 Bonus-Guthaben!",
@@ -240,7 +242,7 @@ const T = {
     ref_cta_in: "Obtenez votre lien d'invitation", ref_cta_out: "Connectez-vous pour inviter",
     testi_title: "Ce que disent les cabinets", testi_sub: "4.9/5 — Sur la base de 482 avis vérifiés",
     foot_desc: "Extraction automatique haute précision pour cabinets d'avocats, notaires et experts-comptables • Serveurs UE • RGPD",
-    foot_guide: "Guide des services", foot_topup: "Acheter des crédits",
+    foot_guide: "Guide des services", assistant_cta: "Parler à l'assistant", foot_topup: "Acheter des crédits",
     pric_title: "Acheter des crédits", tab_card: "Carte / Stripe", tab_crypto: "Crypto (BTC/USDT)",
     auth_login: "Se connecter", auth_register: "Créer un compte", auth_google: "Continuer avec Google", auth_or: "ou", lang_label: "Langue",
     auth_submit_reg: "S'inscrire (+3 crédits gratuits)", auth_pw_ph: "Mot de passe (min 6 caractères)", auth_name_ph: "Nom (ex. Cabinet Rossi)", auth_helper: "En vous inscrivant, vous conservez vos crédits et pouvez vous connecter depuis n'importe quel appareil.", auth_bonus: "🎁 Invitation valide : vous recevrez +5 crédits bonus !",
@@ -1996,11 +1998,13 @@ function Footer({ onTopup, onGuide }) {
         <div className="flex gap wrapf aic" style={{ justifyContent: "center", marginTop: "1rem" }}>
           <Link to="/blog" className="btn btn-sm btn-ghost" data-testid="footer-blog"><BookOpen size={14} /> {t("blog_link")}</Link>
           <button className="btn btn-sm btn-ghost" onClick={onGuide}><BookOpen size={14} /> {t("foot_guide")}</button>
+          <a className="btn btn-sm btn-ghost" href="/assistant?utm_source=site&utm_medium=footer" data-testid="footer-assistant-link"><Bot size={14} /> {t("assistant_cta")}</a>
           <a className="btn btn-sm btn-ghost" href="mailto:docuanalitics@gmail.com" data-testid="footer-contact"><Mail size={14} /> {t("contact")}</a>
           <button className="btn btn-primary btn-sm" onClick={onTopup}><CreditCard size={14} /> {t("foot_topup")}</button>
         </div>
         <p style={{ color: "var(--text-muted)", fontSize: ".72rem", marginTop: "1.2rem" }}>© {new Date().getFullYear()} DocuAnalytics AI · {t("rights")}</p>
       </div>
+      <AssistantFab label={t("assistant_cta")} />
     </footer>
   );
 }
@@ -2344,6 +2348,7 @@ function App() {
           <Route path="/blog/:slug" element={<BlogPost />} />
           {SECTOR_SLUGS.map((s) => <Route key={s} path={`/${s}`} element={<SectorLanding slug={s} />} />)}
           <Route path="/assistant" element={<AssistantPage />} />
+          <Route path="/admin/assistant" element={<AdminAssistant />} />
           <Route path="*" element={<Home />} />
         </Routes>
       </BrowserRouter>

@@ -270,3 +270,8 @@ IMPLEMENTATO E TESTATO (19/19 backend + frontend E2E, 100%):
 - QR PNG/SVG + links.txt in frontend/public/assistant-qr/ (qr, linkedin, facebook, instagram, brochure, presentazione).
 - Tested: iteration_21 (100%), regression analysis/copilot/history/credits OK via curl.
 - Pending: user approval to deploy; homepage button to /assistant; sitemap entry; admin conversion dashboard UI.
+
+## 2026-10-09 — Assistant button + Conversion dashboard (PREVIEW ONLY, not deployed)
+- Floating "Parla con l'assistente" button (AssistantFab, inside Footer -> homepage + 5 sector pages) + footer link; UTM: utm_source=site, utm_medium=fab|footer, utm_campaign=<page>. i18n key assistant_cta (5 langs).
+- /admin/assistant (AdminAssistant.jsx): admin token typed by hand (sessionStorage only), noindex; KPIs, per-channel and per-day tables, register conversion; GET /api/assistant/stats?days=7|30|90.
+- Sitemap NOT updated (only at authorized deploy). Security copy NOT changed: proposal in /app/memory/security_copy_proposal.md awaiting approval.

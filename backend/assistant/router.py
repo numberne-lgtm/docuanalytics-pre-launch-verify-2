@@ -6,7 +6,7 @@ import uuid
 import hashlib
 import logging
 from pathlib import Path
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from typing import Optional, List
 
 from fastapi import APIRouter, HTTPException, Request, Header
@@ -197,16 +197,21 @@ def build_assistant_router(db, packages: dict, free_credits: int, referral_bonus
         return {"ok": True}
 
     @router.get("/stats")
-    async def stats(x_admin_token: str = Header(None)):
+    async def stats(days: Optional[int] = 30, x_admin_token: str = Header(None)):
         import hmac
         if not admin_token:
             raise HTTPException(503, "Admin non configurato")
         if not (x_admin_token and hmac.compare_digest(x_admin_token, admin_token)):
             raise HTTPException(401, "Token admin non valido")
-        pipeline = [{"$group": {"_id": {"event": "$event", "source": {"$ifNull": ["$utm_source", "direct"]}},
+        days = max(1, min(int(days or 30), 365))
+        since = (datetime.now(timezone.utc) - timedelta(days=days - 1)).strftime("%Y-%m-%d")
+        pipeline = [{"$match": {"date": {"$gte": since}}},
+                    {"$group": {"_id": {"date": "$date", "event": "$event",
+                                        "source": {"$ifNull": ["$utm_source", "direct"]}},
                                 "count": {"$sum": 1}}}]
-        rows = [{"event": r["_id"]["event"], "utm_source": r["_id"]["source"], "count": r["count"]}
-                async for r in db.assistant_events.aggregate(pipeline)]
-        return {"events": rows, "messages_today": await _usage_today(), "daily_budget": DAILY_BUDGET}
+        rows = [{"date": r["_id"]["date"], "event": r["_id"]["event"], "utm_source": r["_id"]["source"],
+                 "count": r["count"]} async for r in db.assistant_events.aggregate(pipeline)]
+        return {"events": rows, "since": since, "days": days,
+                "messages_today": await _usage_today(), "daily_budget": DAILY_BUDGET}
 
     return router
