@@ -23,6 +23,8 @@ MAX_HISTORY = 6
 MAX_HISTORY_CHARS = 600
 MAX_REPLY_TOKENS = int(os.environ.get("ASSISTANT_MAX_REPLY_TOKENS", "1500"))
 EVENTS = {"visit", "message", "cta_register", "cta_trial", "cta_pricing", "profile_select", "limit_reached"}
+SERVER_ONLY_EVENTS = {"message", "signup_completed"}
+SIGNUP_WINDOW_HOURS = 48
 UTM_RE = re.compile(r"^[A-Za-z0-9_.\-]{1,40}$")
 MODELS = [("gemini", "gemini-2.5-flash"), ("openai", "gpt-5.4-mini")]
 
@@ -97,7 +99,8 @@ REGOLE INVIOLABILI:
 
 
 def build_assistant_router(db, packages: dict, free_credits: int, referral_bonus: int,
-                           client_ip, admin_token: Optional[str], llm_key: Optional[str]) -> APIRouter:
+                           client_ip, admin_token: Optional[str], llm_key: Optional[str],
+                           get_current_user=None) -> APIRouter:
     router = APIRouter(prefix="/api/assistant")
     rl = {}
 
@@ -189,12 +192,32 @@ def build_assistant_router(db, packages: dict, free_credits: int, referral_bonus
 
     @router.post("/event")
     async def event(req: AssistantEventReq, request: Request):
-        if req.event not in EVENTS or req.event == "message":
+        if req.event not in EVENTS or req.event in SERVER_ONLY_EVENTS:
             raise HTTPException(400, "Evento non valido.")
         if not _hit(f"evip:{client_ip(request)}", 60, 3600):
             raise HTTPException(429, "Troppe richieste.")
         await _log_event(req.session_id, req.event, _clean_utm(req))
         return {"ok": True}
+
+    @router.post("/signup")
+    async def signup(req: AssistantEventReq, request: Request):
+        """Count a completed sign-up attributed to the assistant (anonymous, deduplicated)."""
+        if not _hit(f"suip:{client_ip(request)}", 20, 3600):
+            raise HTTPException(429, "Troppe richieste.")
+        u = await get_current_user(request)
+        if not u.get("email"):
+            return {"counted": False, "reason": "no_account"}
+        try:
+            created = datetime.fromisoformat(u.get("created_at", ""))
+        except ValueError:
+            return {"counted": False, "reason": "unknown_date"}
+        if datetime.now(timezone.utc) - created > timedelta(hours=SIGNUP_WINDOW_HOURS):
+            return {"counted": False, "reason": "existing_account"}
+        dedupe = hashlib.sha256(f"signup:{u['user_id']}".encode()).hexdigest()[:24]
+        if await db.assistant_events.find_one({"event": "signup_completed", "dedupe": dedupe}):
+            return {"counted": False, "reason": "already_counted"}
+        await _log_event(req.session_id, "signup_completed", {**_clean_utm(req), "dedupe": dedupe})
+        return {"counted": True}
 
     @router.get("/stats")
     async def stats(days: Optional[int] = 30, x_admin_token: str = Header(None)):

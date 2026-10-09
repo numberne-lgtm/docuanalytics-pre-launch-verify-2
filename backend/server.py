@@ -1457,7 +1457,9 @@ app.include_router(api)
 
 from assistant.router import build_assistant_router
 app.include_router(build_assistant_router(db, PACKAGES, FREE_CREDITS, REFERRAL_BONUS,
-                                          _client_ip, ADMIN_TOKEN, EMERGENT_LLM_KEY))
+                                          _client_ip, ADMIN_TOKEN, EMERGENT_LLM_KEY, get_current_user))
+from privacy_admin.router import build_privacy_router
+app.include_router(build_privacy_router(db, ADMIN_TOKEN))
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,

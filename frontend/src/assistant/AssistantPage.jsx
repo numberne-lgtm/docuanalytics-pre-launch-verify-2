@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import axios from "axios";
 import { Send, Scale, Calculator, Briefcase, Users, Sparkles, CreditCard, UserPlus, Loader2, RotateCcw, ArrowLeft } from "lucide-react";
 import "./assistant.css";
+import { markFromAssistant } from "./signupTracking";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api/assistant`;
 const SID_KEY = "da_assistant_sid";
@@ -83,7 +84,7 @@ function Suggestions({ items, onAsk, disabled }) {
 }
 
 function CtaBar({ utm, freeCredits }) {
-  const go = (event, url) => { sendEvent(event, utm); window.location.href = ctaUrl(url, utm); };
+  const go = (event, url) => { sendEvent(event, utm); markFromAssistant(getSid(), utm); window.location.href = ctaUrl(url, utm); };
   return (
     <div className="as-cta" data-testid="assistant-cta-bar">
       <button className="as-btn as-btn-primary" data-testid="assistant-cta-register" onClick={() => go("cta_register", "/?auth=register")}><UserPlus size={15} /> Registrati</button>

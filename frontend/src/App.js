@@ -16,6 +16,8 @@ import { BlogIndex, BlogPost } from "./Blog";
 import AssistantPage from "./assistant/AssistantPage";
 import AdminAssistant from "./assistant/AdminAssistant";
 import { AssistantFab } from "./assistant/AssistantFab";
+import { reportAssistantSignup } from "./assistant/signupTracking";
+import AdminPrivacy from "./AdminPrivacy";
 import PrivacyPage from "./PrivacyPage";
 import { MT, MARK, SECTORS, DEMO, validatePiva, validateCF } from "./content";
 import { jsPDF } from "jspdf";
@@ -562,6 +564,7 @@ function useUser() {
     localStorage.removeItem("da_ref");
     axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
     setUser(userObj); setAuthed(true);
+    reportAssistantSignup(token);
   }, []);
 
   const logout = useCallback(() => {
@@ -2346,6 +2349,7 @@ function App() {
           <Route path="/assistant" element={<AssistantPage />} />
           <Route path="/admin/assistant" element={<AdminAssistant />} />
           <Route path="/privacy" element={<PrivacyPage />} />
+          <Route path="/admin/privacy" element={<AdminPrivacy />} />
           <Route path="*" element={<Home />} />
         </Routes>
       </BrowserRouter>

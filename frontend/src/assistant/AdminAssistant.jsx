@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import axios from "axios";
-import { Lock, RefreshCw, LogOut, Eye, MessageSquare, UserPlus, Sparkles, CreditCard, Percent } from "lucide-react";
+import { Lock, RefreshCw, LogOut, Eye, MessageSquare, UserPlus, UserCheck, Sparkles, CreditCard, Percent } from "lucide-react";
 import "./assistant.css";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api/assistant`;
 const TOKEN_KEY = "da_admin_assistant_token";
-const COLS = [["visit", "Visite"], ["message", "Messaggi"], ["cta_register", "Registrati"], ["cta_trial", "Prova gratis"], ["cta_pricing", "Prezzi"]];
+const COLS = [["visit", "Visite"], ["message", "Messaggi"], ["cta_register", "Click Registrati"], ["cta_trial", "Prova gratis"], ["cta_pricing", "Prezzi"], ["signup_completed", "Registrazioni completate"]];
 
 const rate = (a, b) => (b ? `${((a / b) * 100).toFixed(1)}%` : "—");
 
@@ -15,12 +15,12 @@ const groupBy = (rows, key) => {
   return out;
 };
 
-function Login({ onToken, error }) {
+export function Login({ onToken, error, title = "Statistiche assistente" }) {
   const [v, setV] = useState("");
   return (
     <form className="ad-login" onSubmit={(e) => { e.preventDefault(); if (v.trim()) onToken(v.trim()); }} data-testid="admin-login-form">
       <Lock size={22} />
-      <h1>Statistiche assistente</h1>
+      <h1>{title}</h1>
       <p>Area riservata agli amministratori. Inserisci il token admin.</p>
       <input type="password" className="as-input" placeholder="Token admin" value={v} onChange={(e) => setV(e.target.value)} data-testid="admin-token-input" />
       <button className="as-btn as-btn-primary" type="submit" data-testid="admin-login-btn">Accedi</button>
@@ -31,7 +31,7 @@ function Login({ onToken, error }) {
 
 function Kpis({ totals }) {
   const items = [[Eye, "Visite", totals.visit], [MessageSquare, "Messaggi", totals.message], [UserPlus, "Click Registrati", totals.cta_register],
-    [Sparkles, "Click Prova gratis", totals.cta_trial], [CreditCard, "Click Prezzi", totals.cta_pricing], [Percent, "Conversione registrazione", rate(totals.cta_register || 0, totals.visit || 0)]];
+    [Sparkles, "Click Prova gratis", totals.cta_trial], [CreditCard, "Click Prezzi", totals.cta_pricing], [UserCheck, "Registrazioni completate", totals.signup_completed], [Percent, "Conversione visite → registrazioni", rate(totals.signup_completed || 0, totals.visit || 0)]];
   return (
     <div className="ad-kpis">
       {items.map(([Icon, l, v]) => (
@@ -50,11 +50,11 @@ function StatsTable({ title, data, label, testid, sortDesc }) {
       <h2>{title}</h2>
       <div className="ad-scroll">
         <table className="ad-table">
-          <thead><tr><th>{label}</th>{COLS.map(([, l]) => <th key={l}>{l}</th>)}<th>Conv. registrazione</th></tr></thead>
+          <thead><tr><th>{label}</th>{COLS.map(([, l]) => <th key={l}>{l}</th>)}<th>Conv. visite → registrazioni</th></tr></thead>
           <tbody>
             {keys.length === 0 && <tr><td colSpan={COLS.length + 2}>Nessun dato nel periodo.</td></tr>}
             {keys.map((k) => (
-              <tr key={k}><td>{k}</td>{COLS.map(([e]) => <td key={e}>{data[k][e] || 0}</td>)}<td>{rate(data[k].cta_register || 0, data[k].visit || 0)}</td></tr>
+              <tr key={k}><td>{k}</td>{COLS.map(([e]) => <td key={e}>{data[k][e] || 0}</td>)}<td>{rate(data[k].signup_completed || 0, data[k].visit || 0)}</td></tr>
             ))}
           </tbody>
         </table>
@@ -107,7 +107,7 @@ export default function AdminAssistant() {
           <Kpis totals={totals} />
           <StatsTable title="Per canale (utm_source)" data={groupBy(rows, "utm_source")} label="Canale" testid="admin-table-source" />
           <StatsTable title="Per giorno" data={groupBy(rows, "date")} label="Giorno" testid="admin-table-day" sortDesc />
-          <p className="ad-meta">Dati anonimi: nessun IP, nessun testo dei messaggi. I click indicano l'intenzione, non la registrazione completata.</p>
+          <p className="ad-meta">Dati anonimi: nessun IP, nessun testo dei messaggi. "Registrazioni completate" conta solo account nuovi (creati da meno di 48 ore) di visitatori passati dall'assistente, una sola volta per account.</p>
         </>
       )}
     </div>
