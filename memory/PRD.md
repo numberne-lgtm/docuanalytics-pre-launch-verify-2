@@ -290,3 +290,4 @@ IMPLEMENTATO E TESTATO (19/19 backend + frontend E2E, 100%):
 - Sign-up tracking: CTA click sets localStorage da_from_assistant; App login() calls POST /api/assistant/signup; counted only if account created <48h, deduped (hash). Registration logic untouched. Limitation: anon session older than 48h upgraded to account is not counted (undercount).
 - /admin/privacy UI (AdminPrivacy.jsx); /admin/assistant shows "Registrazioni completate".
 - Retention proposal: /app/memory/retention_policy_proposal.md (options, no job). Tested: iteration_22 100%.
+- 2026-10-09: QR kit section added to /admin/assistant (preview): 6 channels, PNG/SVG download, copy link, links.txt. All 12 files decoded OK at 260px.

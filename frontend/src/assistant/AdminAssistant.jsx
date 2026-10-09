@@ -1,11 +1,45 @@
 import { useEffect, useMemo, useState } from "react";
 import axios from "axios";
-import { Lock, RefreshCw, LogOut, Eye, MessageSquare, UserPlus, UserCheck, Sparkles, CreditCard, Percent } from "lucide-react";
+import { Lock, RefreshCw, LogOut, Eye, MessageSquare, UserPlus, UserCheck, Sparkles, CreditCard, Percent, Download, Copy, QrCode } from "lucide-react";
 import "./assistant.css";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api/assistant`;
 const TOKEN_KEY = "da_admin_assistant_token";
 const COLS = [["visit", "Visite"], ["message", "Messaggi"], ["cta_register", "Click Registrati"], ["cta_trial", "Prova gratis"], ["cta_pricing", "Prezzi"], ["signup_completed", "Registrazioni completate"]];
+
+const QR_BASE = "https://docuanalytics.online/assistant";
+const QR_CHANNELS = [["qr", "QR generico", "qr", "offline"], ["linkedin", "LinkedIn", "linkedin", "social"], ["facebook", "Facebook", "facebook", "social"],
+  ["instagram", "Instagram", "instagram", "social"], ["brochure", "Brochure / stampa", "brochure", "print"], ["presentazione", "Presentazioni", "presentazione", "slide"]];
+
+function QrKit() {
+  const [copied, setCopied] = useState("");
+  const copy = (id, url) => navigator.clipboard?.writeText(url).then(() => { setCopied(id); setTimeout(() => setCopied(""), 1500); });
+  return (
+    <section className="ad-card" data-testid="admin-qr-kit">
+      <h2><QrCode size={16} /> QR code e link condivisibili</h2>
+      <p className="ad-meta">Puntano a <b>{QR_BASE}</b>: funzioneranno dopo la pubblicazione su docuanalytics.online. PNG con logo (1512 px) per web e social, SVG vettoriale per la stampa.</p>
+      <div className="ad-qr-grid">
+        {QR_CHANNELS.map(([id, label, src, med]) => {
+          const url = `${QR_BASE}?utm_source=${src}&utm_medium=${med}&utm_campaign=assistant_launch`;
+          const file = `/assistant-qr/docuanalytics-assistant-${id}`;
+          return (
+            <div className="ad-qr" key={id} data-testid={`admin-qr-${id}`}>
+              <img src={`${file}.png`} alt={`QR ${label}`} loading="lazy" />
+              <b>{label}</b>
+              <code title={url}>utm_source={src}</code>
+              <div className="ad-qr-actions">
+                <a className="as-btn" href={`${file}.png`} download data-testid={`admin-qr-${id}-png`}><Download size={13} /> PNG</a>
+                <a className="as-btn" href={`${file}.svg`} download data-testid={`admin-qr-${id}-svg`}><Download size={13} /> SVG</a>
+                <button className="as-btn" onClick={() => copy(id, url)} data-testid={`admin-qr-${id}-copy`}><Copy size={13} /> {copied === id ? "Copiato" : "Link"}</button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      <a className="ad-meta ad-link" href="/assistant-qr/links.txt" target="_blank" rel="noreferrer" data-testid="admin-qr-links-txt">Elenco completo dei link (links.txt)</a>
+    </section>
+  );
+}
 
 const rate = (a, b) => (b ? `${((a / b) * 100).toFixed(1)}%` : "—");
 
@@ -105,6 +139,7 @@ export default function AdminAssistant() {
         <>
           <p className="ad-meta" data-testid="admin-budget">Messaggi AI oggi: <b>{data.messages_today}</b> / {data.daily_budget} · dal {data.since}</p>
           <Kpis totals={totals} />
+          <QrKit />
           <StatsTable title="Per canale (utm_source)" data={groupBy(rows, "utm_source")} label="Canale" testid="admin-table-source" />
           <StatsTable title="Per giorno" data={groupBy(rows, "date")} label="Giorno" testid="admin-table-day" sortDesc />
           <p className="ad-meta">Dati anonimi: nessun IP, nessun testo dei messaggi. "Registrazioni completate" conta solo account nuovi (creati da meno di 48 ore) di visitatori passati dall'assistente, una sola volta per account.</p>
