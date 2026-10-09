@@ -1,5 +1,6 @@
-import { Bot, ArrowRight, ScanLine, MessageCircle } from "lucide-react";
+import { Bot, ArrowRight, ScanLine, MessageCircle, Download } from "lucide-react";
 import "./assistant.css";
+import { AssistantShare } from "./AssistantShare";
 
 const QR_SRC = "/assistant-qr/docuanalytics-assistant-qr-web.png?v=3";
 
@@ -18,10 +19,12 @@ export const AssistantPromo = ({ t }) => (
         <a className="btn btn-primary btn-lg ap-btn" href="/assistant?utm_source=site&utm_medium=home_section" data-testid="assistant-promo-btn">
           <Bot size={18} /> {t("ap_btn")} <ArrowRight size={16} />
         </a>
+        <AssistantShare t={t} />
       </div>
       <figure className="ap-qr" data-testid="assistant-promo-qr">
         <img src={QR_SRC} alt="QR code https://docuanalytics.online/assistant" width="200" height="200" loading="lazy" />
         <figcaption><ScanLine size={13} /> {t("ap_qr_hint")}</figcaption>
+        <a className="ap-qr-dl" href={QR_SRC.replace("-web", "")} download="docuanalytics-assistant-qr.png" data-testid="assistant-promo-qr-download"><Download size={12} /> {t("share_dl")}</a>
       </figure>
     </div>
   </section>
