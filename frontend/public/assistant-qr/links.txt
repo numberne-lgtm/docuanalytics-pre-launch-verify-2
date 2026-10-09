@@ -1,0 +1,8 @@
+Pagina assistente: https://docuanalytics.online/assistant
+
+qr: https://docuanalytics.online/assistant?utm_source=qr&utm_medium=offline&utm_campaign=assistant_launch
+linkedin: https://docuanalytics.online/assistant?utm_source=linkedin&utm_medium=social&utm_campaign=assistant_launch
+facebook: https://docuanalytics.online/assistant?utm_source=facebook&utm_medium=social&utm_campaign=assistant_launch
+instagram: https://docuanalytics.online/assistant?utm_source=instagram&utm_medium=social&utm_campaign=assistant_launch
+brochure: https://docuanalytics.online/assistant?utm_source=brochure&utm_medium=print&utm_campaign=assistant_launch
+presentazione: https://docuanalytics.online/assistant?utm_source=presentazione&utm_medium=slide&utm_campaign=assistant_launch

@@ -20,6 +20,7 @@ dnspython==2.8.0
 ecdsa==0.19.2
 email-validator==2.3.0
 emergentintegrations==0.2.0
+et_xmlfile==2.0.0
 execnet==2.1.2
 fastapi==0.110.1
 fastuuid==0.14.0
@@ -55,6 +56,7 @@ jsonschema==4.26.0
 jsonschema-specifications==2025.9.1
 librt==0.13.0
 litellm @ https://customer-assets.emergentagent.com/internal-asset/library/litellm-1.80.0-py3-none-any.whl#sha256=adf398c513273de9341f61822296c6b2145f7f2dc4a69daf3ac04829f5bde3f8
+lxml==6.1.2
 markdown-it-py==4.2.0
 MarkupSafe==3.0.3
 mccabe==0.7.0
@@ -66,6 +68,7 @@ mypy_extensions==1.1.0
 numpy==2.4.6
 oauthlib==3.3.1
 openai==1.99.9
+openpyxl==3.1.5
 packaging==26.2
 pandas==3.0.5
 passlib==1.7.4
@@ -86,6 +89,7 @@ pyflakes==3.4.0
 Pygments==2.20.0
 PyJWT==2.13.0
 pymongo==4.6.3
+pymupdf==1.28.2
 pyparsing==3.3.2
 pytest==9.1.1
 pytest-xdist==3.8.0
@@ -105,6 +109,7 @@ rpds-py==2026.6.3
 rsa==4.9.1
 s3transfer==0.19.2
 s5cmd==0.2.0
+segno==1.6.6
 shellingham==1.5.4
 six==1.17.0
 sniffio==1.3.1
@@ -125,6 +130,3 @@ watchfiles==1.2.0
 websockets==16.1.1
 yarl==1.24.5
 zipp==4.1.0
-pymupdf==1.28.2
-lxml==6.1.2
-openpyxl==3.1.5

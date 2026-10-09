@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { createPortal } from "react-dom";
 import { BlogIndex, BlogPost } from "./Blog";
+import AssistantPage from "./assistant/AssistantPage";
 import { MT, MARK, SECTORS, DEMO, validatePiva, validateCF } from "./content";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -608,6 +609,7 @@ function Home() {
   useEffect(() => {
     const h = window.location.hash;
     if (h && h.length > 1) setTimeout(() => scrollToId(h.slice(1)), 450);
+    if (new URLSearchParams(window.location.search).get("auth") === "register") setAuthOpen(true);
   }, []);
 
   useEffect(() => {
@@ -2341,6 +2343,7 @@ function App() {
           <Route path="/blog" element={<BlogIndex />} />
           <Route path="/blog/:slug" element={<BlogPost />} />
           {SECTOR_SLUGS.map((s) => <Route key={s} path={`/${s}`} element={<SectorLanding slug={s} />} />)}
+          <Route path="/assistant" element={<AssistantPage />} />
           <Route path="*" element={<Home />} />
         </Routes>
       </BrowserRouter>
