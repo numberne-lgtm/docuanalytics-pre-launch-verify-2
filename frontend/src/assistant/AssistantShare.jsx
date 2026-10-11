@@ -2,8 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { FaWhatsapp, FaFacebookF, FaLinkedinIn, FaInstagram, FaTiktok } from "react-icons/fa";
 import { Share2, Link2, Download, Check, X } from "lucide-react";
 
-const BASE = "https://docuanalytics.online/assistant";
-const QR_FILE = "/assistant-qr/docuanalytics-assistant-qr.png?v=3";
+export const BASE = "https://docuanalytics.online/assistant";
+export const QR_FILE = "/assistant-qr/docuanalytics-assistant-qr.png?v=3";
 const link = (src) => `${BASE}?utm_source=${src}&utm_medium=share&utm_campaign=assistant_launch`;
 const popup = (url) => window.open(url, "_blank", "noopener,noreferrer,width=640,height=640");
 
@@ -16,6 +16,14 @@ async function nativeShare(src, msg) {
     if (navigator.canShare?.({ files: [file] })) data.files = [file];
   } catch { /* share without image */ }
   try { await navigator.share(data); return true; } catch (e) { return e?.name === "AbortError"; }
+}
+
+export async function copyQrImage() {
+  if (!(navigator.clipboard?.write && window.ClipboardItem)) return false;
+  try {
+    await navigator.clipboard.write([new window.ClipboardItem({ "image/png": fetch(QR_FILE).then((r) => r.blob()) })]);
+    return true;
+  } catch { return false; }
 }
 
 export const AssistantShare = ({ t }) => {
@@ -33,7 +41,7 @@ export const AssistantShare = ({ t }) => {
     return () => { document.removeEventListener("mousedown", close); document.removeEventListener("keydown", esc); };
   }, [open]);
 
-  const copy = (src = "copy") => navigator.clipboard?.writeText(link(src)).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1800); });
+  const copy = () => navigator.clipboard?.writeText(BASE).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1800); });
   const viaNative = async (src) => { setManual(null); if (!(await nativeShare(src, msg))) setManual(src); };
 
   const items = [
@@ -58,6 +66,11 @@ export const AssistantShare = ({ t }) => {
                 <span className="sh-ic" style={{ color }}><Icon size={20} /></span>{label}
               </button>
             ))}
+            {typeof navigator !== "undefined" && navigator.share && (
+              <button className="sh-item" onClick={() => viaNative("native")} data-testid="share-native">
+                <span className="sh-ic"><Share2 size={20} /></span>{t("share_native")}
+              </button>
+            )}
             <button className="sh-item" onClick={() => copy()} data-testid="share-copy">
               <span className="sh-ic">{copied ? <Check size={20} color="var(--success)" /> : <Link2 size={20} />}</span>{copied ? t("share_copied") : t("share_copy")}
             </button>
@@ -66,7 +79,7 @@ export const AssistantShare = ({ t }) => {
             <div className="sh-manual" data-testid="share-manual">
               <p>{t("share_manual")}</p>
               <div className="sh-row">
-                <button className="btn btn-sm" onClick={() => copy(manual)} data-testid="share-manual-copy"><Link2 size={14} /> {copied ? t("share_copied") : t("share_copy")}</button>
+                <button className="btn btn-sm" onClick={() => copy()} data-testid="share-manual-copy"><Link2 size={14} /> {copied ? t("share_copied") : t("share_copy")}</button>
                 <a className="btn btn-sm" href={QR_FILE} download="docuanalytics-assistant-qr.png" data-testid="share-manual-qr"><Download size={14} /> {t("share_dl")}</a>
               </div>
             </div>

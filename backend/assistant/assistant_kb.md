@@ -42,6 +42,9 @@ L'utente può scegliere il motore di analisi: Gemini, Claude, ChatGPT, ChatGPT m
 - L'elaborazione AI avviene tramite fornitori di modelli AI esterni (Google Gemini, Anthropic Claude, OpenAI).
 - NON affermare certificazioni, audit di sicurezza, ISO, server esclusivamente in UE o garanzie legali. Per domande specifiche su GDPR/DPA invitare a contattare il supporto.
 
+## Contatti
+- Email ufficiale: docuanalyticsai@docuanalytics.online
+
 ## Destinatari e casi d'uso
 - Commercialisti: estrazione dati da fatture e F24, controlli di quadratura, export verso gestionali.
 - Avvocati: analisi contratti, parti, durata, clausole penali/vessatorie, scadenze.

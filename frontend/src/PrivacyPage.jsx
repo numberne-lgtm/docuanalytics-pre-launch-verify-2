@@ -6,7 +6,7 @@ const PH = ({ children }) => <mark className="pv-ph">{children}</mark>;
 
 const SECTIONS = [
   ["Titolare del trattamento", <p key="t">
-    Francesco Lampone (impresa individuale), P.IVA 03803270838, C.F. LMPFNC83E23A638T, Via Edoardo De Filippo 68, 98051 Barcellona Pozzo di Gotto (ME), Italia. Contatto privacy: <a href="mailto:docuanalitics@gmail.com">docuanalitics@gmail.com</a>.</p>],
+    Francesco Lampone (impresa individuale), P.IVA 03803270838, C.F. LMPFNC83E23A638T, Via Edoardo De Filippo 68, 98051 Barcellona Pozzo di Gotto (ME), Italia. Contatto privacy: <a href="mailto:docuanalyticsai@docuanalytics.online">docuanalyticsai@docuanalytics.online</a>.</p>],
   ["Dati che trattiamo", <ul key="d">
     <li><b>Account</b>: email, nome, password (salvata solo in forma cifrata con hash), foto profilo se accedi con Google, codice invito.</li>
     <li><b>Utilizzo senza registrazione</b>: un identificativo anonimo salvato nel tuo browser per gestire i crediti gratuiti.</li>
@@ -34,11 +34,11 @@ const SECTIONS = [
   </ul>],
   ["Per quanto tempo conserviamo i dati", <>
     <p key="r1">Il <b>file caricato</b> viene cancellato al termine dell'analisi.</p>
-    <p key="r2">Lo <b>storico delle analisi</b> e i dati dell'account sono conservati finché mantieni l'account. Puoi chiederne la cancellazione scrivendo a <a href="mailto:docuanalitics@gmail.com">docuanalitics@gmail.com</a>. La cancellazione non è automatica.</p>
+    <p key="r2">Lo <b>storico delle analisi</b> e i dati dell'account sono conservati finché mantieni l'account. Puoi chiederne la cancellazione scrivendo a <a href="mailto:docuanalyticsai@docuanalytics.online">docuanalyticsai@docuanalytics.online</a>. La cancellazione non è automatica.</p>
     <p key="r3">I dati di pagamento sono conservati per il tempo richiesto dagli obblighi fiscali e contabili.</p>
   </>],
   ["I tuoi diritti", <p key="dr">
-    Puoi chiedere accesso, rettifica, cancellazione, limitazione, portabilità dei dati e opporti al trattamento scrivendo a <a href="mailto:docuanalitics@gmail.com">docuanalitics@gmail.com</a>. Hai inoltre diritto di proporre reclamo al Garante per la protezione dei dati personali (garanteprivacy.it).</p>],
+    Puoi chiedere accesso, rettifica, cancellazione, limitazione, portabilità dei dati e opporti al trattamento scrivendo a <a href="mailto:docuanalyticsai@docuanalytics.online">docuanalyticsai@docuanalytics.online</a>. Hai inoltre diritto di proporre reclamo al Garante per la protezione dei dati personali (garanteprivacy.it).</p>],
   ["Consigli d'uso", <p key="c">
     I risultati dell'AI possono contenere errori e vanno sempre verificati. Prima di caricare documenti con dati personali di terzi, verifica di averne titolo e le informative del tuo studio.</p>],
 ];

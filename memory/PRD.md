@@ -294,3 +294,6 @@ IMPLEMENTATO E TESTATO (19/19 backend + frontend E2E, 100%):
 - 2026-10-09: QR regenerated with brand colors (#2f6bff modules, #0a1022 finders, white bg), logo center (20%, ECC H) in PNG 2600px/300dpi and SVG (embedded logo). Robustness decode OK (blur, rotation, low contrast, dim, jpeg, 200px).
 - 2026-10-09: Homepage AssistantPromo section (#assistente, after SectorsSection) with QR (qr-web.png 520px) + button -> /assistant?utm_source=site&utm_medium=home_section; sector pages AssistantNudge strip (no QR) before TrialCTA; i18n ap_* keys 5 langs. PREVIEW ONLY.
 - 2026-10-09: Share menu (AssistantShare.jsx, react-icons) in homepage assistant section: WhatsApp/Facebook/LinkedIn share URLs, Instagram/TikTok via navigator.share (+QR file) or fallback copy/download, copy link, QR download. utm_medium=share.
+- 2026-10-11: Public email -> docuanalyticsai@docuanalytics.online (footer, /privacy, assistant KB). SENDER_EMAIL (noreply@docuanalytics.it, Resend) NOT changed. DNS: MX IONOS (mx00/mx01.ionos.it), SPF ionos only, DMARC p=none; mailbox send/receive NOT verified.
+- QR card actions: Copia link (base URL), Copia QR (ClipboardItem, fallback download), Scarica PNG, SVG; share menu native-share item. Deploy dispatched.
+- Voice Live: NOT implemented (awaiting authorization; requires realtime voice API).
