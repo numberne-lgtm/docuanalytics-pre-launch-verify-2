@@ -64,8 +64,8 @@ export function Client360({ cid, onBack, onOpenDoc, reloadKey, onChanged }) {
     <div data-testid="client-360">
       <button className="ws-link" onClick={onBack} data-testid="client-back">← Tutti i clienti</button>
       <div className="ws-bar"><h2 className="ws-h2" data-testid="client-name">{c.name}</h2><Level level={d.risk_level} />
-        <button className="as-btn ws-btn-icon" onClick={pdf} disabled={pdfBusy} data-testid="client-report-pdf"><FileDown size={14} /> {pdfBusy ? "Preparazione…" : "Report PDF per il cliente"}</button>
-        <button className="as-btn" data-testid="client-delete" onClick={() => window.confirm("Eliminare la scheda cliente? Documenti e scadenze restano, senza associazione.") && ws.del(`/clients/${cid}`).then(() => { onChanged(); onBack(); }).catch((e) => setErr(errMsg(e)))}>Elimina scheda</button></div>
+        <span className="ws-bar-actions"><button className="as-btn ws-btn-icon" onClick={pdf} disabled={pdfBusy} data-testid="client-report-pdf"><FileDown size={14} /> {pdfBusy ? "Preparazione…" : "Report PDF per il cliente"}</button>
+        <button className="as-btn" data-testid="client-delete" onClick={() => window.confirm("Eliminare la scheda cliente? Documenti e scadenze restano, senza associazione.") && ws.del(`/clients/${cid}`).then(() => { onChanged(); onBack(); }).catch((e) => setErr(errMsg(e)))}>Elimina scheda</button></span></div>
       {pdfErr && <div className="ws-error" data-testid="client-report-error">{pdfErr}</div>}
       <p className="ws-muted">{c.piva ? `P.IVA ${c.piva}` : "P.IVA non disponibile"} · {c.cf ? `CF ${c.cf}` : "CF non disponibile"}</p>
       <div className="ws-tabs">{TABS.map(([k, l]) => <button key={k} className={tab === k ? "on" : ""} onClick={() => setTab(k)} data-testid={`client-tab-${k}`}>{l}</button>)}</div>

@@ -1,4 +1,5 @@
 """Deterministic helpers for the workspace (Cliente 360, risk, deadlines, multi-doc audit). No AI here."""
+import json
 import re
 from datetime import date, datetime, timezone
 
@@ -23,7 +24,19 @@ def norm_id(v) -> str:
     if m:
         return m.group(1)
     m = re.fullmatch(r"(?:CF|CODICEFISCALE)?(" + CF_RE.pattern + ")", s)
+    if m:
+        return m.group(1)
+    m = re.fullmatch(r"[A-Z]*?(?:IT)?(\d{11})", s) or re.fullmatch(r"[A-Z]*?(" + CF_RE.pattern + ")", s)
     return m.group(1) if m else s
+
+
+def _as_dict(s):
+    if isinstance(s, str):
+        try:
+            s = json.loads(s)
+        except ValueError:
+            return {}
+    return s if isinstance(s, dict) else {}
 
 
 CATEGORY_ALIASES = {"fattura": "invoice", "fattura elettronica": "invoice", "contratto": "contract",
@@ -37,14 +50,14 @@ def category(result: dict) -> str:
     c = CATEGORY_ALIASES.get(c, c)
     if c in ("invoice", "f24", "visura", "contract"):
         return c
-    s = result.get("structured") or {}
-    if isinstance(s, dict) and len(s) == 1:
+    s = _as_dict(result.get("structured"))
+    if len(s) == 1:
         k, v = next(iter(s.items()))
         kc = CATEGORY_ALIASES.get(str(k).lower(), str(k).lower())
         if kc in ("invoice", "f24", "visura", "contract"):
             return kc
     for k, cat in _KEY_CATEGORY:
-        if isinstance(s, dict) and s.get(k):
+        if s.get(k):
             return cat
     return c or "other"
 
@@ -94,14 +107,8 @@ def parse_date(v):
 
 def structured(result: dict) -> dict:
     """AI sometimes wraps the schema in its category key ({"invoice": {...}}): unwrap it."""
-    s, cat = result.get("structured") or {}, category(result)
-    if isinstance(s, str):
-        try:
-            import json
-            s = json.loads(s)
-        except ValueError:
-            s = {}
-    if isinstance(s, dict) and len(s) == 1:
+    s, cat = _as_dict(result.get("structured")), category(result)
+    if len(s) == 1:
         k, v = next(iter(s.items()))
         if isinstance(v, dict) and CATEGORY_ALIASES.get(str(k).lower(), str(k).lower()) == cat:
             return v
@@ -134,7 +141,8 @@ def subjects(result: dict) -> list:
         for p in s.get("parties") or []:
             pid = norm_id(p.get("piva_cf"))
             add(p.get("name"), pid if len(pid) == 11 else "", pid if len(pid) == 16 else "", p.get("role") or "Parte")
-    return out if any(x["piva"] or x["cf"] for x in out) else out + ids_from_text(result)
+    known = {x["piva"] for x in out if x["piva"]} | {x["cf"] for x in out if x["cf"]}
+    return out + [x for x in ids_from_text(result) if (x["piva"] or x["cf"]) not in known]
 
 
 def match_client(subj: dict, clients: list):

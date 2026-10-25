@@ -127,7 +127,7 @@ def build_workspace_router(db, get_current_user, llm_key, default_notify_days) -
     def _doc_out(a, clients_by_id):
         res = a.get("result") or {}
         return {"analysis_id": a["analysis_id"], "filename": a.get("filename"), "doc_type": res.get("doc_type") or a.get("doc_type"),
-                "category": res.get("category", "other"), "summary": res.get("summary", ""), "created_at": a.get("created_at"),
+                "category": core.category(res), "summary": res.get("summary", ""), "created_at": a.get("created_at"),
                 "risk_level": a.get("risk_level") or core.doc_risk(res),
                 "flags": [x for x in res.get("audit") or [] if x.get("level") in ("warning", "error")],
                 "client_id": a.get("client_id"), "client_name": (clients_by_id.get(a.get("client_id")) or {}).get("name"),
@@ -388,7 +388,7 @@ def build_workspace_router(db, get_current_user, llm_key, default_notify_days) -
             a = await _analysis(uid, aid)
             res = a.get("result") or {}
             docs.append({"ref": f"Documento {chr(65 + i)}", "analysis_id": aid, "filename": a.get("filename"),
-                         "category": res.get("category", "other"), "doc_type": res.get("doc_type"), "result": res})
+                         "category": core.category(res), "doc_type": res.get("doc_type"), "result": res})
         if len(docs) < 2:
             raise HTTPException(400, "Seleziona almeno 2 documenti diversi.")
         return docs

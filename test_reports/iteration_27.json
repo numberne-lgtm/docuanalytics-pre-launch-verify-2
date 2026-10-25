@@ -1,0 +1,40 @@
+{
+  "summary": "Iteration 27 (NO AI calls). New suite tests/test_client_autolink_report_feed.py (10 tests) passes 10/10: all 7 auto-link variants link as client_link=auto (category 'Fattura', no category, structured.fattura nesting, JSON-string structured, 'P.IVA IT…' prefix, legacy fields-only, full_text-only); negatives don't link (1 digit off, name only, 2 clients in structured, 2 clients in full_text, 12-digit number, other user's client P.IVA); manual unassign stays unlinked after overview+sync. PDF report: 200 application/pdf, report-rossi-srl.pdf; pymupdf text has name, P.IVA, CF, confirmed manual and confirmed auto deadlines in dd/mm/yyyy, doc_type, extracted fields and disclaimer. It does NOT contain audit messages, Alto/Medio/Basso, to_verify deadlines or other clients' deadlines. Other user gets 404 and anon gets 401. Per-client ICS: only that client's confirmed/manual deadlines, scadenze-rossi-srl.ics, other user 404. Client feed: stored as sha256 hash only, token length ≥ 40, public 200 without auth, regenerate makes the old link 404 and the new one 200, revoke gives 404. It is independent of the global feed, and the other user gets 404 on GET/POST/DELETE. Deleting a client makes its feed 404 (confirmed). Regression: test_workspace_final_smoke + test_workspace + test_calendar_notify + new suite = 48 passed, 3 skipped. UI desktop: client-report-pdf downloads report-rossi-srl.pdf with correct content. The client-calendar-* testids all work: download (only Rossi), create/url/copy/regenerate/revoke/status. The global Scadenze calendar-export and notify chips still work. Mobile 390: no horizontal page overflow on the client 360 header or export section.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "core.category()/subjects() (auto-link)", "issue": "structured sent as a JSON STRING with NO category is not linked. category() only inspects dict structured, returns 'other', and subjects() yields nothing. ids_from_text then only looks at fields/full_text. Repro: result={'structured': json.dumps({'customer':{'piva':'22222222222'}})} gives no link. Fix: parse a JSON-string structured in category() as well (reuse the structured() parsing)."},
+      {"endpoint": "core.subjects() fallback", "issue": "The fields/full_text fallback runs only when NO structured subject has an identifier. If structured has the supplier P.IVA (not a client) but the customer has only a name, a field 'P.IVA cliente: 22222222222' is ignored and there is no link. Consider always merging ids_from_text results; the ambiguity rule still protects against 2 different clients."},
+      {"endpoint": "core.norm_id()", "issue": "Combined label values such as 'P.IVA/CF: 22222222222' normalise to 'PIVACF22222222222' and don't match. The prefix regex lacks a PIVACF / PARTITAIVACF variant. A fallback could extract a lone 11-digit/16-char id from the string."},
+      {"endpoint": "_doc_out", "issue": "The 'category' returned to the UI is the raw res.category (e.g. 'Fattura' or missing → 'other'), not core.category(res). It is cosmetic but inconsistent with the normalisation used for linking."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Client 360 header (desktop 1920)", "issues": ["The .ws-bar spreads 4 items with space-between, so the 'Report PDF per il cliente' button floats in the middle of the bar, far from both the name and 'Elimina scheda'. Group the PDF and Elimina buttons on the right."]},
+      {"screen": "Client 360 header (mobile 390)", "issues": ["The P.IVA/CF line sits directly under the PDF/Elimina buttons with almost no vertical gap.", "The client tabs row scrolls horizontally and 'Attività' is hidden off-screen (inner scroll, no page overflow); there is no scroll affordance."]}
+    ]
+  },
+  "test_report_links": ["/app/backend/tests/test_client_autolink_report_feed.py", "/app/backend/tests/seed_iter27_ui.py", "/app/test_reports/pytest/pytest_iter27.xml"],
+  "action_items": [
+    "(minor) Make category() handle a JSON-string structured so string-structured docs without a category still auto-link",
+    "(minor) Consider merging ids_from_text() with structured subjects when structured lacks the counterpart's id (ambiguity rule unchanged)",
+    "(minor) norm_id: handle 'P.IVA/CF:' combined prefixes",
+    "(cosmetic) Group the Client 360 header action buttons; add a small gap under them on mobile"
+  ],
+  "critical_code_review_comments": [
+    "Feed lookup: deleted clients/revoked tokens correctly 404. Tokens are only sha256-hashed and token_urlsafe(32) gives 43 chars. Hashes aren't indexed; add indexes on users.calendar_feed.hash and clients.calendar_feed.hash for public feed lookups at scale.",
+    "match_client returns the first client matching on piva OR cf. If one subject's P.IVA matches client A and its CF matches client B, only A counts, so the ambiguity check misses it (edge case).",
+    "The PDF includes overdue confirmed deadlines (all confirmed with due_date). That's fine, but consider labelling past dates.",
+    "Python slug truncates to 60 chars, JS slug doesn't, so the frontend filename can differ from the Content-Disposition for long names (cosmetic)."
+  ],
+  "updated_files": ["/app/backend/tests/test_client_autolink_report_feed.py", "/app/backend/tests/seed_iter27_ui.py"],
+  "success_rate": {"backend": "100% (48 passed, 3 skipped; 4 minor robustness gaps found via direct core probes)", "frontend": "100%"},
+  "seed_data_creation": "Fresh test_it27_* / test_iter27_* users with clients, analyses and reminders were seeded directly in the DB. All of it was cleaned up (verified 0 leftover).",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Run: cd /app/backend && SMOKE_REAL_AI=0 python -m pytest tests/test_client_autolink_report_feed.py tests/test_workspace_final_smoke.py tests/test_workspace.py tests/test_calendar_notify.py -n0. For UI, use python tests/seed_iter27_ui.py seed|clean (writes /tmp/iter27.json with token/uid/cid). The preview server clock is Oct 2026. Zero AI calls were made.",
+  "test_credentials": "Fresh accounts via /api/auth/register (password Test12345); no static creds needed."
+}

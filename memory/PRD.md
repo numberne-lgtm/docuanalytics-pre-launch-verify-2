@@ -323,3 +323,10 @@ IMPLEMENTATO E TESTATO (19/19 backend + frontend E2E, 100%):
 - Deep audit: AI receives Italian-labeled data (core.labeled), outputs cleaned by core.clean_tech (protects emails/URLs).
 - Tests: iteration_26.json, backend/tests/test_calendar_notify.py (11/11).
 - Open: 1 smoke-suite real-AI auto-link check failed once in iter26 (AI-output variance suspected, not investigated).
+
+
+## 2026-10-25 — Auto-link robustness, client PDF report, per-client calendar (PREVIEW ONLY, no deploy, no AI calls)
+- Auto-link: core.category() normalises/infers category; structured() handles JSON strings and Italian wrapper keys; norm_id strips label prefixes (P.IVA, CF, P.IVA/CF, IT); ids_from_text() merges exact IDs from fields/full_text (older/partial analyses). Safety unchanged: exact ID + exactly one client; manual unlink respected. 38 older analyses (Jul/Aug) without structured data can now link via fields.
+- GET /api/workspace/clients/{cid}/report.pdf — reduced client-facing PDF (pymupdf Story): identifiers, public registry, documents+extracted fields, confirmed deadlines, disclaimer. No risk/red flags/unconfirmed deadlines.
+- Per-client calendar: /clients/{cid}/calendar.ics and /clients/{cid}/calendar/feed (GET/POST/DELETE), token hash in clients.calendar_feed, public /feed/{token}.ics resolves user or client feed.
+- Tests: iteration_27.json, backend/tests/test_client_autolink_report_feed.py.
