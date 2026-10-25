@@ -1,0 +1,32 @@
+{
+  "summary": "Frontend-only test of the 3 /area changes using a seeded fresh user (2 contracts + 2 invoices, 7 credits; cleaned up afterwards). Used 1 real AI call (deep audit). (1) Credits pill works: shows 7 = /api/auth/me, and after the deep audit it updates to 6 with no page reload (window marker kept, no navigation); the panel shows 'Crediti residui: 6' and /api/auth/me returns 6. (2) Audit labels work: contracts show 'Data di scadenza', 'Data di decorrenza', 'Durata', 'Parte 1 › Nome', 'Parte 1 › P.IVA / CF', 'Promemoria 1 › Data'; invoices show 'Fornitore › P.IVA', 'Cliente › Nome', 'Totali › Totale', 'Documento › Numero'; unknown key invoice_number shows as 'Invoice number'; no raw snake_case in deterministic finding titles. (3) DateField works: it is a button with placeholder gg/mm/aaaa; the calendar is Italian (ottobre 2026, lun..dom, week starts on Monday); picking a day shows dd/mm/yyyy and closes the popup; Aggiungi creates the deadline and lists it as 15/11/2026; edit -> 20/11/2026 saved; a DA VERIFICARE deadline gets a date, then Conferma -> Confermata 10/11/2026. Inside doc-panel the calendar sits above the panel (popper z 300 vs panel 200, elementFromPoint confirmed). Mobile 390: no horizontal overflow (scrollWidth 390). No console errors; all 4 tabs load. MAIN PROBLEM: the calendar has no styling because Tailwind is not active in this project.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "DateField / shadcn Calendar", "issue": "The calendar has no styling. ROOT CAUSE: no CSS file in the project has @tailwind directives (index.css and App.css are plain CSS), so every Tailwind class in components/ui/calendar.jsx and popover.jsx does nothing (h-8 w-8, flex rows, buttonVariants, p-3, z-50). Result: tiny day cells with browser-default white button backgrounds and borders, weekday header squashed into 'lunmarmergiovensabdom', white default nav buttons, no padding. It works, but looks broken and unprofessional on desktop and mobile.", "selector": "[data-testid=deadline-add-date-calendar], [data-testid=deadline-edit-date-calendar]", "priority": "HIGH"},
+      {"component": "DateField", "issue": "Clicking the day that is already selected deselects it: react-day-picker single mode calls onSelect(undefined), the value becomes '' and the button goes back to 'gg/mm/aaaa'. When editing, Salva then sends due_date undefined, so the old date is silently kept while the UI showed it as empty. Reproduced on mobile in doc-panel edit.", "selector": "[data-testid=deadline-edit-date]", "priority": "MEDIUM"}
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Deadlines add form (mobile 390)", "issues": ["The label input is narrow and its placeholder 'Nuova scadenza manuale' is cut off; the calendar is aligned to the right screen edge (x 180-390), so it touches the edge with no margin"]},
+      {"screen": "Audit deep AI findings", "issues": ["The AI-written descriptions and the source lines under them still show technical keys and raw JSON (e.g. 'parties: [{\"name\": ...}]', 'expiration_date: \"01/12/2026\"', 'invoice_number'). This is outside the fieldLabel change, but the user wanted no technical keys in the audit. Consider passing labelled fields to the prompt, or formatting the sources with fieldLabel."]}
+    ]
+  },
+  "test_report_links": ["/app/backend/tests/seed_iter25_ui.py"],
+  "action_items": [
+    "Style the calendar without Tailwind: write .ws-cal CSS for react-day-picker v8 classNames (pass custom classNames such as rdp table/row/cell/day/nav and style them in workspace.css), or import 'react-day-picker/dist/style.css' and override the colours for the dark theme. Do NOT add @tailwind base globally: preflight would restyle the whole app.",
+    "In DateField, ignore an undefined onSelect (keep the current value) or pass required to Calendar, so re-clicking the selected day does not clear the date.",
+    "Optional: humanize keys in the deep audit sources and prompt output; on mobile, give the deadline add form full-width rows."
+  ],
+  "critical_code_review_comments": [
+    "calendar.jsx and popover.jsx depend fully on Tailwind utilities that are never compiled in this project. Any other shadcn component used in /area will have the same no-styling problem.",
+    "Workspace.jsx fetches /api/auth/me only on mount. The credits pill does not update after other credit-spending actions unless they call setCredits (fine for now)."
+  ],
+  "updated_files": ["/app/backend/tests/seed_iter25_ui.py (new seed/cleanup helper)"],
+  "success_rate": {"backend": "N/A (skipped)", "frontend": "90% functional (all flows pass); calendar visual styling fails"},
+  "seed_data_creation": "A fresh test_iter25_*@example.com user with 4 TEST_ analyses was created and fully cleaned up (analyses, reminders, clients, audits, user).",
+  "retest_needed": true,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Use 'python /app/backend/tests/seed_iter25_ui.py seed' to create the user (writes /tmp/iter25.json with token and uid; set localStorage da_token/da_uid), and 'seed_iter25_ui.py clean' to remove it. The deep audit was already verified (7->6 credits, no reload). Do not spend another AI call; only retest calendar styling and the re-click deselect fix.",
+  "rca of the issue": "Calendar styling: no @tailwind directives exist anywhere in src, so shadcn's className-based styling compiles to nothing; only the inline Radix popper styles and the custom .ws-cal rules apply. Deselect: DayPicker mode='single' toggles the selection off on a second click, and DateField maps undefined to ''."
+}

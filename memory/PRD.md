@@ -310,3 +310,9 @@ IMPLEMENTATO E TESTATO (19/19 backend + frontend E2E, 100%):
 - Fixed: core.structured() unwraps AI output nested under category key (auto-link P.IVA was failing intermittently); PATCH /clients duplicate P.IVA/CF -> 409 and empty name rejected; deep audit lock expires after 3 min (deep_started); AI sources no empty "()"; singular "1 documento".
 - Open (low): header credits badge not refreshed after deep audit until reload; audit shows raw field keys; native date input mm/dd; first sync of 500 analyses ~5s (N+1), analyses beyond 500 not synced; _check_reminders relies on notify_days=[] (no explicit status filter).
 - Demo testimonials/99%/12 ore claims still on homepage (untouched, pending decision).
+
+## 2026-10-25 — /area UX improvements (PREVIEW ONLY, no deploy)
+- Credits pill in /area top bar (workspace-credits), updates immediately after deep audit (onCredits).
+- Audit field labels in Italian via fieldLabel()/SEG map in workspace/api.js; unknown keys auto-humanized.
+- Deadlines date input: DateField.jsx (Radix Popover + react-day-picker with own CSS, Italian locale, gg/mm/aaaa, Monday start, re-click keeps date). NOTE: Tailwind is NOT active in this project — shadcn components need plain CSS.
+- Report: /app/test_reports/iteration_25.json + post-fix screenshot check (desktop/mobile).

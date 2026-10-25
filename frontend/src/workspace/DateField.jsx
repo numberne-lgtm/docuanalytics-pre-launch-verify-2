@@ -3,7 +3,8 @@ import { it } from "date-fns/locale";
 import { format, parseISO } from "date-fns";
 import { CalendarDays } from "lucide-react";
 import { Popover, PopoverTrigger, PopoverContent } from "../components/ui/popover";
-import { Calendar } from "../components/ui/calendar";
+import { DayPicker } from "react-day-picker";
+import "react-day-picker/dist/style.css";
 
 export default function DateField({ value, onChange, testid }) {
   const [open, setOpen] = useState(false);
@@ -15,9 +16,9 @@ export default function DateField({ value, onChange, testid }) {
           <CalendarDays size={15} /> {sel ? format(sel, "dd/MM/yyyy") : <span className="ws-muted">gg/mm/aaaa</span>}
         </button>
       </PopoverTrigger>
-      <PopoverContent className="ws-cal" align="start" data-testid={`${testid}-calendar`}>
-        <Calendar mode="single" locale={it} weekStartsOn={1} selected={sel} defaultMonth={sel}
-          onSelect={(d) => { onChange(d ? format(d, "yyyy-MM-dd") : ""); setOpen(false); }} />
+      <PopoverContent className="ws-cal" align="start" collisionPadding={8} data-testid={`${testid}-calendar`}>
+        <DayPicker mode="single" required locale={it} weekStartsOn={1} selected={sel} defaultMonth={sel} showOutsideDays
+          onSelect={(d) => { if (d) onChange(format(d, "yyyy-MM-dd")); setOpen(false); }} />
       </PopoverContent>
     </Popover>
   );

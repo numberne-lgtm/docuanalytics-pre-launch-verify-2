@@ -41,6 +41,7 @@
 .ws-dl-actions .as-btn{font-size:.75rem;padding:.35rem .7rem}
 .ws-dl-edit{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.7rem}
 .ws-dl-edit .as-input{flex:1;min-width:160px}
+@media (max-width:600px){.ws-dl-edit .as-input{flex-basis:100%}}
 .ws-tag{font-size:.68rem;font-weight:800;padding:.15rem .5rem;border-radius:6px;background:#ffffff10}
 .st-to_verify{background:#ffab4022;color:#ffd38a}.st-detected{background:#2f6bff22;color:#9dbaff}.st-confirmed{background:#00e67618;color:#8dffc2}
 .ws-tags{display:flex;flex-wrap:wrap;gap:.4rem;margin:.5rem 0}
@@ -57,8 +58,14 @@
 .ws-panel-head{padding-right:2.2rem}
 @media (max-width:600px){.ws-h1{font-size:1.4rem}.ws-top .btn{margin-left:0}.ws-kpi b{font-size:1.4rem}}
 .ws-date-btn{display:inline-flex;align-items:center;gap:.45rem;min-width:9.5rem;cursor:pointer;text-align:left}
-.ws-cal{z-index:300;width:auto;padding:0;background:#0f1730;color:#e8ecf8;border:1px solid var(--border-color)}
-.ws-cal button[name="day"]:hover{background:#2f6bff33}
-.ws-cal [aria-selected="true"]{background:#2f6bff;color:#fff}
+.ws-cal{z-index:300;background:#0f1730;color:#e8ecf8;border:1px solid var(--border-color);border-radius:12px;box-shadow:0 12px 40px #0008;max-width:calc(100vw - 16px)}
+.ws-cal .rdp{--rdp-cell-size:38px;--rdp-accent-color:#2f6bff;--rdp-background-color:#2f6bff33;margin:.6rem}
+.ws-cal .rdp-caption_label{font-size:1rem;text-transform:capitalize}
+.ws-cal .rdp-head_cell{font-size:.72rem;color:#9aa6c4;text-transform:capitalize}
+.ws-cal .rdp-button{color:inherit;background:transparent;border:2px solid transparent;font:inherit;cursor:pointer}
+.ws-cal .rdp-day_outside{opacity:.35}
+.ws-cal .rdp-day_today:not(.rdp-day_selected){color:#7fa4ff;font-weight:700}
+.ws-cal .rdp-day_selected{background:#2f6bff;color:#fff}
+@media (max-width:420px){.ws-cal .rdp{--rdp-cell-size:34px}}
 .ws-credits{display:inline-flex;align-items:center;gap:.35rem;margin-left:auto;padding:.3rem .75rem;border:1px solid var(--border-color);border-radius:999px;font-size:.85rem;font-weight:600}
 .ws-credits + .btn{margin-left:0}
