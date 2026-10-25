@@ -10,7 +10,12 @@ export const ws = {
   del: (p) => axios.delete(base + p, { headers: headers() }).then((r) => r.data),
 };
 
-export const errMsg = (e) => e?.response?.data?.detail || "Errore di rete. Riprova.";
+export const errMsg = (e) => {
+  const d = e?.response?.data?.detail;
+  if (typeof d === "string") return d;
+  if (Array.isArray(d) && d.length) return "Dati non validi: controlla i campi obbligatori.";
+  return "Errore di rete. Riprova.";
+};
 export const hasToken = () => !!localStorage.getItem("da_token");
 
 export const LEVEL = {

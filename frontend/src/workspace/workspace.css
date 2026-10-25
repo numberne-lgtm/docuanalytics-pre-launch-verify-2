@@ -54,4 +54,5 @@
 .ws-panel-in{width:min(640px,100%);height:100%;overflow-y:auto;background:var(--bg-color);border-left:1px solid var(--border-color);padding:1.4rem;position:relative;animation:asIn .25s ease both}
 .ws-x{position:absolute;right:1rem;top:1rem;background:none;border:none;color:var(--text-secondary);cursor:pointer}
 .ws-disclaimer{margin-top:2rem;font-size:.75rem;color:var(--text-muted)}
+.ws-panel-head{padding-right:2.2rem}
 @media (max-width:600px){.ws-h1{font-size:1.4rem}.ws-top .btn{margin-left:0}.ws-kpi b{font-size:1.4rem}}

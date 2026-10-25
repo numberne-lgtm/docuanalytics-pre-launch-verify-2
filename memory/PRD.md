@@ -297,3 +297,10 @@ IMPLEMENTATO E TESTATO (19/19 backend + frontend E2E, 100%):
 - 2026-10-11: Public email -> docuanalyticsai@docuanalytics.online (footer, /privacy, assistant KB). SENDER_EMAIL (noreply@docuanalytics.it, Resend) NOT changed. DNS: MX IONOS (mx00/mx01.ionos.it), SPF ionos only, DMARC p=none; mailbox send/receive NOT verified.
 - QR card actions: Copia link (base URL), Copia QR (ClipboardItem, fallback download), Scarica PNG, SVG; share menu native-share item. Deploy dispatched.
 - Voice Live: NOT implemented (awaiting authorization; requires realtime voice API).
+
+## 2026-10-11 — FASE 1 Evoluzione prodotto: Area di lavoro /area (PREVIEW ONLY, not deployed)
+- Backend backend/workspace/{core.py,router.py} mounted at /api/workspace (registered users only via get_current_user): sync, overview (Risk Dashboard+Priorità), documents (+detail, candidates, assign), clients CRUD (create/list/360/patch/delete), deadlines (buckets, create, patch, confirm, delete), audits (create deterministic, list, get, deep AI 1 credit atomic w/ refund).
+- Data: new collections clients, multi_document_audits; optional fields on analyses (client_id, client_link, ws_synced, risk_level) and reminders (status detected|to_verify|confirmed, source auto|manual, kind, client_id, raw_date). Auto deadlines have notify_days [] until confirmed. Legacy GET /api/reminders now hides unconfirmed auto deadlines.
+- Sync is lazy (on /area load), /api/analyze untouched. Auto client link only on exact P.IVA/CF match with a single existing client.
+- Frontend src/workspace/* (Italian UI), route /area, header link nav-workspace (authed). Tested iteration_23 (backend 100%, frontend all flows; fixes applied after).
+- Not done: page/section refs in audit (not in extraction), i18n for /area, Fase 2.

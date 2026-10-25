@@ -23,13 +23,14 @@ function DocPanel({ aid, onClose, onOpenClient, reloadKey, onChanged }) {
         {err && <div className="ws-error">{err}</div>}
         {!d ? <div className="ws-muted">Caricamento…</div> : (
           <>
-            <div className="ws-bar"><h2 className="ws-h2">{d.doc_type || d.filename}</h2><Level level={d.risk_level} /></div>
+            <div className="ws-bar ws-panel-head"><h2 className="ws-h2">{d.doc_type || d.filename}</h2><Level level={d.risk_level} /></div>
             <p className="ws-muted">{d.filename}</p>
             <p>{d.summary}</p>
             {d.client_id ? <button className="ws-link" onClick={() => onOpenClient(d.client_id)} data-testid="doc-panel-client">Cliente: {d.client_name} →</button> : <p className="ws-muted">Nessun cliente associato (associalo da "Documenti").</p>}
             <h3 className="ws-h3">Controlli e red flag</h3>
             {d.audit.map((a, i) => <div key={i} className={`ws-finding lvl-${a.level}`}>{a.level === "error" ? "🔴" : a.level === "warning" ? "🟠" : "🟢"} {a.message}</div>)}
             <h3 className="ws-h3">Dati estratti</h3>
+            {d.fields.length === 0 && <p className="ws-muted">Nessun dato estratto disponibile.</p>}
             <div className="ws-fields">{d.fields.map((f, i) => <div key={i}><span className="ws-muted">{f.label}</span><b>{String(f.value)}</b></div>)}</div>
             <h3 className="ws-h3">Scadenze del documento</h3>
             <DeadlineList items={d.deadlines} onChanged={onChanged} />

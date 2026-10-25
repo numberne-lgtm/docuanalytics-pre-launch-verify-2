@@ -7,7 +7,8 @@ const Sources = ({ values }) => (
   <ul className="ws-src">{(values || []).map((v, i) => <li key={i}><b>{v.ref}</b> ({v.filename}): {v.value || v.excerpt}</li>)}</ul>
 );
 
-export default function AuditView({ ids, auditId, onBack, onCredits }) {
+export default function AuditView({ ids, auditId, onBack }) {
+  const [credits, setCredits] = useState(null);
   const [a, setA] = useState(null);
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
@@ -18,7 +19,7 @@ export default function AuditView({ ids, auditId, onBack, onCredits }) {
   const deep = () => {
     if (!window.confirm("L'analisi approfondita con AI costa 1 credito. Procedere?")) return;
     setBusy(true); setErr("");
-    ws.post(`/audits/${a.audit_id}/deep`).then((r) => { setA({ ...a, deep: r.deep }); onCredits?.(r.credits); }).catch((e) => setErr(errMsg(e))).finally(() => setBusy(false));
+    ws.post(`/audits/${a.audit_id}/deep`).then((r) => { setA({ ...a, deep: r.deep }); setCredits(r.credits); }).catch((e) => setErr(errMsg(e))).finally(() => setBusy(false));
   };
   if (err && !a) return <div className="ws-error" data-testid="audit-error">{err}</div>;
   if (!a) return <div className="ws-muted">Confronto in corso…</div>;
@@ -51,7 +52,7 @@ export default function AuditView({ ids, auditId, onBack, onCredits }) {
           </>
         ) : (
           <>
-            <p className="ws-muted">{a.deep.disclaimer}</p>
+            <p className="ws-muted">{a.deep.disclaimer}{credits != null && ` Crediti residui: ${credits}.`}</p>
             {a.deep.findings.length === 0 && <p className="ws-muted" data-testid="audit-deep-empty">Nessuna contraddizione rilevata dall'AI.</p>}
             {a.deep.findings.map((f, i) => <div key={i} className="ws-finding" data-testid={`audit-deep-${i}`}><b>{f.level}</b>: {f.description}<Sources values={f.sources} /></div>)}
           </>

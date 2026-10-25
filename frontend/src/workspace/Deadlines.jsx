@@ -7,12 +7,12 @@ function Row({ d, onChanged }) {
   const [date, setDate] = useState(d.due_date || "");
   const [label, setLabel] = useState(d.label);
   const [err, setErr] = useState("");
-  const run = (p) => p.then(() => { setEdit(false); onChanged(); }).catch((e) => setErr(errMsg(e)));
+  const run = (p) => { setErr(""); return p.then(() => { setEdit(false); onChanged(); }).catch((e) => setErr(errMsg(e))); };
   return (
     <div className="ws-dl" data-testid={`deadline-${d.reminder_id}`}>
       <div className="ws-dl-main">
         <Level level={d.priority} />
-        <span><b>{d.label}</b> <span className="ws-muted">· {d.kind_label} · {d.due_date ? fmtDate(d.due_date) : `"${d.raw_date}"`} · {dueText(d.status === "to_verify" ? null : d.days_left)}</span></span>
+        <span><b>{d.label}</b> <span className="ws-muted">· {d.kind_label !== d.label && `${d.kind_label} · `} {d.due_date ? fmtDate(d.due_date) : `"${d.raw_date}"`} · {dueText(d.status === "to_verify" ? null : d.days_left)}</span></span>
         <span className={`ws-tag st-${d.status}`} data-testid={`deadline-status-${d.reminder_id}`}>{d.status === "to_verify" ? "DA VERIFICARE" : d.status === "detected" ? "Rilevata" : "Confermata"}</span>
       </div>
       <div className="ws-dl-actions">
@@ -23,7 +23,7 @@ function Row({ d, onChanged }) {
       {edit && (
         <div className="ws-dl-edit">
           <input className="as-input" value={label} onChange={(e) => setLabel(e.target.value)} data-testid="deadline-edit-label" />
-          <input className="as-input" type="date" value={date} onChange={(e) => setDate(e.target.value)} data-testid="deadline-edit-date" />
+          <input className="as-input" type="date" lang="it" value={date} onChange={(e) => setDate(e.target.value)} data-testid="deadline-edit-date" />
           <button className="as-btn as-btn-primary" onClick={() => run(ws.patch(`/deadlines/${d.reminder_id}`, { label, due_date: date || undefined }))} data-testid="deadline-edit-save">Salva</button>
         </div>
       )}
@@ -45,7 +45,7 @@ function AddDeadline({ onChanged }) {
   return (
     <form className="ws-dl-edit" onSubmit={add} data-testid="deadline-add-form">
       <input className="as-input" placeholder="Nuova scadenza manuale" value={f.label} onChange={(e) => setF({ ...f, label: e.target.value })} data-testid="deadline-add-label" />
-      <input className="as-input" type="date" value={f.due_date} onChange={(e) => setF({ ...f, due_date: e.target.value })} data-testid="deadline-add-date" />
+      <input className="as-input" type="date" lang="it" value={f.due_date} onChange={(e) => setF({ ...f, due_date: e.target.value })} data-testid="deadline-add-date" />
       <button className="as-btn as-btn-primary" data-testid="deadline-add-btn">Aggiungi</button>
       {err && <div className="ws-error">{err}</div>}
     </form>

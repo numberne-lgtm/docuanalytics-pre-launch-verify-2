@@ -542,7 +542,8 @@ async def list_reminders(user_id: Optional[str] = None, request: Request = None)
     uid = await _auth_user_id(request, user_id)
     today = datetime.now(timezone.utc).date()
     out = []
-    async for r in db.reminders.find({"user_id": uid, "active": True}, {"_id": 0}).sort("due_date", 1):
+    async for r in db.reminders.find({"user_id": uid, "active": True,
+                                      "$or": [{"source": {"$ne": "auto"}}, {"status": "confirmed"}]}, {"_id": 0}).sort("due_date", 1):
         try:
             dl = (datetime.strptime(r["due_date"], "%Y-%m-%d").date() - today).days
         except Exception:

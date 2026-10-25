@@ -290,6 +290,16 @@ def build_workspace_router(db, get_current_user, llm_key, default_notify_days) -
             await db.clients.update_one({"client_id": cid, "user_id": u["user_id"]}, {"$set": upd})
         return await _client(u["user_id"], cid)
 
+    @r.delete("/clients/{cid}")
+    async def delete_client(cid: str, request: Request):
+        u = await _user(request)
+        await _client(u["user_id"], cid)
+        unlink = {"$set": {"client_id": None, "client_link": {"status": "unlinked", "at": _now()}}}
+        await db.analyses.update_many({"user_id": u["user_id"], "client_id": cid}, unlink)
+        await db.reminders.update_many({"user_id": u["user_id"], "client_id": cid}, {"$set": {"client_id": None}})
+        await db.clients.delete_one({"client_id": cid, "user_id": u["user_id"]})
+        return {"ok": True}
+
     @r.get("/deadlines")
     async def deadlines(request: Request):
         u = await _user(request)
@@ -393,9 +403,25 @@ def build_workspace_router(db, get_current_user, llm_key, default_notify_days) -
             raise HTTPException(404, "Confronto non trovato")
         if a.get("deep"):
             return {"deep": a["deep"], "credits": u.get("credits", 0)}
-        if u.get("credits", 0) <= 0:
+        lock = await db.multi_document_audits.find_one_and_update(
+            {"audit_id": audit_id, "user_id": u["user_id"], "deep": None, "deep_status": {"$ne": "running"}},
+            {"$set": {"deep_status": "running"}})
+        if not lock:
+            raise HTTPException(409, "Analisi approfondita già in corso.")
+        paid = await db.users.find_one_and_update({"user_id": u["user_id"], "credits": {"$gt": 0}}, {"$inc": {"credits": -1}})
+        if not paid:
+            await db.multi_document_audits.update_one({"audit_id": audit_id}, {"$unset": {"deep_status": ""}})
             raise HTTPException(402, "Crediti insufficienti per l'analisi approfondita.")
-        docs = await _audit_docs(u["user_id"], [d["analysis_id"] for d in a["documents"]])
+
+        async def _refund():
+            await db.users.update_one({"user_id": u["user_id"]}, {"$inc": {"credits": 1}})
+            await db.multi_document_audits.update_one({"audit_id": audit_id}, {"$unset": {"deep_status": ""}})
+
+        try:
+            docs = await _audit_docs(u["user_id"], [d["analysis_id"] for d in a["documents"]])
+        except HTTPException:
+            await _refund()
+            raise
         payload = [{"ref": d["ref"], "file": d["filename"], "tipo": d["doc_type"], "dati": d["result"].get("structured"),
                     "testo": (d["result"].get("full_text") or "")[:3000]} for d in docs]
         prompt = ("Confronta questi documenti di uno studio professionale e individua SOLO contraddizioni o differenze sostanziali "
@@ -413,12 +439,18 @@ def build_workspace_router(db, get_current_user, llm_key, default_notify_days) -
             data = json.loads(text[start:end + 1]) if start >= 0 else {"findings": []}
         except Exception as e:
             logger.exception(f"deep audit: {e}")
+            await _refund()
             raise HTTPException(503, "Analisi approfondita non disponibile. Nessun credito scalato.")
         refs = {d["ref"] for d in docs}
-        findings = [f for f in data.get("findings", []) if isinstance(f, dict) and any(s.get("ref") in refs for s in f.get("sources") or [])]
+        findings = []
+        for f in data.get("findings", []) if isinstance(data, dict) else []:
+            if not isinstance(f, dict):
+                continue
+            srcs = [x for x in f.get("sources") or [] if isinstance(x, dict) and x.get("ref") in refs]
+            if srcs:
+                findings.append({"level": str(f.get("level", "Da verificare"))[:40], "description": str(f.get("description", ""))[:600], "sources": srcs})
         deep = {"findings": findings[:30], "model": "gemini-2.5-flash", "at": _now(), "disclaimer": "Risultati AI da verificare: non sostituiscono il professionista."}
-        await db.users.update_one({"user_id": u["user_id"]}, {"$inc": {"credits": -1}})
-        await db.multi_document_audits.update_one({"audit_id": audit_id}, {"$set": {"deep": deep}})
+        await db.multi_document_audits.update_one({"audit_id": audit_id}, {"$set": {"deep": deep}, "$unset": {"deep_status": ""}})
         u2 = await db.users.find_one({"user_id": u["user_id"]}, {"_id": 0, "credits": 1})
         return {"deep": deep, "credits": u2.get("credits", 0)}
 
