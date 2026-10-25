@@ -10,6 +10,13 @@ export const ws = {
   del: (p) => axios.delete(base + p, { headers: headers() }).then((r) => r.data),
 };
 
+export const download = (p, name) =>
+  axios.get(base + p, { responseType: "blob", headers: headers() }).then(({ data }) => {
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(data); a.download = name; a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  });
+
 export const errMsg = (e) => {
   const d = e?.response?.data?.detail;
   if (typeof d === "string") return d;

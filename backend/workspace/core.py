@@ -14,9 +14,58 @@ KIND_LABEL = {"payment": "Pagamento", "tax": "Scadenza fiscale", "renewal": "Rin
               "notice": "Preavviso", "validity": "Validità / scadenza", "start": "Decorrenza", "other": "Data operativa"}
 
 
+CF_RE = re.compile(r"[A-Z]{6}\d{2}[A-Z]\d{2}[A-Z]\d{3}[A-Z]")
+
+
 def norm_id(v) -> str:
     s = re.sub(r"[^A-Za-z0-9]", "", str(v or "")).upper()
-    return s[2:] if s.startswith("IT") and len(s) == 13 else s
+    m = re.fullmatch(r"(?:PARTITAIVA|PIVA|VAT|IVA|CF|CODICEFISCALE)?(?:IT)?(\d{11})", s)
+    if m:
+        return m.group(1)
+    m = re.fullmatch(r"(?:CF|CODICEFISCALE)?(" + CF_RE.pattern + ")", s)
+    return m.group(1) if m else s
+
+
+CATEGORY_ALIASES = {"fattura": "invoice", "fattura elettronica": "invoice", "contratto": "contract",
+                    "visura camerale": "visura", "modello f24": "f24"}
+_KEY_CATEGORY = (("supplier", "invoice"), ("customer", "invoice"), ("parties", "contract"), ("company", "visura"), ("taxpayer", "f24"))
+
+
+def category(result: dict) -> str:
+    """Normalised category; inferred from structured keys when missing or non-standard."""
+    c = str(result.get("category") or "").strip().lower()
+    c = CATEGORY_ALIASES.get(c, c)
+    if c in ("invoice", "f24", "visura", "contract"):
+        return c
+    s = result.get("structured") or {}
+    if isinstance(s, dict) and len(s) == 1:
+        k, v = next(iter(s.items()))
+        kc = CATEGORY_ALIASES.get(str(k).lower(), str(k).lower())
+        if kc in ("invoice", "f24", "visura", "contract"):
+            return kc
+    for k, cat in _KEY_CATEGORY:
+        if isinstance(s, dict) and s.get(k):
+            return cat
+    return c or "other"
+
+
+_ID_LABEL = re.compile(r"p\.?\s?iva|partita\s+iva|codice\s+fiscale|\bc\.?f\.?\b|vat", re.I)
+
+
+def ids_from_text(result: dict) -> list:
+    """Fallback when structured data is missing (older or partial analyses): exact identifiers found in fields/text."""
+    found = []
+    for f in result.get("fields") or []:
+        if isinstance(f, dict) and _ID_LABEL.search(str(f.get("label", ""))):
+            found.append((str(f.get("label", "")).strip(), str(f.get("value", ""))))
+    text = " ".join(v for _, v in found) + " " + str(result.get("full_text") or "")
+    out, seen = [], set()
+    for raw in re.findall(r"(?<![\dA-Z])(?:IT\s?)?\d{11}(?!\d)|" + CF_RE.pattern, text.upper()):
+        v = norm_id(raw)
+        if v not in seen:
+            seen.add(v)
+            out.append({"name": "", "piva": v if len(v) == 11 else "", "cf": v if len(v) == 16 else "", "role": "Dal testo", "extra": {}})
+    return out
 
 
 def norm_name(v) -> str:
@@ -45,15 +94,23 @@ def parse_date(v):
 
 def structured(result: dict) -> dict:
     """AI sometimes wraps the schema in its category key ({"invoice": {...}}): unwrap it."""
-    s, cat = result.get("structured") or {}, result.get("category")
-    if isinstance(s, dict) and len(s) == 1 and isinstance(s.get(cat), dict):
-        return s[cat]
+    s, cat = result.get("structured") or {}, category(result)
+    if isinstance(s, str):
+        try:
+            import json
+            s = json.loads(s)
+        except ValueError:
+            s = {}
+    if isinstance(s, dict) and len(s) == 1:
+        k, v = next(iter(s.items()))
+        if isinstance(v, dict) and CATEGORY_ALIASES.get(str(k).lower(), str(k).lower()) == cat:
+            return v
     return s if isinstance(s, dict) else {}
 
 
 def subjects(result: dict) -> list:
     """Identifiable subjects (name/piva/cf/role) found in an analysis result."""
-    s, cat = structured(result), result.get("category")
+    s, cat = structured(result), category(result)
     out = []
 
     def add(name, piva="", cf="", role="", extra=None):
@@ -77,7 +134,7 @@ def subjects(result: dict) -> list:
         for p in s.get("parties") or []:
             pid = norm_id(p.get("piva_cf"))
             add(p.get("name"), pid if len(pid) == 11 else "", pid if len(pid) == 16 else "", p.get("role") or "Parte")
-    return out
+    return out if any(x["piva"] or x["cf"] for x in out) else out + ids_from_text(result)
 
 
 def match_client(subj: dict, clients: list):
@@ -92,7 +149,7 @@ def match_client(subj: dict, clients: list):
 
 def deadlines(result: dict) -> list:
     """Dates explicitly present in the analysis. Never invents."""
-    s, cat, out = structured(result), result.get("category"), []
+    s, cat, out = structured(result), category(result), []
 
     def add(kind, raw, label):
         if not raw:
@@ -180,7 +237,7 @@ def compare(docs: list) -> dict:
     src = lambda d: {"ref": d["ref"], "analysis_id": d["analysis_id"], "filename": d["filename"]}
     by_cat = {}
     for d in docs:
-        by_cat.setdefault(d["category"], []).append(d)
+        by_cat.setdefault(category(d["result"]), []).append(d)
     for cat, group in by_cat.items():
         if len(group) < 2:
             continue
@@ -220,7 +277,7 @@ def compare(docs: list) -> dict:
                                              "note": "Stesso identificativo con denominazioni diverse"})
     for d in docs:
         s = structured(d["result"])
-        if d["category"] == "contract":
+        if category(d["result"]) == "contract":
             a, b = parse_date(s.get("effective_date"))[0], parse_date(s.get("expiration_date"))[0]
             if a and b and b < a:
                 res["anomalies"].append({"type": "Data di scadenza precedente alla decorrenza", "subject": d["filename"],
@@ -310,3 +367,64 @@ def ics(events: list, name: str) -> str:
                   f"SUMMARY:{esc(e['label'])}", f"DESCRIPTION:{esc(e.get('description', ''))}", "TRANSP:TRANSPARENT", "END:VEVENT"]
     lines.append("END:VCALENDAR")
     return "\r\n".join(fold(x) for x in lines) + "\r\n"
+
+
+def slug(s) -> str:
+    return re.sub(r"[^a-z0-9]+", "-", str(s or "").lower()).strip("-")[:60] or "cliente"
+
+
+def _fmt(iso) -> str:
+    return "/".join(reversed(str(iso)[:10].split("-"))) if iso else "—"
+
+
+def client_report_pdf(client: dict, docs: list, deadlines_: list, prepared_by: str) -> bytes:
+    """Client-facing summary (reduced): identifiers, documents with extracted data, confirmed deadlines. No internal notes or risk levels."""
+    import io
+    import html as H
+    import pymupdf as fitz
+    e = lambda v: H.escape(str(v or ""))
+    reg = client.get("registry") or {}
+    reg_rows = "".join(f"<tr><td class='k'>{l}</td><td>{e(reg[k])}</td></tr>" for k, l in (
+        ("legal_form", "Forma giuridica"), ("registered_office", "Sede"), ("pec", "PEC"), ("rea", "REA")) if reg.get(k))
+    doc_html = ""
+    for a in docs:
+        res = a.get("result") or {}
+        fields = [f for f in res.get("fields") or [] if isinstance(f, dict) and str(f.get("value", "")).strip()][:10]
+        rows = "".join(f"<tr><td class='k'>{e(f.get('label'))}</td><td class='v'>{e(f.get('value'))}</td></tr>" for f in fields)
+        doc_html += (f"<h3>{e(res.get('doc_type') or a.get('doc_type') or 'Documento')}</h3>"
+                     f"<p class='m'>{e(a.get('filename'))} · analizzato il {_fmt(a.get('created_at'))}</p>"
+                     + (f"<table>{rows}</table>" if rows else "<p class='m'>Nessun dato estratto disponibile.</p>"))
+    dl_rows = "".join(f"<tr><td class='k'>{_fmt(d['due_date'])}</td><td>{e(d['label'])}</td><td>{e(d.get('kind_label'))}</td></tr>" for d in deadlines_)
+    today = date.today().strftime("%d/%m/%Y")
+    body = f"""
+<p class='brand'>DocuAnalytics AI</p>
+<h1>Riepilogo documenti e scadenze</h1>
+<p class='m'>Preparato il {today}{(' da ' + e(prepared_by)) if prepared_by else ''}</p>
+<h2>{e(client.get('name'))}</h2>
+<table><tr><td class='k'>P.IVA</td><td>{e(client.get('piva')) or '—'}</td></tr>
+<tr><td class='k'>Codice fiscale</td><td>{e(client.get('cf')) or '—'}</td></tr>{reg_rows}</table>
+<h2>Scadenze confermate ({len(deadlines_)})</h2>
+{f"<table><tr><th>Data</th><th>Scadenza</th><th>Tipo</th></tr>{dl_rows}</table>" if dl_rows else "<p class='m'>Nessuna scadenza confermata.</p>"}
+<h2>Documenti ({len(docs)})</h2>
+{doc_html or "<p class='m'>Nessun documento associato.</p>"}
+<p class='disc'>Documento informativo generato da DocuAnalytics AI sulla base dei dati estratti automaticamente dai documenti.
+I dati possono contenere errori di lettura e vanno verificati sugli originali. Non costituisce consulenza fiscale, legale o notarile.</p>"""
+    css = """* {font-family: sans-serif; color: #152033;} body {font-size: 10pt;}
+.brand {color: #2f6bff; font-weight: bold; font-size: 11pt; margin: 0;} h1 {font-size: 18pt; margin: 2pt 0;}
+h2 {font-size: 13pt; color: #0a1022; margin-top: 16pt; border-bottom: 1px solid #2f6bff; padding-bottom: 2pt;}
+h3 {font-size: 11pt; margin: 10pt 0 0 0;} .m {color: #667085; font-size: 9pt; margin: 1pt 0 4pt 0;}
+table {width: 100%; border-collapse: collapse; margin-top: 4pt;} td, th {border-bottom: 1px solid #e4e7ec; padding: 3pt 4pt; text-align: left; vertical-align: top;}
+th {background-color: #eef3ff; font-size: 9pt;} .k {color: #475467; width: 35%;} .v {width: 65%;}
+.disc {margin-top: 20pt; font-size: 8pt; color: #667085;}"""
+    buf = io.BytesIO()
+    story = fitz.Story(html=f"<body>{body}</body>", user_css=css)
+    writer = fitz.DocumentWriter(buf)
+    page = fitz.paper_rect("a4")
+    more = 1
+    while more:
+        dev = writer.begin_page(page)
+        more, _ = story.place(page + (48, 48, -48, -48))
+        story.draw(dev)
+        writer.end_page()
+    writer.close()
+    return buf.getvalue()

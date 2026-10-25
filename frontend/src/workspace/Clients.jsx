@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
-import { ws, errMsg, fmtDate } from "./api";
+import { FileDown } from "lucide-react";
+import { ws, errMsg, fmtDate, download } from "./api";
+import CalendarExport from "./CalendarExport";
 import { Level } from "./RiskDashboard";
 import { DocCard } from "./Documents";
 import { DeadlineList } from "./Deadlines";
@@ -50,15 +52,21 @@ export function Client360({ cid, onBack, onOpenDoc, reloadKey, onChanged }) {
   const [d, setD] = useState(null);
   const [tab, setTab] = useState("overview");
   const [err, setErr] = useState("");
+  const [pdfErr, setPdfErr] = useState("");
+  const [pdfBusy, setPdfBusy] = useState(false);
   useEffect(() => { ws.get(`/clients/${cid}`).then(setD).catch((e) => setErr(errMsg(e))); }, [cid, reloadKey]);
   if (err) return <div className="ws-error">{err}</div>;
   if (!d) return <div className="ws-muted">Caricamento…</div>;
   const c = d.client, reg = c.registry || {};
+  const slug = c.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "cliente";
+  const pdf = () => { setPdfErr(""); setPdfBusy(true); download(`/clients/${cid}/report.pdf`, `report-${slug}.pdf`).catch((e) => setPdfErr(errMsg(e))).finally(() => setPdfBusy(false)); };
   return (
     <div data-testid="client-360">
       <button className="ws-link" onClick={onBack} data-testid="client-back">← Tutti i clienti</button>
       <div className="ws-bar"><h2 className="ws-h2" data-testid="client-name">{c.name}</h2><Level level={d.risk_level} />
+        <button className="as-btn ws-btn-icon" onClick={pdf} disabled={pdfBusy} data-testid="client-report-pdf"><FileDown size={14} /> {pdfBusy ? "Preparazione…" : "Report PDF per il cliente"}</button>
         <button className="as-btn" data-testid="client-delete" onClick={() => window.confirm("Eliminare la scheda cliente? Documenti e scadenze restano, senza associazione.") && ws.del(`/clients/${cid}`).then(() => { onChanged(); onBack(); }).catch((e) => setErr(errMsg(e)))}>Elimina scheda</button></div>
+      {pdfErr && <div className="ws-error" data-testid="client-report-error">{pdfErr}</div>}
       <p className="ws-muted">{c.piva ? `P.IVA ${c.piva}` : "P.IVA non disponibile"} · {c.cf ? `CF ${c.cf}` : "CF non disponibile"}</p>
       <div className="ws-tabs">{TABS.map(([k, l]) => <button key={k} className={tab === k ? "on" : ""} onClick={() => setTab(k)} data-testid={`client-tab-${k}`}>{l}</button>)}</div>
       {tab === "overview" && (
@@ -76,7 +84,10 @@ export function Client360({ cid, onBack, onOpenDoc, reloadKey, onChanged }) {
         <button key={i} className="ws-row" onClick={() => onOpenDoc(r.analysis_id)} data-testid={`client-risk-${i}`}>
           <Level level={r.level === "error" ? "high" : "medium"} /><span className="ws-row-main"><b>{r.doc_type || r.filename}</b><span>{r.message}</span></span>
         </button>)) : <p className="ws-muted">Nessuna anomalia rilevata.</p>)}
-      {tab === "deadlines" && <DeadlineList items={d.deadlines} onChanged={onChanged} />}
+      {tab === "deadlines" && <>
+        <DeadlineList items={d.deadlines} onChanged={onChanged} />
+        <CalendarExport path={`/clients/${cid}`} title={`Esporta le scadenze di ${c.name}`} fileName={`scadenze-${slug}.ics`} tid="client-calendar" />
+      </>}
       {tab === "activity" && d.activity.map((a, i) => <div key={i} className="ws-act"><span className="ws-muted">{fmtDate(a.at)}</span> {a.text}</div>)}
     </div>
   );

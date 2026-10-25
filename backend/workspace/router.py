@@ -484,16 +484,47 @@ def build_workspace_router(db, get_current_user, llm_key, default_notify_days) -
         u2 = await db.users.find_one({"user_id": u["user_id"]}, {"_id": 0, "credits": 1})
         return {"deep": deep, "credits": u2.get("credits", 0)}
 
-    async def _ics_for(uid):
+    async def _ics_for(uid, cid=None):
         clients = {c["client_id"]: c["name"] async for c in db.clients.find({"user_id": uid}, {"_id": 0, "client_id": 1, "name": 1})}
+        q = {"user_id": uid, "active": True, "due_date": {"$nin": [None, ""]},
+             "$or": [{"source": {"$ne": "auto"}}, {"status": "confirmed"}]}
+        if cid:
+            q["client_id"] = cid
         ev = []
-        async for x in db.reminders.find({"user_id": uid, "active": True, "due_date": {"$nin": [None, ""]},
-                                          "$or": [{"source": {"$ne": "auto"}}, {"status": "confirmed"}]}, {"_id": 0}).sort("due_date", 1):
+        async for x in db.reminders.find(q, {"_id": 0}).sort("due_date", 1):
             desc = " · ".join(v for v in (core.KIND_LABEL.get(x.get("kind") or "other", ""), x.get("doc_type"),
                                           f"Cliente: {clients[x['client_id']]}" if x.get("client_id") in clients else "") if v)
             ev.append({**x, "description": f"{desc}\nDocuAnalytics AI — da verificare con il professionista."})
-        return Response(core.ics(ev, "DocuAnalytics — Scadenze"), media_type="text/calendar; charset=utf-8",
-                        headers={"Content-Disposition": 'attachment; filename="docuanalytics-scadenze.ics"', "Cache-Control": "no-store"})
+        name = f"DocuAnalytics — {clients.get(cid, 'Cliente')}" if cid else "DocuAnalytics — Scadenze"
+        fname = f"scadenze-{core.slug(clients.get(cid, 'cliente'))}.ics" if cid else "docuanalytics-scadenze.ics"
+        return Response(core.ics(ev, name), media_type="text/calendar; charset=utf-8",
+                        headers={"Content-Disposition": f'attachment; filename="{fname}"', "Cache-Control": "no-store"})
+
+    def _hash(token):
+        return hashlib.sha256(token.encode()).hexdigest()
+
+    async def _feed_target(request, cid):
+        u = await _user(request)
+        if cid:
+            await _client(u["user_id"], cid)
+            return u, db.clients, {"client_id": cid, "user_id": u["user_id"]}
+        return u, db.users, {"user_id": u["user_id"]}
+
+    async def _feed_status(request, cid=None):
+        _, coll, flt = await _feed_target(request, cid)
+        f = (await coll.find_one(flt, {"_id": 0, "calendar_feed": 1}) or {}).get("calendar_feed") or {}
+        return {"active": bool(f.get("hash")), "created_at": f.get("created_at")}
+
+    async def _feed_create(request, cid=None):
+        _, coll, flt = await _feed_target(request, cid)
+        token = secrets.token_urlsafe(32)
+        await coll.update_one(flt, {"$set": {"calendar_feed": {"hash": _hash(token), "created_at": _now()}}})
+        return {"token": token, "active": True}
+
+    async def _feed_revoke(request, cid=None):
+        _, coll, flt = await _feed_target(request, cid)
+        await coll.update_one(flt, {"$unset": {"calendar_feed": ""}})
+        return {"active": False}
 
     @r.get("/calendar.ics")
     async def calendar_download(request: Request):
@@ -502,31 +533,56 @@ def build_workspace_router(db, get_current_user, llm_key, default_notify_days) -
 
     @r.get("/calendar/feed")
     async def feed_status(request: Request):
-        u = await _user(request)
-        f = (await db.users.find_one({"user_id": u["user_id"]}, {"_id": 0, "calendar_feed": 1}) or {}).get("calendar_feed") or {}
-        return {"active": bool(f.get("hash")), "created_at": f.get("created_at")}
+        return await _feed_status(request)
 
     @r.post("/calendar/feed")
     async def feed_create(request: Request):
-        u = await _user(request)
-        token = secrets.token_urlsafe(32)
-        await db.users.update_one({"user_id": u["user_id"]}, {"$set": {"calendar_feed": {
-            "hash": hashlib.sha256(token.encode()).hexdigest(), "created_at": _now()}}})
-        return {"token": token, "active": True}
+        return await _feed_create(request)
 
     @r.delete("/calendar/feed")
     async def feed_revoke(request: Request):
+        return await _feed_revoke(request)
+
+    @r.get("/clients/{cid}/calendar.ics")
+    async def client_calendar_download(cid: str, request: Request):
         u = await _user(request)
-        await db.users.update_one({"user_id": u["user_id"]}, {"$unset": {"calendar_feed": ""}})
-        return {"active": False}
+        await _client(u["user_id"], cid)
+        return await _ics_for(u["user_id"], cid)
+
+    @r.get("/clients/{cid}/calendar/feed")
+    async def client_feed_status(cid: str, request: Request):
+        return await _feed_status(request, cid)
+
+    @r.post("/clients/{cid}/calendar/feed")
+    async def client_feed_create(cid: str, request: Request):
+        return await _feed_create(request, cid)
+
+    @r.delete("/clients/{cid}/calendar/feed")
+    async def client_feed_revoke(cid: str, request: Request):
+        return await _feed_revoke(request, cid)
 
     @r.get("/feed/{token}.ics")
     async def feed_public(token: str):
         if len(token) < 40:
             raise HTTPException(404, "Not found")
-        u = await db.users.find_one({"calendar_feed.hash": hashlib.sha256(token.encode()).hexdigest()}, {"_id": 0, "user_id": 1})
-        if not u:
+        h = _hash(token)
+        u = await db.users.find_one({"calendar_feed.hash": h}, {"_id": 0, "user_id": 1})
+        if u:
+            return await _ics_for(u["user_id"])
+        c = await db.clients.find_one({"calendar_feed.hash": h}, {"_id": 0, "user_id": 1, "client_id": 1})
+        if not c:
             raise HTTPException(404, "Not found")
-        return await _ics_for(u["user_id"])
+        return await _ics_for(c["user_id"], c["client_id"])
+
+    @r.get("/clients/{cid}/report.pdf")
+    async def client_report(cid: str, request: Request):
+        u = await _user(request)
+        uid = u["user_id"]
+        c = await _client(uid, cid)
+        docs = [a async for a in db.analyses.find({"user_id": uid, "client_id": cid}, {"_id": 0}).sort("created_at", -1)]
+        dls = [d for d in await _deadlines(uid, {"client_id": cid}) if d["status"] == "confirmed" and d["due_date"]]
+        pdf = core.client_report_pdf(c, docs, dls, u.get("name") or u.get("email") or "")
+        return Response(pdf, media_type="application/pdf",
+                        headers={"Content-Disposition": f'attachment; filename="report-{core.slug(c["name"])}.pdf"', "Cache-Control": "no-store"})
 
     return r
