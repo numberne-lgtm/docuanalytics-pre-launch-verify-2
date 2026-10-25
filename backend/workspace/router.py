@@ -2,7 +2,7 @@
 import json
 import uuid
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from typing import Optional, List
 
 from fastapi import APIRouter, HTTPException, Request
@@ -26,7 +26,7 @@ class ClientReq(BaseModel):
 
 
 class ClientPatch(BaseModel):
-    name: Optional[str] = Field(None, max_length=200)
+    name: Optional[str] = Field(None, min_length=1, max_length=200)
     piva: Optional[str] = None
     cf: Optional[str] = None
     notes: Optional[str] = Field(None, max_length=2000)
@@ -286,6 +286,11 @@ def build_workspace_router(db, get_current_user, llm_key, default_notify_days) -
         u = await _user(request)
         await _client(u["user_id"], cid)
         upd = {k: (core.norm_id(v) if k in ("piva", "cf") else v.strip()) for k, v in req.model_dump().items() if v is not None}
+        if "name" in upd and not upd["name"]:
+            raise HTTPException(400, "Il nome non può essere vuoto.")
+        for k in ("piva", "cf"):
+            if upd.get(k) and await db.clients.find_one({"user_id": u["user_id"], k: upd[k], "client_id": {"$ne": cid}}):
+                raise HTTPException(409, "Esiste già un cliente con questo identificativo.")
         if upd:
             await db.clients.update_one({"client_id": cid, "user_id": u["user_id"]}, {"$set": upd})
         return await _client(u["user_id"], cid)
@@ -404,8 +409,10 @@ def build_workspace_router(db, get_current_user, llm_key, default_notify_days) -
         if a.get("deep"):
             return {"deep": a["deep"], "credits": u.get("credits", 0)}
         lock = await db.multi_document_audits.find_one_and_update(
-            {"audit_id": audit_id, "user_id": u["user_id"], "deep": None, "deep_status": {"$ne": "running"}},
-            {"$set": {"deep_status": "running"}})
+            {"audit_id": audit_id, "user_id": u["user_id"], "deep": None,
+             "$or": [{"deep_status": {"$ne": "running"}},
+                     {"deep_started": {"$lt": (datetime.now(timezone.utc) - timedelta(minutes=3)).isoformat()}}]},
+            {"$set": {"deep_status": "running", "deep_started": _now()}})
         if not lock:
             raise HTTPException(409, "Analisi approfondita già in corso.")
         paid = await db.users.find_one_and_update({"user_id": u["user_id"], "credits": {"$gt": 0}}, {"$inc": {"credits": -1}})

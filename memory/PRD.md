@@ -304,3 +304,9 @@ IMPLEMENTATO E TESTATO (19/19 backend + frontend E2E, 100%):
 - Sync is lazy (on /area load), /api/analyze untouched. Auto client link only on exact P.IVA/CF match with a single existing client.
 - Frontend src/workspace/* (Italian UI), route /area, header link nav-workspace (authed). Tested iteration_23 (backend 100%, frontend all flows; fixes applied after).
 - Not done: page/section refs in audit (not in extraction), i18n for /area, Fase 2.
+
+## 2026-10-25 — FASE 1 final smoke test (PREVIEW ONLY, no deploy)
+- Report: /app/test_reports/iteration_24.json (UI desktop+mobile 100%, backend 21/21 + 28 combined).
+- Fixed: core.structured() unwraps AI output nested under category key (auto-link P.IVA was failing intermittently); PATCH /clients duplicate P.IVA/CF -> 409 and empty name rejected; deep audit lock expires after 3 min (deep_started); AI sources no empty "()"; singular "1 documento".
+- Open (low): header credits badge not refreshed after deep audit until reload; audit shows raw field keys; native date input mm/dd; first sync of 500 analyses ~5s (N+1), analyses beyond 500 not synced; _check_reminders relies on notify_days=[] (no explicit status filter).
+- Demo testimonials/99%/12 ore claims still on homepage (untouched, pending decision).

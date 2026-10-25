@@ -43,9 +43,17 @@ def parse_date(v):
     return d.isoformat(), exact
 
 
+def structured(result: dict) -> dict:
+    """AI sometimes wraps the schema in its category key ({"invoice": {...}}): unwrap it."""
+    s, cat = result.get("structured") or {}, result.get("category")
+    if isinstance(s, dict) and len(s) == 1 and isinstance(s.get(cat), dict):
+        return s[cat]
+    return s if isinstance(s, dict) else {}
+
+
 def subjects(result: dict) -> list:
     """Identifiable subjects (name/piva/cf/role) found in an analysis result."""
-    s, cat = result.get("structured") or {}, result.get("category")
+    s, cat = structured(result), result.get("category")
     out = []
 
     def add(name, piva="", cf="", role="", extra=None):
@@ -84,7 +92,7 @@ def match_client(subj: dict, clients: list):
 
 def deadlines(result: dict) -> list:
     """Dates explicitly present in the analysis. Never invents."""
-    s, cat, out = result.get("structured") or {}, result.get("category"), []
+    s, cat, out = structured(result), result.get("category"), []
 
     def add(kind, raw, label):
         if not raw:
@@ -176,7 +184,7 @@ def compare(docs: list) -> dict:
     for cat, group in by_cat.items():
         if len(group) < 2:
             continue
-        flat = [flatten((d["result"].get("structured") or {})) for d in group]
+        flat = [flatten(structured(d["result"])) for d in group]
         for path in sorted(set().union(*flat)):
             if path.endswith("currency"):
                 continue
@@ -211,7 +219,7 @@ def compare(docs: list) -> dict:
                                              "values": [{**src(da), "value": a["name"]}, {**src(db_), "value": b["name"]}],
                                              "note": "Stesso identificativo con denominazioni diverse"})
     for d in docs:
-        s = d["result"].get("structured") or {}
+        s = structured(d["result"])
         if d["category"] == "contract":
             a, b = parse_date(s.get("effective_date"))[0], parse_date(s.get("expiration_date"))[0]
             if a and b and b < a:

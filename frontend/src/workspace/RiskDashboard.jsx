@@ -28,7 +28,7 @@ export default function RiskDashboard({ onOpenDoc, onOpenClient, reloadKey }) {
         ))}
       </div>
       {(c.unassigned > 0 || c.deadlines_to_verify > 0) && (
-        <p className="ws-note" data-testid="risk-notes">{c.unassigned > 0 && `${c.unassigned} documenti senza cliente associato. `}{c.deadlines_to_verify > 0 && `${c.deadlines_to_verify} date da verificare.`}</p>
+        <p className="ws-note" data-testid="risk-notes">{c.unassigned > 0 && `${c.unassigned} ${c.unassigned === 1 ? "documento" : "documenti"} senza cliente associato. `}{c.deadlines_to_verify > 0 && `${c.deadlines_to_verify} date da verificare.`}</p>
       )}
       <h3 className="ws-h3">Priorità</h3>
       {data.priorities.length === 0 && <p className="ws-muted" data-testid="priorities-empty">Nessuna priorità: nessuna criticità o scadenza rilevata.</p>}

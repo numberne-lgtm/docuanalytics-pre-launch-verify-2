@@ -1,0 +1,83 @@
+{
+  "summary": "FINAL smoke test of FASE 1 (/area) on preview, run 25/10/2026 (server date). Only freshly registered TEST accounts were used and all were removed afterwards. BACKEND: new suite tests/test_workspace_final_smoke.py has 22 tests. It passes 21/21 with real AI turned off, plus the existing test_workspace.py (28 passed in the combined run). The real-AI run passed 20/21. The one failure was a REAL BUG, which I fixed and then re-checked against the live API. UI: 5 Playwright runs, desktop 1920x800 and mobile 390x844, and every UI check passed. Real AI calls: 3-4 in total. These were 1 /api/analyze, 1 deep audit via 2 parallel POSTs (one 200, one 409), 1 deep audit from the UI (one confirm dialog, one request, credits -1), and possibly 1 more from the legacy test_workspace.py deep test. Copilot was not called, to stay within budget. No Stripe payment was made: only the checkout session URL was created.",
+  "ui_tests_run": [
+    "Anonymous user on /area sees workspace-locked and workspace-login. After logout, /area is locked again and nav-workspace is hidden.",
+    "Login through the AuthModal (tab-login), on mobile. credits-badge shows. nav-workspace is visible when logged in.",
+    "Desktop dashboard: the 6 KPIs match /api/workspace/overview counts exactly (4/2/1/1/1/2). KPIs are the same after reload. Priorities are ordered high before medium, and overdue before near-term. priority-0 opens the correct doc-panel (contract: red flag, deadlines, 'Nessun cliente associato'), and close works. All 4 ws-nav tabs work.",
+    "Clients: create client (name, P.IVA, CF), then client-360 shows the name, 'P.IVA 55555555555' and the CF. A duplicate P.IVA ('IT' prefix) shows client-new-error 'Esiste già un cliente...'.",
+    "Documents: assign-select links the contract, the client's Documents and Scadenze tabs show it, unassign-btn removes the link, and the document is still in /api/analyses and in the nav-history modal. client-delete with the confirm dialog removes the client; the document and its 2 deadlines remain with client_id null.",
+    "Deadlines: tabs with counts. A 'DA VERIFICARE' item with no date: confirming it shows the error 'Inserisci prima una data certa.' Editing the date works. Before confirm it is NOT in /api/reminders; after confirm it IS and is labelled 'Confermata'. Manual add creates a confirmed manual deadline in next7, and delete with confirm works.",
+    "Multi-Doc Audit: compare-btn is disabled with 0 or 1 docs selected. With 2 contracts, all 4 sections (Coerenze 4, Differenze 3, Anomalie 0, Da verificare 0) render with Documento A/B labels. With 3 docs, the A/B/C tags show, the header shows 'Pagina/sezione non disponibili', and no page references are invented.",
+    "Deep AI audit from the UI: one confirm dialog. A second click is blocked because the button is disabled. Exactly 1 /deep request; credits went 3 -> 2. Findings show sources Documento A/B only. Done in about 6s.",
+    "Mobile 390x844: dashboard, doc-panel (full screen 390x844), clients, client360, documents, deadlines and audit all have scrollWidth 390, with no overflowing elements outside scroll containers. No console errors except the expected 409 and 400 from the duplicate and confirm-without-date negative tests."
+  ],
+  "server_tests_run": [
+    "Overview counts match /documents and /deadlines. Overview output is identical on repeated calls. Risk comes only from audit levels: ok -> low, warning -> medium, error -> high.",
+    "Priorities are sorted by (level, days_left).",
+    "Auto deadlines: a date that is exactly present gives 'detected'. 'entro il ... circa' gives to_verify with a date. Free text gives to_verify with no date. Contract expiration is detected.",
+    "Unconfirmed auto deadlines are absent from GET /api/reminders, and notify_days==[] in the DB, so _check_reminders never emails them. Confirm without a date returns 400. PATCH with a date, then confirm, gives notify_days set and the deadline appears in the legacy list. A bad date returns 400.",
+    "Manual deadline linked to a client and a document shows in Client 360 and in the doc detail. Bad date -> 400. Unknown client -> 404. Delete hides it.",
+    "Legacy POST/GET/DELETE /api/reminders.",
+    "No auto-link when the P.IVA differs by 1 digit, or when only the name matches. Exact P.IVA ('IT ' prefix normalised) auto-links both invoices. Duplicate P.IVA or CF (case-insensitive) -> 409.",
+    "Manual assign, then unassign: the doc leaves Client 360 but stays in /api/analyses. An unlinked auto document is NOT re-linked by sync.",
+    "Client delete: GET -> 404; docs and deadlines keep existing with client_id null.",
+    "Audits with 2 and 3 docs: refs A/B/C and the 4 section keys; no 'page' or 'pagina' text. Duplicate ids -> 400. A single id -> 422.",
+    "ISOLATION: user B calling 14 endpoints with A's IDs gets 404 every time: documents/{aid}, candidates, assign, clients GET/PATCH/DELETE, deadlines PATCH/confirm/DELETE, audits GET and /deep, an audit of A's docs, assigning B's doc to A's client, and a deadline on A's analysis. A's data is unchanged. B's list endpoints contain none of A's data. Anonymous -> 401.",
+    "Deep audit with 0 credits -> 402: no credit taken, deep is None, and no deep_status lock is left behind.",
+    "Deep audit with simulated AI failure, run in-process: the real router is used with LlmChat monkeypatched to raise, so no app code changed. Result: 503, the credit is refunded (2 -> 2), and the lock is released.",
+    "Deep audit with 2 concurrent POSTs: [200, 409], credits -1 exactly. A third call returns the cached result with no deduction.",
+    "/api/packages amounts are 19/29/49/99/149/299.",
+    "Login OK; wrong password -> 401. /auth/me returns credits. /api/referral returns a code.",
+    "POST /api/payments/checkout returns a checkout.stripe.com URL (not paid).",
+    "Real /api/analyze: 200 in 8.8s, credits -1, appears in /api/analyses and /workspace/documents, and is auto-linked to Rossi SRL. It FAILED before my fix (see RCA) and passes after it.",
+    "New regression test: nested structured output still auto-links."
+  ],
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "POST /api/workspace/audits/{id}/deep", "issue": "deep_status='running' has no expiry. If the backend restarts or crashes during the AI call, that audit returns 409 'già in corso' forever. Consider storing a running_at timestamp and treating locks older than 2-3 minutes as stale."},
+      {"endpoint": "PATCH /api/workspace/clients/{cid}", "issue": "Changing piva or cf does not check for duplicates (POST returns 409, PATCH lets you create a duplicate). name='' is accepted, because there is no min_length on the patch."},
+      {"endpoint": "GET /api/workspace/documents, GET /clients", "issue": "These do not call _sync. A new analysis only gets auto-linked and receives deadlines after /overview, /deadlines or /sync runs. In the UI this is hidden because the Dashboard (overview) always loads first."},
+      {"endpoint": "_check_reminders (server.py:562)", "issue": "It does not filter on status/source explicitly. It is safe only because auto deadlines are created with notify_days=[] and only /confirm sets them. This works but is fragile; an explicit filter would be safer: {'$or':[{'source':{'$ne':'auto'}},{'status':'confirmed'}]}."},
+      {"endpoint": "POST /api/workspace/sync (also called by /overview and /deadlines)", "issue": "PERF: with 500 analyses, the FIRST sync takes 5.15s. This is N+1 queries: for each analysis, one find_one plus one insert per detected deadline, then an update_one. Later calls take about 0.2s (overview 0.21s, deadlines 0.22s but 192KB, documents 0.19s). Analyses beyond the 500 most recent are never synced or listed. Report only."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "AuditView deep findings", "issue": "AI sources render as 'Documento A ()' with empty parentheses, because AI sources have no filename. The excerpts contain raw JSON fragments such as 'expiration_date\": \"01/12/2025'.", "selector": "[data-testid^='audit-deep-']", "priority": "LOW"},
+      {"component": "AuditView credits", "issue": "onCredits is still not passed from Workspace. The header credits badge only updates after a reload. The panel does show 'Crediti residui: N'.", "selector": "[data-testid='credits-badge']", "priority": "LOW"}
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Scadenze add/edit", "issues": ["Uses the browser's native <input type=date>, which shows 'mm/dd/yyyy' (US format) on an Italian UI. Consider the shadcn Calendar or Popover date picker, or a dd/mm/yyyy display."]},
+      {"screen": "Multi-Doc Audit", "issues": ["Field names are shown as raw keys (expiration_date, parties[0].name, reminders[0].date) instead of Italian labels.", "Comparing documents of different categories (invoice vs contract) shows 4 empty sections with no explanation, and Documento C (the only invoice among contracts) gets no findings."]},
+      {"screen": "Risk Dashboard", "issues": ["Grammar: '1 documenti senza cliente associato' should be singular ('1 documento')."]}
+    ]
+  },
+  "claims_homepage": "STILL PRESENT, not modified. App.js lines 305-310 (and the EN/ES/DE/FR copies at 339/373/407/441) still contain 4 named testimonials: 'Avv. Alessandro Rossi' with 'accurata al 99%' and '12 ore a settimana', plus 'Dott.ssa Elena Conti', 'Dott. Marco Bianchi' and 'Chiara Ferrari'. The 'azzerato gli errori' claim and the demo data (Fattura_128_2026.pdf, hero-demo) are also present. These are unverified claims and need a product/legal decision.",
+  "rca of the issue": "BUG (verified and fixed): a document freshly analysed by the AI was NOT auto-linked to a client whose P.IVA matched exactly. Reproduction: create client Rossi SRL with P.IVA 22222222222, then POST /api/analyze on an invoice image showing 'Cliente: Rossi SRL P.IVA IT22222222222'; then call /overview. Result: client_id stays null. Root cause: Gemini sometimes wraps the schema in the category key, returning result.structured = {\"invoice\": {\"supplier\":..., \"customer\":...}} instead of {\"supplier\":..., \"customer\":...}. core.subjects(), core.deadlines() and core.compare() read structured.supplier/customer/parties directly, so they found no subjects. This silently disabled auto-link, Client 360 registry extras and contract deadline detection, and made the Multi-Doc Audit compare only the 'invoice.' paths. It is intermittent: the previous iteration's real analyze returned a flat structure. Fix (minimal, deterministic, no schema or DB change): added core.structured(result), which unwraps {category: {...}} when it is the only key. It is used in subjects, deadlines, compare (flatten) and the contract date check. Verified: after the hot reload the same real analysis auto-linked (client_link=auto). Added regression test test_nested_structured_autolink.",
+  "test_report_links": ["/app/backend/tests/test_workspace_final_smoke.py", "/app/backend/tests/perf_workspace_sync.py", "/app/test_reports/pytest/pytest_final_smoke.xml"],
+  "action_items": [
+    "Review my fix in backend/workspace/core.py (structured() helper). Optionally also normalise result.structured at save time in /api/analyze.",
+    "Add an expiry to the deep_status lock (store running_at) so a crash cannot block an audit forever.",
+    "PATCH /clients: add the 409 duplicate check for piva/cf and min_length=1 for name.",
+    "Optional: add an explicit status/source filter in _check_reminders (belt and braces).",
+    "Optional UX: Italian field labels in the audit, hide the empty '()' in AI sources, pass onCredits to AuditView, use a dd/mm date picker, fix the singular/plural wording.",
+    "Product decision: the testimonials and the '99%' / '12 ore' claims are still on the homepage (not touched)."
+  ],
+  "critical_code_review_comments": [
+    "router.py _sync is N+1 (find_one, insert_one and update_one per analysis/deadline). This is fine at the current scale, but the first sync of 500 docs takes about 5s. A bulk_write would fix it.",
+    "_sync runs on every /overview and every /deadlines GET. Opening the Dashboard and then Scadenze runs it twice; at steady state it is cheap (about 0.2s).",
+    "The deep audit is correctly atomic now: a lock via find_one_and_update with deep None and status not running, an atomic $inc with a credits>0 guard, and refunds on HTTPException or AI exception. The cached deep result returns u.credits from the request start, which is fine.",
+    "Isolation is enforced everywhere through user_id filters in _analysis, _client and _own_deadline.",
+    "Client delete sets client_link.status='unlinked', which correctly prevents auto re-linking."
+  ],
+  "updated_files": ["/app/backend/workspace/core.py", "/app/backend/tests/test_workspace_final_smoke.py", "/app/backend/tests/perf_workspace_sync.py"],
+  "success_rate": {"backend": "100% after fix (21/21 non-AI plus 28/28 combined with test_workspace.py; real-AI run 20/21 before the fix, and the failing check was re-verified as fixed)", "frontend": "100% (all checked UI flows passed)"},
+  "test_credentials": "Fresh accounts test_smokea_*/test_smokeb_*/test_perf_*@example.com, password Test12345, created and deleted during the run. /app/memory/test_credentials.md was read.",
+  "seed_data_creation": "Synthetic TEST_ analyses were inserted into the DB for the test users only, and credits were set directly on the test users. Everything was cleaned up (0 test users left).",
+  "performance": "/area open (navigation until KPIs and priorities rendered): 1.33s desktop. With 4-5 docs: sync 0.20s, overview 0.18s, deadlines 0.15-0.18s, documents 0.17-0.19s. With 500 synthetic analyses: first sync 5.15s, then sync, overview, deadlines and documents each about 0.2s (deadlines payload 192KB). 500 reminders were created.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Run: cd /app/backend && SMOKE_REAL_AI=0 python -m pytest tests/test_workspace_final_smoke.py -n0. Use -n0 because the suite depends on order; pytest.ini forces xdist. SMOKE_REAL_AI=1 adds 2 real AI calls. KEEP_SMOKE_DATA=1 keeps user A in /tmp/smoke_A.json for UI testing. The server date is Oct 2026, so the test dates are relative. Perf probe: python tests/perf_workspace_sync.py 500."
+}

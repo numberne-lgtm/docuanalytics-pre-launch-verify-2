@@ -4,7 +4,7 @@ import { ws, errMsg } from "./api";
 const SECTIONS = [["consistent", "Coerenze", "lv-low"], ["differences", "Differenze", "lv-medium"], ["anomalies", "Possibili anomalie", "lv-high"], ["to_verify", "Da verificare", "lv-medium"]];
 
 const Sources = ({ values }) => (
-  <ul className="ws-src">{(values || []).map((v, i) => <li key={i}><b>{v.ref}</b> ({v.filename}): {v.value || v.excerpt}</li>)}</ul>
+  <ul className="ws-src">{(values || []).map((v, i) => <li key={i}><b>{v.ref}</b>{v.filename ? ` (${v.filename})` : ""}: {v.value || v.excerpt}</li>)}</ul>
 );
 
 export default function AuditView({ ids, auditId, onBack }) {
