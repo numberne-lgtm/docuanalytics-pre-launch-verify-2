@@ -69,3 +69,15 @@
 @media (max-width:420px){.ws-cal .rdp{--rdp-cell-size:34px}}
 .ws-credits{display:inline-flex;align-items:center;gap:.35rem;margin-left:auto;padding:.3rem .75rem;border:1px solid var(--border-color);border-radius:999px;font-size:.85rem;font-weight:600}
 .ws-credits + .btn{margin-left:0}
+
+.ws-notify{display:flex;flex-wrap:wrap;align-items:center;gap:.4rem;flex-basis:100%}
+.ws-chip{padding:.28rem .7rem;border-radius:999px;border:1px solid var(--border-color);background:transparent;color:inherit;font:inherit;font-size:.8rem;cursor:pointer;transition:background-color .15s,border-color .15s}
+.ws-chip:hover{border-color:#2f6bff}
+.ws-chip.on{background:#2f6bff;border-color:#2f6bff;color:#fff}
+.ws-dl-notify{font-size:.8rem}
+.ws-cal-export{margin-top:1.4rem;display:flex;flex-direction:column;gap:.6rem;align-items:flex-start}
+.ws-h4{font-size:.95rem;font-weight:700;margin:.6rem 0 0}
+.ws-feed-url{display:flex;flex-wrap:wrap;gap:.5rem;width:100%}
+.ws-feed-url .as-input{flex:1;min-width:220px;font-size:.8rem}
+.ws-ok{color:#4ade80;font-size:.85rem}
+.ws-cal-export .as-btn{display:inline-flex;align-items:center;gap:.4rem}

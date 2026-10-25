@@ -1,11 +1,14 @@
 """Workspace API: Cliente 360, Risk Dashboard, automatic deadlines (on existing reminders), Multi-Document Audit."""
 import json
 import uuid
+import hashlib
+import secrets
 import logging
 from datetime import datetime, timezone, timedelta
 from typing import Optional, List
 
 from fastapi import APIRouter, HTTPException, Request
+from fastapi.responses import Response
 from pydantic import BaseModel, Field
 
 from . import core
@@ -42,16 +45,28 @@ class DeadlineReq(BaseModel):
     kind: Optional[str] = "other"
     analysis_id: Optional[str] = None
     client_id: Optional[str] = None
+    notify_days: Optional[List[int]] = None
 
 
 class DeadlinePatch(BaseModel):
     label: Optional[str] = Field(None, max_length=200)
     due_date: Optional[str] = None
     kind: Optional[str] = None
+    notify_days: Optional[List[int]] = None
 
 
 class ConfirmReq(BaseModel):
     notify: bool = True
+    notify_days: Optional[List[int]] = None
+
+
+NOTIFY_CHOICES = (30, 15, 7, 3, 1, 0)
+
+
+def _notify(days):
+    if any(d not in NOTIFY_CHOICES for d in days):
+        raise HTTPException(400, "Giorni di avviso non validi.")
+    return sorted(set(days), reverse=True)
 
 
 class AuditReq(BaseModel):
@@ -122,7 +137,7 @@ def build_workspace_router(db, get_current_user, llm_key, default_notify_days) -
         dl = core.days_left(rm.get("due_date"))
         status = rm.get("status") or "confirmed"
         return {k: rm.get(k) for k in ("reminder_id", "label", "due_date", "raw_date", "kind", "analysis_id", "client_id",
-                                       "doc_type", "source", "notify_days")} | {
+                                       "doc_type", "source", "notify_days")} | {"notify_pref": rm.get("notify_pref"),
             "status": status, "days_left": dl, "kind_label": core.KIND_LABEL.get(rm.get("kind") or "other", "Scadenza"),
             "priority": core.deadline_priority(dl, status)}
 
@@ -323,7 +338,8 @@ def build_workspace_router(db, get_current_user, llm_key, default_notify_days) -
             await _client(u["user_id"], req.client_id)
         doc = {"reminder_id": str(uuid.uuid4()), "user_id": u["user_id"], "email": u["email"], "analysis_id": req.analysis_id,
                "client_id": req.client_id, "doc_type": "", "label": req.label.strip(), "due_date": iso, "kind": req.kind or "other",
-               "status": "confirmed", "source": "manual", "notify_days": list(default_notify_days), "sent": [], "active": True,
+               "status": "confirmed", "source": "manual", "sent": [], "active": True,
+               "notify_days": _notify(req.notify_days) if req.notify_days is not None else list(default_notify_days),
                "created_at": _now()}
         await db.reminders.insert_one(dict(doc))
         return _dl_out(doc)
@@ -337,8 +353,10 @@ def build_workspace_router(db, get_current_user, llm_key, default_notify_days) -
     @r.patch("/deadlines/{rid}")
     async def patch_deadline(rid: str, req: DeadlinePatch, request: Request):
         u = await _user(request)
-        await _own_deadline(u["user_id"], rid)
+        x = await _own_deadline(u["user_id"], rid)
         upd = {k: v for k, v in {"label": req.label, "kind": req.kind}.items() if v}
+        if req.notify_days is not None:
+            upd["notify_days" if (x.get("status") or "confirmed") == "confirmed" else "notify_pref"] = _notify(req.notify_days)
         if req.due_date is not None:
             iso, _ = core.parse_date(req.due_date)
             if not iso:
@@ -354,7 +372,7 @@ def build_workspace_router(db, get_current_user, llm_key, default_notify_days) -
         if not x.get("due_date"):
             raise HTTPException(400, "Inserisci prima una data certa.")
         await db.reminders.update_one({"reminder_id": rid}, {"$set": {
-            "status": "confirmed", "confirmed_at": _now(), "notify_days": list(default_notify_days) if req.notify else []}})
+            "status": "confirmed", "confirmed_at": _now(), "notify_days": (_notify(req.notify_days) if req.notify_days is not None else (x["notify_pref"] if x.get("notify_pref") is not None else list(default_notify_days))) if req.notify else []}})
         return _dl_out(await _own_deadline(u["user_id"], rid))
 
     @r.delete("/deadlines/{rid}")
@@ -429,12 +447,15 @@ def build_workspace_router(db, get_current_user, llm_key, default_notify_days) -
         except HTTPException:
             await _refund()
             raise
-        payload = [{"ref": d["ref"], "file": d["filename"], "tipo": d["doc_type"], "dati": d["result"].get("structured"),
+        payload = [{"ref": d["ref"], "file": d["filename"], "tipo": d["doc_type"], "dati": core.labeled(d["result"]),
                     "testo": (d["result"].get("full_text") or "")[:3000]} for d in docs]
         prompt = ("Confronta questi documenti di uno studio professionale e individua SOLO contraddizioni o differenze sostanziali "
                   "supportate dai dati forniti (es. modifiche tra versioni di contratto, clausole diverse, importi o date incoerenti). "
                   "Non inventare norme, rischi o dati. Rispondi SOLO con JSON: {\"findings\":[{\"level\":\"Possibile anomalia|Da verificare\","
                   "\"description\":\"...\",\"sources\":[{\"ref\":\"Documento A\",\"excerpt\":\"citazione breve\"}]}]}. "
+                  "Scrivi description ed excerpt in italiano chiaro per un professionista: usa le etichette dei dati così come fornite "
+                  "(es. 'Data di scadenza', 'Parte 1 › Nome'), mai nomi tecnici, chiavi JSON, underscore o parentesi quadre. "
+                  "L'excerpt deve essere una frase leggibile (es. 'Data di scadenza: 01/12/2025'). "
                   "Se non trovi nulla restituisci findings vuoto.\n\n" + json.dumps(payload, ensure_ascii=False)[:30000])
         try:
             from emergentintegrations.llm.chat import LlmChat, UserMessage
@@ -453,12 +474,59 @@ def build_workspace_router(db, get_current_user, llm_key, default_notify_days) -
         for f in data.get("findings", []) if isinstance(data, dict) else []:
             if not isinstance(f, dict):
                 continue
-            srcs = [x for x in f.get("sources") or [] if isinstance(x, dict) and x.get("ref") in refs]
+            srcs = [{"ref": x["ref"], "excerpt": core.clean_tech(x.get("excerpt"))[:400]}
+                    for x in f.get("sources") or [] if isinstance(x, dict) and x.get("ref") in refs]
             if srcs:
-                findings.append({"level": str(f.get("level", "Da verificare"))[:40], "description": str(f.get("description", ""))[:600], "sources": srcs})
+                findings.append({"level": str(f.get("level", "Da verificare"))[:40],
+                                 "description": core.clean_tech(f.get("description"))[:600], "sources": srcs})
         deep = {"findings": findings[:30], "model": "gemini-2.5-flash", "at": _now(), "disclaimer": "Risultati AI da verificare: non sostituiscono il professionista."}
         await db.multi_document_audits.update_one({"audit_id": audit_id}, {"$set": {"deep": deep}, "$unset": {"deep_status": ""}})
         u2 = await db.users.find_one({"user_id": u["user_id"]}, {"_id": 0, "credits": 1})
         return {"deep": deep, "credits": u2.get("credits", 0)}
+
+    async def _ics_for(uid):
+        clients = {c["client_id"]: c["name"] async for c in db.clients.find({"user_id": uid}, {"_id": 0, "client_id": 1, "name": 1})}
+        ev = []
+        async for x in db.reminders.find({"user_id": uid, "active": True, "due_date": {"$nin": [None, ""]},
+                                          "$or": [{"source": {"$ne": "auto"}}, {"status": "confirmed"}]}, {"_id": 0}).sort("due_date", 1):
+            desc = " · ".join(v for v in (core.KIND_LABEL.get(x.get("kind") or "other", ""), x.get("doc_type"),
+                                          f"Cliente: {clients[x['client_id']]}" if x.get("client_id") in clients else "") if v)
+            ev.append({**x, "description": f"{desc}\nDocuAnalytics AI — da verificare con il professionista."})
+        return Response(core.ics(ev, "DocuAnalytics — Scadenze"), media_type="text/calendar; charset=utf-8",
+                        headers={"Content-Disposition": 'attachment; filename="docuanalytics-scadenze.ics"', "Cache-Control": "no-store"})
+
+    @r.get("/calendar.ics")
+    async def calendar_download(request: Request):
+        u = await _user(request)
+        return await _ics_for(u["user_id"])
+
+    @r.get("/calendar/feed")
+    async def feed_status(request: Request):
+        u = await _user(request)
+        f = (await db.users.find_one({"user_id": u["user_id"]}, {"_id": 0, "calendar_feed": 1}) or {}).get("calendar_feed") or {}
+        return {"active": bool(f.get("hash")), "created_at": f.get("created_at")}
+
+    @r.post("/calendar/feed")
+    async def feed_create(request: Request):
+        u = await _user(request)
+        token = secrets.token_urlsafe(32)
+        await db.users.update_one({"user_id": u["user_id"]}, {"$set": {"calendar_feed": {
+            "hash": hashlib.sha256(token.encode()).hexdigest(), "created_at": _now()}}})
+        return {"token": token, "active": True}
+
+    @r.delete("/calendar/feed")
+    async def feed_revoke(request: Request):
+        u = await _user(request)
+        await db.users.update_one({"user_id": u["user_id"]}, {"$unset": {"calendar_feed": ""}})
+        return {"active": False}
+
+    @r.get("/feed/{token}.ics")
+    async def feed_public(token: str):
+        if len(token) < 40:
+            raise HTTPException(404, "Not found")
+        u = await db.users.find_one({"calendar_feed.hash": hashlib.sha256(token.encode()).hexdigest()}, {"_id": 0, "user_id": 1})
+        if not u:
+            raise HTTPException(404, "Not found")
+        return await _ics_for(u["user_id"])
 
     return r

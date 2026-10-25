@@ -1,6 +1,6 @@
 """Deterministic helpers for the workspace (Cliente 360, risk, deadlines, multi-doc audit). No AI here."""
 import re
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 
 DATE_RE = re.compile(r"\b(\d{1,2})[/.\-](\d{1,2})[/.\-](\d{4})\b|\b(\d{4})-(\d{2})-(\d{2})\b")
 DEADLINE_WORDS = {
@@ -226,3 +226,81 @@ def compare(docs: list) -> dict:
                 res["anomalies"].append({"type": "Data di scadenza precedente alla decorrenza", "subject": d["filename"],
                                          "values": [{**src(d), "value": f"decorrenza {s.get('effective_date')} / scadenza {s.get('expiration_date')}"}]})
     return res
+
+
+SEG = {
+    "supplier": "Fornitore", "customer": "Cliente", "name": "Nome", "piva": "P.IVA", "codice_fiscale": "Codice fiscale",
+    "address": "Indirizzo", "document": "Documento", "number": "Numero", "date": "Data", "type": "Tipo", "totals": "Totali",
+    "imponibile": "Imponibile", "imposta": "Imposta", "totale": "Totale", "vat_lines": "Riga IVA", "aliquota": "Aliquota",
+    "natura": "Natura IVA", "iban": "IBAN", "line_items": "Riga", "description": "Descrizione", "quantity": "Quantità",
+    "unit_price": "Prezzo unitario", "total": "Totale", "vat_rate": "Aliquota IVA", "taxpayer": "Contribuente",
+    "sections": "Sezione", "section": "Sezione", "entries": "Voce", "codice_tributo": "Codice tributo", "anno": "Anno",
+    "importo_debito": "Importo a debito", "importo_credito": "Importo a credito", "due_date": "Data di scadenza",
+    "total_debito": "Totale a debito", "total_credito": "Totale a credito", "saldo": "Saldo", "company": "Società",
+    "denominazione": "Denominazione", "rea": "REA", "pec": "PEC", "share_capital": "Capitale sociale",
+    "legal_form": "Forma giuridica", "registered_office": "Sede legale", "ateco_codes": "Codice ATECO", "code": "Codice",
+    "legal_representatives": "Legale rappresentante", "role": "Ruolo", "parties": "Parte", "piva_cf": "P.IVA / CF",
+    "effective_date": "Data di decorrenza", "expiration_date": "Data di scadenza", "duration": "Durata",
+    "penalty_clauses": "Clausola penale", "clause": "Clausola", "key_obligations": "Obbligo principale",
+    "reminders": "Promemoria", "label": "Descrizione", "currency": "Valuta",
+}
+_SEG_RE = re.compile(r"^(\w+)(?:\[(\d+)\])?$")
+_PATH_RE = re.compile(r"\b[a-z]+(?:_[a-z]+)*(?:\[\d+\])?(?:\.[a-z]+(?:_[a-z]+)*(?:\[\d+\])?)*\b")
+
+
+def field_label(path: str) -> str:
+    """'parties[0].name' -> 'Parte 1 › Nome'. Unknown keys are humanized."""
+    out = []
+    for seg in path.split("."):
+        m = _SEG_RE.match(seg)
+        if not m:
+            return path
+        base = SEG.get(m.group(1)) or m.group(1).replace("_", " ").strip().capitalize()
+        out.append(f"{base} {int(m.group(2)) + 1}" if m.group(2) is not None else base)
+    return " › ".join(out)
+
+
+def labeled(result: dict) -> dict:
+    """Structured data flattened with Italian labels (for AI prompts)."""
+    return {field_label(k): v for k, v in flatten(structured(result)).items()}
+
+
+def clean_tech(text: str) -> str:
+    """Replace leftover technical field names (snake_case, dotted, indexed) and JSON quoting with Italian labels."""
+    def rep(m):
+        p = m.group(0)
+        technical = "_" in p or "[" in p or ("." in p and all(_SEG_RE.match(s) for s in p.split(".")))
+        known = all((_SEG_RE.match(s) and _SEG_RE.match(s).group(1) in SEG) for s in p.split("."))
+        return field_label(p) if technical and (known or "_" in p) else p
+    t = re.sub(r'"([\w.\[\]]+)"\s*:\s*', lambda m: f"{m.group(1)}: ", str(text or ""))
+    t = _PATH_RE.sub(rep, t)
+    return t.replace('"', "").replace("{", "").replace("}", "").strip()
+
+
+def ics(events: list, name: str) -> str:
+    """Minimal RFC 5545 calendar with all-day events."""
+    def esc(s):
+        return str(s or "").replace("\\", "\\\\").replace(";", "\\;").replace(",", "\\,").replace("\n", "\\n")
+
+    def fold(line):
+        b, out = line.encode("utf-8"), []
+        while len(b) > 74:
+            cut = 74
+            while (b[cut] & 0xC0) == 0x80:
+                cut -= 1
+            out.append(b[:cut].decode("utf-8"))
+            b = b" " + b[cut:]
+        out.append(b.decode("utf-8"))
+        return "\r\n".join(out)
+
+    stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    lines = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//DocuAnalytics AI//Scadenze//IT", "CALSCALE:GREGORIAN",
+             "METHOD:PUBLISH", f"X-WR-CALNAME:{esc(name)}", "X-WR-TIMEZONE:Europe/Rome"]
+    for e in events:
+        d = date.fromisoformat(e["due_date"][:10])
+        nxt = date.fromordinal(d.toordinal() + 1)
+        lines += ["BEGIN:VEVENT", f"UID:{e['reminder_id']}@docuanalytics.online", f"DTSTAMP:{stamp}",
+                  f"DTSTART;VALUE=DATE:{d.strftime('%Y%m%d')}", f"DTEND;VALUE=DATE:{nxt.strftime('%Y%m%d')}",
+                  f"SUMMARY:{esc(e['label'])}", f"DESCRIPTION:{esc(e.get('description', ''))}", "TRANSP:TRANSPARENT", "END:VEVENT"]
+    lines.append("END:VCALENDAR")
+    return "\r\n".join(fold(x) for x in lines) + "\r\n"
