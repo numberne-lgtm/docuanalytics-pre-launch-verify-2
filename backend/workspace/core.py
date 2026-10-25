@@ -269,11 +269,17 @@ def clean_tech(text: str) -> str:
     """Replace leftover technical field names (snake_case, dotted, indexed) and JSON quoting with Italian labels."""
     def rep(m):
         p = m.group(0)
+        before, after = m.string[max(0, m.start() - 3):m.start()], m.string[m.end():m.end() + 3]
+        if "@" in before or "@" in after[:1] or "/" in before or after.startswith("://"):
+            return p
+        p = re.sub(r"^(structured|dati)\.", "", p)
         technical = "_" in p or "[" in p or ("." in p and all(_SEG_RE.match(s) for s in p.split(".")))
         known = all((_SEG_RE.match(s) and _SEG_RE.match(s).group(1) in SEG) for s in p.split("."))
         return field_label(p) if technical and (known or "_" in p) else p
     t = re.sub(r'"([\w.\[\]]+)"\s*:\s*', lambda m: f"{m.group(1)}: ", str(text or ""))
-    t = _PATH_RE.sub(rep, t)
+    t = re.sub(r"\S+@\S+|https?://\S+", lambda m: "\0" + m.group(0).replace("_", "\1") + "\0", t)
+    t = _PATH_RE.sub(rep, t).replace("\1", "_").replace("\0", "")
+    t = re.sub(r'\[\s*"?([^\[\]"]*?)"?\s*\]', r"\1", t)
     return t.replace('"', "").replace("{", "").replace("}", "").strip()
 
 

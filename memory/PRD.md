@@ -316,3 +316,10 @@ IMPLEMENTATO E TESTATO (19/19 backend + frontend E2E, 100%):
 - Audit field labels in Italian via fieldLabel()/SEG map in workspace/api.js; unknown keys auto-humanized.
 - Deadlines date input: DateField.jsx (Radix Popover + react-day-picker with own CSS, Italian locale, gg/mm/aaaa, Monday start, re-click keeps date). NOTE: Tailwind is NOT active in this project — shadcn components need plain CSS.
 - Report: /app/test_reports/iteration_25.json + post-fix screenshot check (desktop/mobile).
+
+## 2026-10-25 — Notify days, calendar export, clean AI wording (PREVIEW ONLY, no deploy)
+- Per-deadline email days: chips 30/15/7/3/1/0 (NOTIFY_CHOICES); unconfirmed auto deadlines store notify_pref (never emailed), applied on confirm. Past-date confirm asks confirmation.
+- Calendar: GET /api/workspace/calendar.ics (auth); private feed POST/GET/DELETE /api/workspace/calendar/feed, public GET /api/workspace/feed/{token}.ics. Token secrets.token_urlsafe(32), stored only as sha256 in users.calendar_feed; regenerate revokes old. Only confirmed/manual deadlines exported.
+- Deep audit: AI receives Italian-labeled data (core.labeled), outputs cleaned by core.clean_tech (protects emails/URLs).
+- Tests: iteration_26.json, backend/tests/test_calendar_notify.py (11/11).
+- Open: 1 smoke-suite real-AI auto-link check failed once in iter26 (AI-output variance suspected, not investigated).

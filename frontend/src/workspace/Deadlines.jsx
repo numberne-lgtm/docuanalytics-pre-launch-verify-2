@@ -38,7 +38,7 @@ function Row({ d, onChanged }) {
         <span className={`ws-tag st-${d.status}`} data-testid={`deadline-status-${d.reminder_id}`}>{d.status === "to_verify" ? "DA VERIFICARE" : d.status === "detected" ? "Rilevata" : "Confermata"}</span>
       </div>
       <div className="ws-dl-actions">
-        {d.status !== "confirmed" && <button className="as-btn" onClick={() => run(ws.post(`/deadlines/${d.reminder_id}/confirm`, { notify: true, notify_days: days }))} data-testid={`deadline-confirm-${d.reminder_id}`}>Conferma + promemoria</button>}
+        {d.status !== "confirmed" && <button className="as-btn" onClick={() => (d.days_left == null || d.days_left >= 0 || window.confirm("Questa data è già passata: nessun promemoria email potrà partire. Confermare comunque?")) && run(ws.post(`/deadlines/${d.reminder_id}/confirm`, { notify: true, notify_days: days }))} data-testid={`deadline-confirm-${d.reminder_id}`}>Conferma + promemoria</button>}
         <button className="as-btn" onClick={() => setEdit(!edit)} data-testid={`deadline-edit-${d.reminder_id}`}>Modifica</button>
         <button className="as-btn" onClick={() => window.confirm("Eliminare questa scadenza?") && run(ws.del(`/deadlines/${d.reminder_id}`))} data-testid={`deadline-delete-${d.reminder_id}`}>Elimina</button>
       </div>

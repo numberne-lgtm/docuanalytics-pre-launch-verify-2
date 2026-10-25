@@ -1,0 +1,36 @@
+{
+  "summary": "Iteration 26 tested the 3 new /area features: chips to pick reminder days for each deadline, exporting deadlines to a calendar (.ics download plus a private subscription link), and Italian-only wording in the deep AI audit. Backend: new pytest test_calendar_notify.py, 11/11 passed. Frontend: Playwright E2E on desktop 1920 and mobile 390. All requested flows work. The deep audit used 1 real AI call (credits went from 5 to 4). Its 4 findings were in clear Italian with labels like 'Data di scadenza', 'Parte 1 › Nome' and 'Clausola penale 1 › Descrizione'. No snake_case, brackets, quotes or braces appeared. While re-running the old smoke suite I accidentally made 1 extra real AI call (/api/analyze). Its only failure is an AI-dependent auto-link check and has nothing to do with these features.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "core.clean_tech", "issue": "Damages emails, PEC addresses and URLs that contain an underscore: 'info@verdi_spa.it' becomes 'info@Verdi spa › It'. Excerpts that quote a PEC or email can be corrupted."},
+      {"endpoint": "core.clean_tech", "issue": "Leaves square brackets in some cases. '[\"Documento A\"]' becomes '[Documento A]'. 'structured.parties[1].role' is not converted because 'structured' is not in SEG and the path has no underscore."},
+      {"endpoint": "POST /api/workspace/deadlines/{rid}/confirm", "issue": "Lets you confirm a deadline whose date is already past (the test one was 173 days ago). It becomes confirmed and overdue, and its reminders can never be sent. A warning would help the user."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "CalendarExport", "issues": ["copy(): if navigator.clipboard is missing (e.g. a non-secure context) nothing happens and the user gets no feedback; writeText rejections are not caught", "download(): URL.revokeObjectURL runs right after a.click(); older Safari/Firefox can cancel the download. Delay it with setTimeout"]}
+    ]
+  },
+  "test_report_links": ["/app/backend/tests/test_calendar_notify.py", "/app/backend/tests/seed_iter26_ui.py", "/app/test_reports/pytest/pytest_iter26.xml"],
+  "action_items": [
+    "Optional: in clean_tech, skip tokens inside emails/URLs (e.g. ignore matches next to '@' or '://') and strip leftover [ ] around refs",
+    "Optional: warn or block when confirming a deadline whose date has passed",
+    "Optional: add clipboard fallback/error handling and delay revokeObjectURL in CalendarExport"
+  ],
+  "critical_code_review_comments": [
+    "Under React StrictMode (dev), AuditView's useEffect POSTs /audits twice, so each comparison makes 2 audit docs (seen in the DB). Production builds are not affected, but a guard would keep the dev DB clean",
+    "_check_reminders sends only when days_left == d exactly. If the 12-hour loop misses a day (e.g. downtime), that reminder is skipped for good (pre-existing behaviour)",
+    "GET /feed/{token}.ics looks users up by calendar_feed.hash with no index. Add a sparse index on users.calendar_feed.hash"
+  ],
+  "updated_files": ["/app/backend/tests/test_calendar_notify.py", "/app/backend/tests/seed_iter26_ui.py"],
+  "success_rate": {"backend": "100% (11/11 new tests); old smoke suite 21/22, the 1 failure is an AI-dependent auto-link check unrelated to this feature", "frontend": "100%"},
+  "seed_data_creation": "seed_iter26_ui.py seeded a test_iter26_* user with 2 TEST_ contracts and 1 auto to_verify reminder; it has been cleaned. The pytest fixtures delete their own users.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Verified in the UI: add form chips (default 30,7,1; toggling to 15+0 shows 'avvisi: 15 gg prima, il giorno stesso'; the form resets to the defaults after adding); edit chips show the saved days; deselecting all shows 'nessun avviso email'; on an auto detected/to_verify deadline, edit saves notify_pref (notify_days stays []), it stays out of /api/reminders, and confirm applies the pref; invalid day 5 returns 400. Download docuanalytics-scadenze.ics leaves out unconfirmed auto deadlines; ICS escaping, CRLF and line folding pass. Subscription link: create gives a 43-char token and works without auth; regenerate asks for confirmation and the old link returns 404; revoke returns 404; only the sha256 hash is stored; random token returns 404; calendar.ics without auth returns 401; the URL is not shown again after a reload (by design). Mobile 390: no horizontal overflow, chips wrap onto 2 rows, URL box fits. window.confirm guards the deep audit button, so Playwright needs a dialog handler that accepts it.",
+  "test_credentials": "Fresh users registered via POST /api/auth/register (test_iter26_*@example.com / Test12345), then cleaned up"
+}

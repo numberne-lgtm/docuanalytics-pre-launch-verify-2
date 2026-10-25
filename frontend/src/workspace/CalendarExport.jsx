@@ -18,7 +18,7 @@ export default function CalendarExport() {
       .then(({ data }) => {
         const a = document.createElement("a");
         a.href = URL.createObjectURL(data); a.download = "docuanalytics-scadenze.ics"; a.click();
-        URL.revokeObjectURL(a.href);
+        setTimeout(() => URL.revokeObjectURL(a.href), 4000);
       }).catch((e) => setErr(errMsg(e)));
   };
   const create = () => {
@@ -31,7 +31,9 @@ export default function CalendarExport() {
     if (!window.confirm("Disattivare il link? I calendari abbonati non riceveranno più aggiornamenti.")) return;
     ws.del("/calendar/feed").then(() => { setFeed({ active: false }); setUrl(""); setMsg("Link disattivato."); }).catch((e) => setErr(errMsg(e)));
   };
-  const copy = () => navigator.clipboard?.writeText(url).then(() => setMsg("Link copiato."));
+  const copy = () => (navigator.clipboard ? navigator.clipboard.writeText(url) : Promise.reject())
+    .then(() => setMsg("Link copiato."))
+    .catch(() => setMsg("Copia non disponibile: seleziona il link e copialo manualmente."));
 
   return (
     <section className="ws-card ws-cal-export" data-testid="calendar-export">
