@@ -1460,6 +1460,8 @@ app.include_router(build_assistant_router(db, PACKAGES, FREE_CREDITS, REFERRAL_B
                                           _client_ip, ADMIN_TOKEN, EMERGENT_LLM_KEY, get_current_user))
 from privacy_admin.router import build_privacy_router
 app.include_router(build_privacy_router(db, ADMIN_TOKEN))
+from workspace.router import build_workspace_router
+app.include_router(build_workspace_router(db, get_current_user, EMERGENT_LLM_KEY, REMINDER_DEFAULT_DAYS))
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,

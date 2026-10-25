@@ -1,0 +1,425 @@
+"""Workspace API: Cliente 360, Risk Dashboard, automatic deadlines (on existing reminders), Multi-Document Audit."""
+import json
+import uuid
+import logging
+from datetime import datetime, timezone
+from typing import Optional, List
+
+from fastapi import APIRouter, HTTPException, Request
+from pydantic import BaseModel, Field
+
+from . import core
+
+logger = logging.getLogger("docuanalytics.workspace")
+RISK_ORDER = {"high": 0, "medium": 1, "low": 2}
+
+
+def _now():
+    return datetime.now(timezone.utc).isoformat()
+
+
+class ClientReq(BaseModel):
+    name: str = Field(..., min_length=1, max_length=200)
+    piva: Optional[str] = ""
+    cf: Optional[str] = ""
+    from_analysis_id: Optional[str] = None
+
+
+class ClientPatch(BaseModel):
+    name: Optional[str] = Field(None, max_length=200)
+    piva: Optional[str] = None
+    cf: Optional[str] = None
+    notes: Optional[str] = Field(None, max_length=2000)
+
+
+class AssignReq(BaseModel):
+    client_id: Optional[str] = None
+
+
+class DeadlineReq(BaseModel):
+    label: str = Field(..., min_length=1, max_length=200)
+    due_date: str
+    kind: Optional[str] = "other"
+    analysis_id: Optional[str] = None
+    client_id: Optional[str] = None
+
+
+class DeadlinePatch(BaseModel):
+    label: Optional[str] = Field(None, max_length=200)
+    due_date: Optional[str] = None
+    kind: Optional[str] = None
+
+
+class ConfirmReq(BaseModel):
+    notify: bool = True
+
+
+class AuditReq(BaseModel):
+    analysis_ids: List[str] = Field(..., min_length=2, max_length=10)
+
+
+def build_workspace_router(db, get_current_user, llm_key, default_notify_days) -> APIRouter:
+    r = APIRouter(prefix="/api/workspace")
+
+    async def _user(request: Request) -> dict:
+        u = await get_current_user(request)
+        if not u.get("email"):
+            raise HTTPException(403, "Area riservata agli utenti registrati.")
+        return u
+
+    async def _analysis(uid, aid):
+        a = await db.analyses.find_one({"analysis_id": aid, "user_id": uid}, {"_id": 0})
+        if not a:
+            raise HTTPException(404, "Documento non trovato")
+        return a
+
+    async def _client(uid, cid):
+        c = await db.clients.find_one({"client_id": cid, "user_id": uid}, {"_id": 0})
+        if not c:
+            raise HTTPException(404, "Cliente non trovato")
+        return c
+
+    async def _link(uid, aid, cid, how):
+        await db.analyses.update_one({"analysis_id": aid, "user_id": uid},
+                                     {"$set": {"client_id": cid, "client_link": {"status": how, "at": _now()}}})
+        await db.reminders.update_many({"analysis_id": aid, "user_id": uid}, {"$set": {"client_id": cid}})
+
+    async def _sync(u):
+        uid = u["user_id"]
+        clients = [c async for c in db.clients.find({"user_id": uid}, {"_id": 0})]
+        async for a in db.analyses.find({"user_id": uid}, {"_id": 0}).sort("created_at", -1).limit(500):
+            res = a.get("result") or {}
+            upd = {}
+            if not a.get("ws_synced"):
+                upd.update({"ws_synced": True, "risk_level": core.doc_risk(res)})
+                for d in core.deadlines(res):
+                    key = {"user_id": uid, "analysis_id": a["analysis_id"], "kind": d["kind"],
+                           "due_date": d["due_date"] or "", "raw_date": d["raw_date"]}
+                    if await db.reminders.find_one(key):
+                        continue
+                    await db.reminders.insert_one({
+                        **key, "reminder_id": str(uuid.uuid4()), "email": u["email"], "label": d["label"],
+                        "doc_type": res.get("doc_type") or a.get("doc_type") or "", "status": d["status"],
+                        "source": "auto", "client_id": a.get("client_id"), "notify_days": [], "sent": [],
+                        "active": True, "created_at": _now()})
+            if not a.get("client_id") and not (a.get("client_link") or {}).get("status") == "unlinked":
+                hits = {c["client_id"] for s in core.subjects(res) if (c := core.match_client(s, clients))}
+                if len(hits) == 1:
+                    await _link(uid, a["analysis_id"], hits.pop(), "auto")
+            if upd:
+                await db.analyses.update_one({"analysis_id": a["analysis_id"]}, {"$set": upd})
+
+    def _doc_out(a, clients_by_id):
+        res = a.get("result") or {}
+        return {"analysis_id": a["analysis_id"], "filename": a.get("filename"), "doc_type": res.get("doc_type") or a.get("doc_type"),
+                "category": res.get("category", "other"), "summary": res.get("summary", ""), "created_at": a.get("created_at"),
+                "risk_level": a.get("risk_level") or core.doc_risk(res),
+                "flags": [x for x in res.get("audit") or [] if x.get("level") in ("warning", "error")],
+                "client_id": a.get("client_id"), "client_name": (clients_by_id.get(a.get("client_id")) or {}).get("name"),
+                "client_link": (a.get("client_link") or {}).get("status")}
+
+    def _dl_out(rm):
+        dl = core.days_left(rm.get("due_date"))
+        status = rm.get("status") or "confirmed"
+        return {k: rm.get(k) for k in ("reminder_id", "label", "due_date", "raw_date", "kind", "analysis_id", "client_id",
+                                       "doc_type", "source", "notify_days")} | {
+            "status": status, "days_left": dl, "kind_label": core.KIND_LABEL.get(rm.get("kind") or "other", "Scadenza"),
+            "priority": core.deadline_priority(dl, status)}
+
+    async def _deadlines(uid, flt=None):
+        q = {"user_id": uid, "active": True, **(flt or {})}
+        return [_dl_out(x) async for x in db.reminders.find(q, {"_id": 0}).sort("due_date", 1)]
+
+    def _buckets(dls):
+        b = {"today": [], "next7": [], "next30": [], "overdue": [], "to_verify": [], "later": []}
+        for d in dls:
+            dl = d["days_left"]
+            if d["status"] == "to_verify" or dl is None:
+                b["to_verify"].append(d)
+            elif dl < 0:
+                b["overdue"].append(d)
+            elif dl == 0:
+                b["today"].append(d)
+            elif dl <= 7:
+                b["next7"].append(d)
+            elif dl <= 30:
+                b["next30"].append(d)
+            else:
+                b["later"].append(d)
+        return b
+
+    @r.post("/sync")
+    async def sync(request: Request):
+        u = await _user(request)
+        await _sync(u)
+        return {"ok": True}
+
+    @r.get("/overview")
+    async def overview(request: Request):
+        u = await _user(request)
+        uid = u["user_id"]
+        await _sync(u)
+        clients = {c["client_id"]: c async for c in db.clients.find({"user_id": uid}, {"_id": 0})}
+        docs = [_doc_out(a, clients) async for a in db.analyses.find({"user_id": uid}, {"_id": 0}).sort("created_at", -1).limit(500)]
+        dls = await _deadlines(uid)
+        b = _buckets(dls)
+        prio = []
+        for d in docs:
+            if d["risk_level"] != "low":
+                prio.append({"type": "document", "level": d["risk_level"], "analysis_id": d["analysis_id"], "client_id": d["client_id"],
+                             "client_name": d["client_name"], "title": d["doc_type"] or d["filename"],
+                             "detail": (d["flags"][0]["message"] if d["flags"] else "Da verificare")[:160], "days_left": None})
+        for x in b["overdue"] + b["today"] + b["next7"] + b["next30"] + b["to_verify"]:
+            lvl = "high" if (x["days_left"] is not None and x["days_left"] <= 7 and x["status"] != "to_verify") else "medium"
+            prio.append({"type": "deadline", "level": lvl, "analysis_id": x["analysis_id"], "client_id": x["client_id"],
+                         "client_name": (clients.get(x["client_id"]) or {}).get("name"), "title": x["label"],
+                         "detail": x["kind_label"] + (" — da verificare" if x["status"] == "to_verify" else ""),
+                         "days_left": x["days_left"], "reminder_id": x["reminder_id"]})
+        prio.sort(key=lambda p: (RISK_ORDER[p["level"]], p["days_left"] if p["days_left"] is not None else 9999))
+        return {"counts": {"documents": len(docs), "no_issues": sum(d["risk_level"] == "low" for d in docs),
+                           "to_verify": sum(d["risk_level"] == "medium" for d in docs),
+                           "high": sum(d["risk_level"] == "high" for d in docs),
+                           "upcoming": len(b["today"]) + len(b["next7"]) + len(b["next30"]), "overdue": len(b["overdue"]),
+                           "deadlines_to_verify": len(b["to_verify"]), "clients": len(clients),
+                           "unassigned": sum(not d["client_id"] for d in docs)},
+                "priorities": prio[:30]}
+
+    @r.get("/documents")
+    async def documents(request: Request):
+        u = await _user(request)
+        clients = {c["client_id"]: c async for c in db.clients.find({"user_id": u["user_id"]}, {"_id": 0})}
+        return {"documents": [_doc_out(a, clients) async for a in db.analyses.find({"user_id": u["user_id"]}, {"_id": 0}).sort("created_at", -1).limit(500)]}
+
+    @r.get("/documents/{aid}")
+    async def document(aid: str, request: Request):
+        u = await _user(request)
+        a = await _analysis(u["user_id"], aid)
+        res = a.get("result") or {}
+        clients = {c["client_id"]: c async for c in db.clients.find({"user_id": u["user_id"]}, {"_id": 0})}
+        return {**_doc_out(a, clients), "fields": res.get("fields") or [], "audit": res.get("audit") or [],
+                "deadlines": await _deadlines(u["user_id"], {"analysis_id": aid})}
+
+    @r.get("/documents/{aid}/candidates")
+    async def candidates(aid: str, request: Request):
+        u = await _user(request)
+        a = await _analysis(u["user_id"], aid)
+        clients = [c async for c in db.clients.find({"user_id": u["user_id"]}, {"_id": 0})]
+        out = []
+        for i, s in enumerate(core.subjects(a.get("result") or {})):
+            m = core.match_client(s, clients)
+            out.append({**s, "index": i, "match": {"client_id": m["client_id"], "name": m["name"]} if m else None})
+        return {"subjects": out, "current_client_id": a.get("client_id")}
+
+    @r.post("/documents/{aid}/assign")
+    async def assign(aid: str, req: AssignReq, request: Request):
+        u = await _user(request)
+        await _analysis(u["user_id"], aid)
+        if req.client_id:
+            await _client(u["user_id"], req.client_id)
+            await _link(u["user_id"], aid, req.client_id, "manual")
+        else:
+            await db.analyses.update_one({"analysis_id": aid, "user_id": u["user_id"]},
+                                         {"$set": {"client_id": None, "client_link": {"status": "unlinked", "at": _now()}}})
+            await db.reminders.update_many({"analysis_id": aid, "user_id": u["user_id"]}, {"$set": {"client_id": None}})
+        return {"ok": True}
+
+    @r.get("/clients")
+    async def list_clients(request: Request):
+        u = await _user(request)
+        uid = u["user_id"]
+        docs = [a async for a in db.analyses.find({"user_id": uid, "client_id": {"$ne": None}}, {"_id": 0, "client_id": 1, "risk_level": 1, "result.audit": 1})]
+        out = []
+        async for c in db.clients.find({"user_id": uid}, {"_id": 0}).sort("name", 1):
+            mine = [a for a in docs if a.get("client_id") == c["client_id"]]
+            lv = min((a.get("risk_level") or core.doc_risk(a.get("result") or {}) for a in mine), key=lambda x: RISK_ORDER[x], default="low")
+            out.append({**c, "documents": len(mine), "risk_level": lv})
+        return {"clients": out}
+
+    @r.post("/clients")
+    async def create_client(req: ClientReq, request: Request):
+        u = await _user(request)
+        uid = u["user_id"]
+        piva, cf = core.norm_id(req.piva), core.norm_id(req.cf)
+        for k, v in (("piva", piva), ("cf", cf)):
+            if v and await db.clients.find_one({"user_id": uid, k: v}):
+                raise HTTPException(409, "Esiste già un cliente con questo identificativo.")
+        extra = {}
+        if req.from_analysis_id:
+            a = await _analysis(uid, req.from_analysis_id)
+            for s in core.subjects(a.get("result") or {}):
+                if (piva and s["piva"] == piva) or (cf and s["cf"] == cf) or core.norm_name(s["name"]) == core.norm_name(req.name):
+                    extra = s.get("extra") or {}
+                    break
+        c = {"client_id": str(uuid.uuid4()), "user_id": uid, "name": req.name.strip(), "piva": piva, "cf": cf,
+             "registry": extra, "notes": "", "created_at": _now()}
+        await db.clients.insert_one(dict(c))
+        if req.from_analysis_id:
+            await _link(uid, req.from_analysis_id, c["client_id"], "manual")
+        await _sync(u)
+        return c
+
+    @r.get("/clients/{cid}")
+    async def client_360(cid: str, request: Request):
+        u = await _user(request)
+        uid = u["user_id"]
+        c = await _client(uid, cid)
+        docs_raw = [a async for a in db.analyses.find({"user_id": uid, "client_id": cid}, {"_id": 0}).sort("created_at", -1)]
+        docs = [_doc_out(a, {cid: c}) for a in docs_raw]
+        registry = dict(c.get("registry") or {})
+        for a in docs_raw:
+            for s in core.subjects(a.get("result") or {}):
+                if s.get("extra") and ((c["piva"] and s["piva"] == c["piva"]) or (c["cf"] and s["cf"] == c["cf"])):
+                    registry = {**s["extra"], **registry}
+        risks = [{"analysis_id": d["analysis_id"], "doc_type": d["doc_type"], "filename": d["filename"], **f}
+                 for d in docs for f in d["flags"]]
+        dls = await _deadlines(uid, {"client_id": cid})
+        activity = sorted([{"at": d["created_at"], "text": f"Documento analizzato: {d['doc_type'] or d['filename']}", "analysis_id": d["analysis_id"]} for d in docs]
+                          + [{"at": c["created_at"], "text": "Cliente creato"}], key=lambda x: x["at"] or "", reverse=True)
+        lv = min((d["risk_level"] for d in docs), key=lambda x: RISK_ORDER[x], default="low")
+        if any(d["days_left"] is not None and d["days_left"] < 0 for d in dls):
+            lv = "high"
+        return {"client": {**c, "registry": registry}, "risk_level": lv, "documents": docs, "risks": risks,
+                "deadlines": dls, "to_verify": [d for d in docs if d["risk_level"] == "medium"], "activity": activity[:50]}
+
+    @r.patch("/clients/{cid}")
+    async def patch_client(cid: str, req: ClientPatch, request: Request):
+        u = await _user(request)
+        await _client(u["user_id"], cid)
+        upd = {k: (core.norm_id(v) if k in ("piva", "cf") else v.strip()) for k, v in req.model_dump().items() if v is not None}
+        if upd:
+            await db.clients.update_one({"client_id": cid, "user_id": u["user_id"]}, {"$set": upd})
+        return await _client(u["user_id"], cid)
+
+    @r.get("/deadlines")
+    async def deadlines(request: Request):
+        u = await _user(request)
+        await _sync(u)
+        return {"buckets": _buckets(await _deadlines(u["user_id"]))}
+
+    @r.post("/deadlines")
+    async def create_deadline(req: DeadlineReq, request: Request):
+        u = await _user(request)
+        iso, _ = core.parse_date(req.due_date)
+        if not iso:
+            raise HTTPException(400, "Data non valida.")
+        if req.analysis_id:
+            await _analysis(u["user_id"], req.analysis_id)
+        if req.client_id:
+            await _client(u["user_id"], req.client_id)
+        doc = {"reminder_id": str(uuid.uuid4()), "user_id": u["user_id"], "email": u["email"], "analysis_id": req.analysis_id,
+               "client_id": req.client_id, "doc_type": "", "label": req.label.strip(), "due_date": iso, "kind": req.kind or "other",
+               "status": "confirmed", "source": "manual", "notify_days": list(default_notify_days), "sent": [], "active": True,
+               "created_at": _now()}
+        await db.reminders.insert_one(dict(doc))
+        return _dl_out(doc)
+
+    async def _own_deadline(uid, rid):
+        x = await db.reminders.find_one({"reminder_id": rid, "user_id": uid, "active": True}, {"_id": 0})
+        if not x:
+            raise HTTPException(404, "Scadenza non trovata")
+        return x
+
+    @r.patch("/deadlines/{rid}")
+    async def patch_deadline(rid: str, req: DeadlinePatch, request: Request):
+        u = await _user(request)
+        await _own_deadline(u["user_id"], rid)
+        upd = {k: v for k, v in {"label": req.label, "kind": req.kind}.items() if v}
+        if req.due_date is not None:
+            iso, _ = core.parse_date(req.due_date)
+            if not iso:
+                raise HTTPException(400, "Data non valida.")
+            upd.update({"due_date": iso, "sent": []})
+        await db.reminders.update_one({"reminder_id": rid}, {"$set": {**upd, "edited_at": _now()}})
+        return _dl_out(await _own_deadline(u["user_id"], rid))
+
+    @r.post("/deadlines/{rid}/confirm")
+    async def confirm_deadline(rid: str, req: ConfirmReq, request: Request):
+        u = await _user(request)
+        x = await _own_deadline(u["user_id"], rid)
+        if not x.get("due_date"):
+            raise HTTPException(400, "Inserisci prima una data certa.")
+        await db.reminders.update_one({"reminder_id": rid}, {"$set": {
+            "status": "confirmed", "confirmed_at": _now(), "notify_days": list(default_notify_days) if req.notify else []}})
+        return _dl_out(await _own_deadline(u["user_id"], rid))
+
+    @r.delete("/deadlines/{rid}")
+    async def delete_deadline(rid: str, request: Request):
+        u = await _user(request)
+        await _own_deadline(u["user_id"], rid)
+        await db.reminders.update_one({"reminder_id": rid}, {"$set": {"active": False, "removed_at": _now()}})
+        return {"ok": True}
+
+    async def _audit_docs(uid, ids):
+        docs = []
+        for i, aid in enumerate(dict.fromkeys(ids)):
+            a = await _analysis(uid, aid)
+            res = a.get("result") or {}
+            docs.append({"ref": f"Documento {chr(65 + i)}", "analysis_id": aid, "filename": a.get("filename"),
+                         "category": res.get("category", "other"), "doc_type": res.get("doc_type"), "result": res})
+        if len(docs) < 2:
+            raise HTTPException(400, "Seleziona almeno 2 documenti diversi.")
+        return docs
+
+    @r.post("/audits")
+    async def create_audit(req: AuditReq, request: Request):
+        u = await _user(request)
+        docs = await _audit_docs(u["user_id"], req.analysis_ids)
+        out = core.compare(docs)
+        audit = {"audit_id": str(uuid.uuid4()), "user_id": u["user_id"], "created_at": _now(),
+                 "documents": [{k: d[k] for k in ("ref", "analysis_id", "filename", "category", "doc_type")} for d in docs],
+                 "deterministic": out, "deep": None, "note": "Pagina/sezione non disponibili: i dati provengono dall'estrazione strutturata."}
+        await db.multi_document_audits.insert_one(dict(audit))
+        audit.pop("user_id")
+        return audit
+
+    @r.get("/audits")
+    async def list_audits(request: Request):
+        u = await _user(request)
+        return {"audits": [a async for a in db.multi_document_audits.find({"user_id": u["user_id"]}, {"_id": 0, "user_id": 0, "deterministic": 0, "deep": 0}).sort("created_at", -1).limit(30)]}
+
+    @r.get("/audits/{audit_id}")
+    async def get_audit(audit_id: str, request: Request):
+        u = await _user(request)
+        a = await db.multi_document_audits.find_one({"audit_id": audit_id, "user_id": u["user_id"]}, {"_id": 0, "user_id": 0})
+        if not a:
+            raise HTTPException(404, "Confronto non trovato")
+        return a
+
+    @r.post("/audits/{audit_id}/deep")
+    async def deep_audit(audit_id: str, request: Request):
+        u = await _user(request)
+        a = await db.multi_document_audits.find_one({"audit_id": audit_id, "user_id": u["user_id"]}, {"_id": 0})
+        if not a:
+            raise HTTPException(404, "Confronto non trovato")
+        if a.get("deep"):
+            return {"deep": a["deep"], "credits": u.get("credits", 0)}
+        if u.get("credits", 0) <= 0:
+            raise HTTPException(402, "Crediti insufficienti per l'analisi approfondita.")
+        docs = await _audit_docs(u["user_id"], [d["analysis_id"] for d in a["documents"]])
+        payload = [{"ref": d["ref"], "file": d["filename"], "tipo": d["doc_type"], "dati": d["result"].get("structured"),
+                    "testo": (d["result"].get("full_text") or "")[:3000]} for d in docs]
+        prompt = ("Confronta questi documenti di uno studio professionale e individua SOLO contraddizioni o differenze sostanziali "
+                  "supportate dai dati forniti (es. modifiche tra versioni di contratto, clausole diverse, importi o date incoerenti). "
+                  "Non inventare norme, rischi o dati. Rispondi SOLO con JSON: {\"findings\":[{\"level\":\"Possibile anomalia|Da verificare\","
+                  "\"description\":\"...\",\"sources\":[{\"ref\":\"Documento A\",\"excerpt\":\"citazione breve\"}]}]}. "
+                  "Se non trovi nulla restituisci findings vuoto.\n\n" + json.dumps(payload, ensure_ascii=False)[:30000])
+        try:
+            from emergentintegrations.llm.chat import LlmChat, UserMessage
+            chat = LlmChat(api_key=llm_key, session_id=f"mdaudit-{audit_id}",
+                           system_message="Sei un revisore documentale prudente. Rispondi solo in JSON valido.").with_model("gemini", "gemini-2.5-flash")
+            resp = await chat.send_message(UserMessage(text=prompt))
+            text = resp if isinstance(resp, str) else str(resp)
+            start, end = text.find("{"), text.rfind("}")
+            data = json.loads(text[start:end + 1]) if start >= 0 else {"findings": []}
+        except Exception as e:
+            logger.exception(f"deep audit: {e}")
+            raise HTTPException(503, "Analisi approfondita non disponibile. Nessun credito scalato.")
+        refs = {d["ref"] for d in docs}
+        findings = [f for f in data.get("findings", []) if isinstance(f, dict) and any(s.get("ref") in refs for s in f.get("sources") or [])]
+        deep = {"findings": findings[:30], "model": "gemini-2.5-flash", "at": _now(), "disclaimer": "Risultati AI da verificare: non sostituiscono il professionista."}
+        await db.users.update_one({"user_id": u["user_id"]}, {"$inc": {"credits": -1}})
+        await db.multi_document_audits.update_one({"audit_id": audit_id}, {"$set": {"deep": deep}})
+        u2 = await db.users.find_one({"user_id": u["user_id"]}, {"_id": 0, "credits": 1})
+        return {"deep": deep, "credits": u2.get("credits", 0)}
+
+    return r
