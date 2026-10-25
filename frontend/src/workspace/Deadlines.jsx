@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { ws, errMsg, fmtDate, dueText } from "./api";
 import { Level } from "./RiskDashboard";
+import DateField from "./DateField";
 
 function Row({ d, onChanged }) {
   const [edit, setEdit] = useState(false);
@@ -23,7 +24,7 @@ function Row({ d, onChanged }) {
       {edit && (
         <div className="ws-dl-edit">
           <input className="as-input" value={label} onChange={(e) => setLabel(e.target.value)} data-testid="deadline-edit-label" />
-          <input className="as-input" type="date" lang="it" value={date} onChange={(e) => setDate(e.target.value)} data-testid="deadline-edit-date" />
+          <DateField value={date} onChange={setDate} testid="deadline-edit-date" />
           <button className="as-btn as-btn-primary" onClick={() => run(ws.patch(`/deadlines/${d.reminder_id}`, { label, due_date: date || undefined }))} data-testid="deadline-edit-save">Salva</button>
         </div>
       )}
@@ -45,7 +46,7 @@ function AddDeadline({ onChanged }) {
   return (
     <form className="ws-dl-edit" onSubmit={add} data-testid="deadline-add-form">
       <input className="as-input" placeholder="Nuova scadenza manuale" value={f.label} onChange={(e) => setF({ ...f, label: e.target.value })} data-testid="deadline-add-label" />
-      <input className="as-input" type="date" lang="it" value={f.due_date} onChange={(e) => setF({ ...f, due_date: e.target.value })} data-testid="deadline-add-date" />
+      <DateField value={f.due_date} onChange={(v) => setF({ ...f, due_date: v })} testid="deadline-add-date" />
       <button className="as-btn as-btn-primary" data-testid="deadline-add-btn">Aggiungi</button>
       {err && <div className="ws-error">{err}</div>}
     </form>

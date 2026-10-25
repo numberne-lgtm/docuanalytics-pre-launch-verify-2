@@ -56,3 +56,9 @@
 .ws-disclaimer{margin-top:2rem;font-size:.75rem;color:var(--text-muted)}
 .ws-panel-head{padding-right:2.2rem}
 @media (max-width:600px){.ws-h1{font-size:1.4rem}.ws-top .btn{margin-left:0}.ws-kpi b{font-size:1.4rem}}
+.ws-date-btn{display:inline-flex;align-items:center;gap:.45rem;min-width:9.5rem;cursor:pointer;text-align:left}
+.ws-cal{z-index:300;width:auto;padding:0;background:#0f1730;color:#e8ecf8;border:1px solid var(--border-color)}
+.ws-cal button[name="day"]:hover{background:#2f6bff33}
+.ws-cal [aria-selected="true"]{background:#2f6bff;color:#fff}
+.ws-credits{display:inline-flex;align-items:center;gap:.35rem;margin-left:auto;padding:.3rem .75rem;border:1px solid var(--border-color);border-radius:999px;font-size:.85rem;font-weight:600}
+.ws-credits + .btn{margin-left:0}

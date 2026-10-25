@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { LayoutDashboard, Users, FileText, CalendarClock, X } from "lucide-react";
+import axios from "axios";
+import { LayoutDashboard, Users, FileText, CalendarClock, X, Zap } from "lucide-react";
 import { ws, errMsg, hasToken } from "./api";
 import RiskDashboard, { Level } from "./RiskDashboard";
 import Documents from "./Documents";
@@ -48,7 +49,12 @@ export default function Workspace() {
   const [audit, setAudit] = useState(null);
   const [reloadKey, setReloadKey] = useState(0);
   const reload = () => setReloadKey((k) => k + 1);
-  useEffect(() => { document.title = "Area di lavoro · DocuAnalytics AI"; }, []);
+  const [credits, setCredits] = useState(null);
+  useEffect(() => {
+    document.title = "Area di lavoro · DocuAnalytics AI";
+    if (hasToken()) axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/auth/me`, { headers: { Authorization: `Bearer ${localStorage.getItem("da_token")}` } })
+      .then(({ data }) => setCredits(data.user.credits)).catch(() => {});
+  }, []);
 
   if (!hasToken()) {
     return (
@@ -67,6 +73,7 @@ export default function Workspace() {
         <div className="ws-top">
           <Link to="/" className="ws-link" data-testid="workspace-home">← DocuAnalytics AI</Link>
           <h1 className="ws-h1">Area di lavoro</h1>
+          {credits != null && <span className="ws-credits" data-testid="workspace-credits"><Zap size={14} /> {credits} crediti</span>}
           <Link to="/#upload" className="btn btn-sm btn-primary" data-testid="workspace-analyze">Analizza documento</Link>
         </div>
         <nav className="ws-nav" data-testid="workspace-nav">
@@ -75,7 +82,7 @@ export default function Workspace() {
         {view === "dashboard" && <RiskDashboard onOpenDoc={setDoc} onOpenClient={openClient} reloadKey={reloadKey} />}
         {view === "clients" && (client ? <Client360 cid={client} onBack={() => setClient(null)} onOpenDoc={setDoc} reloadKey={reloadKey} onChanged={reload} />
           : <ClientList onOpen={setClient} reloadKey={reloadKey} onChanged={reload} />)}
-        {view === "documents" && (audit ? <AuditView ids={audit} onBack={() => setAudit(null)} />
+        {view === "documents" && (audit ? <AuditView ids={audit} onBack={() => setAudit(null)} onCredits={setCredits} />
           : <Documents onOpenDoc={setDoc} onCompare={setAudit} reloadKey={reloadKey} onChanged={reload} />)}
         {view === "deadlines" && <Deadlines reloadKey={reloadKey} onChanged={reload} />}
         <p className="ws-disclaimer">DocuAnalytics evidenzia dati e possibili anomalie: non sostituisce il commercialista, l'avvocato o il notaio.</p>

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ws, errMsg } from "./api";
+import { ws, errMsg, fieldLabel } from "./api";
 
 const SECTIONS = [["consistent", "Coerenze", "lv-low"], ["differences", "Differenze", "lv-medium"], ["anomalies", "Possibili anomalie", "lv-high"], ["to_verify", "Da verificare", "lv-medium"]];
 
@@ -7,7 +7,7 @@ const Sources = ({ values }) => (
   <ul className="ws-src">{(values || []).map((v, i) => <li key={i}><b>{v.ref}</b>{v.filename ? ` (${v.filename})` : ""}: {v.value || v.excerpt}</li>)}</ul>
 );
 
-export default function AuditView({ ids, auditId, onBack }) {
+export default function AuditView({ ids, auditId, onBack, onCredits }) {
   const [credits, setCredits] = useState(null);
   const [a, setA] = useState(null);
   const [err, setErr] = useState("");
@@ -19,7 +19,7 @@ export default function AuditView({ ids, auditId, onBack }) {
   const deep = () => {
     if (!window.confirm("L'analisi approfondita con AI costa 1 credito. Procedere?")) return;
     setBusy(true); setErr("");
-    ws.post(`/audits/${a.audit_id}/deep`).then((r) => { setA({ ...a, deep: r.deep }); setCredits(r.credits); }).catch((e) => setErr(errMsg(e))).finally(() => setBusy(false));
+    ws.post(`/audits/${a.audit_id}/deep`).then((r) => { setA({ ...a, deep: r.deep }); setCredits(r.credits); onCredits?.(r.credits); }).catch((e) => setErr(errMsg(e))).finally(() => setBusy(false));
   };
   if (err && !a) return <div className="ws-error" data-testid="audit-error">{err}</div>;
   if (!a) return <div className="ws-muted">Confronto in corso…</div>;
@@ -36,7 +36,7 @@ export default function AuditView({ ids, auditId, onBack }) {
           {r[k].length === 0 && <p className="ws-muted">Nessun elemento.</p>}
           {r[k].map((x, i) => (
             <div key={i} className="ws-finding">
-              <b>{x.type || x.field}</b>{x.note && <span className="ws-muted"> — {x.note}</span>}
+              <b>{x.type || fieldLabel(x.field)}</b>{x.note && <span className="ws-muted"> — {x.note}</span>}
               <Sources values={x.values} />
               {x.missing_in && <p className="ws-muted">Assente in: {x.missing_in.map((m) => m.ref).join(", ")}</p>}
             </div>
