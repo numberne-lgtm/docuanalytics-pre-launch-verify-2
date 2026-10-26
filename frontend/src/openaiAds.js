@@ -13,7 +13,8 @@ export function adsConsentChosen() {
 }
 export function initAdsPixel() {
   if (typeof window === "undefined" || !adsConsentGranted()) return false;
-  if (initialized) return true;
+  if (initialized && typeof window.oaiq === "function") return true;
+  if (initialized) initialized = false;
   if (!window.oaiq) {
     const q = function () { q.q.push(arguments); };
     q.q = [];
