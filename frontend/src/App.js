@@ -851,6 +851,43 @@ function Home() {
   );
 }
 
+function RemindersModal({ onClose, notify }) {
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const { t } = useI18n();
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { data } = await axios.get(`${API}/reminders`);
+      setItems(data.reminders || []);
+    } catch (e) {
+      notify(e?.response?.data?.detail || "Impossibile caricare le scadenze");
+    } finally { setLoading(false); }
+  }, [notify]);
+  useEffect(() => { load(); }, [load]);
+  const remove = async (id) => {
+    try {
+      await axios.delete(`${API}/reminders/${encodeURIComponent(id)}`);
+      setItems(old => old.filter(item => item.reminder_id !== id));
+    } catch (e) { notify(e?.response?.data?.detail || "Impossibile eliminare la scadenza"); }
+  };
+  return (
+    <div className="modal-bg" onClick={onClose}>
+      <div className="modal glass pad fade" style={{ maxWidth: 600 }} onClick={e => e.stopPropagation()} role="dialog" aria-modal="true" aria-label="Scadenze">
+        <div className="modal-head"><h2 className="section-title"><Bell size={20} /> Scadenze e promemoria</h2>
+          <button className="close-x" onClick={onClose} aria-label="Chiudi"><X size={18} /></button>
+        </div>
+        {loading ? <p>Caricamento...</p> : items.length === 0 ? <p>Nessuna scadenza attiva.</p> : (
+          <div>{items.map(item => <div key={item.reminder_id} className="flex aic gap" style={{ justifyContent: "space-between", padding: "12px 0", borderBottom: "1px solid #7774" }}>
+            <div><strong>{item.label}</strong><div>{item.due_date} {item.doc_type ? `— ${item.doc_type}` : ""}</div></div>
+            <button className="btn btn-sm btn-ghost" onClick={() => remove(item.reminder_id)} aria-label="Elimina promemoria"><Trash2 size={16} /></button>
+          </div>)}</div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function Header({ credits, authed, user, onTopup, onAuth, onReferral, onLogout, onHistory, onReminders }) {
   const { t } = useI18n();
   return (
