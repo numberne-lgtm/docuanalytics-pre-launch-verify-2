@@ -39,9 +39,9 @@ export function trackAdsRegistration(userId) {
   if (!userId || !initAdsPixel()) return false;
   const id = "registration_" + String(userId);
   if (measured.has(id)) return false;
-  try { if (sessionStorage.getItem("da_ads_" + id) === "sent") return false; } catch { /* storage unavailable */ }
+  try { if (localStorage.getItem("da_ads_" + id) === "sent") return false; } catch { /* storage unavailable */ }
   window.oaiq("measure", "registration_completed", { type: "customer_action" }, { event_id: id });
   measured.add(id);
-  try { sessionStorage.setItem("da_ads_" + id, "sent"); } catch { /* storage unavailable */ }
+  try { localStorage.setItem("da_ads_" + id, "sent"); } catch { /* storage unavailable */ }
   return true;
 }
