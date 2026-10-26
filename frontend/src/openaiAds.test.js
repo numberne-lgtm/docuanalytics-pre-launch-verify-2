@@ -63,3 +63,38 @@ test("no advertising script or conversion is created when consent is rejected", 
   expect(document.querySelectorAll('script[src*="bzrcdn.openai.com"]')).toHaveLength(0);
   expect(localStorage.getItem("da_ads_registration_rejected-synthetic-user")).toBeNull();
 });
+
+
+test("verified login does not measure without consent, then measures once after opt-in", () => {
+  const syntheticVerifiedLogin = { user: { user_id: "late-consent-user" }, recently_verified_registration: true };
+  const measureFromVerifiedLogin = data =>
+    data.recently_verified_registration && trackAdsRegistration(data.user?.user_id);
+  expect(measureFromVerifiedLogin(syntheticVerifiedLogin)).toBe(false);
+  expect(document.querySelectorAll('script[src*="bzrcdn.openai.com"]')).toHaveLength(0);
+  setAdsMeasurementConsent(true);
+  expect(measureFromVerifiedLogin(syntheticVerifiedLogin)).toBe(true);
+  expect(measureFromVerifiedLogin(syntheticVerifiedLogin)).toBe(false);
+  const measures = window.oaiq.q.map(args => Array.from(args)).filter(args => args[0] === "measure");
+  expect(measures).toHaveLength(1);
+  expect(measures[0][3]).toEqual({ event_id: "registration_late-consent-user" });
+});
+
+test("unverified and old verified login flags never generate a registration conversion", () => {
+  setAdsMeasurementConsent(true);
+  const measureFromLogin = data =>
+    data.recently_verified_registration && trackAdsRegistration(data.user?.user_id);
+  expect(measureFromLogin({ user: { user_id: "unverified-login" }, recently_verified_registration: false })).toBe(false);
+  expect(measureFromLogin({ user: { user_id: "expired-verification" }, recently_verified_registration: false })).toBe(false);
+  const measures = window.oaiq.q.map(args => Array.from(args)).filter(args => args[0] === "measure");
+  expect(measures).toHaveLength(0);
+});
+
+test("revoking consent between verified logins prevents a second conversion", () => {
+  setAdsMeasurementConsent(true);
+  expect(trackAdsRegistration("first-consented-user")).toBe(true);
+  setAdsMeasurementConsent(false);
+  expect(trackAdsRegistration("second-revoked-user")).toBe(false);
+  const measures = window.oaiq.q.map(args => Array.from(args)).filter(args => args[0] === "measure");
+  expect(measures).toHaveLength(1);
+  expect(localStorage.getItem("da_ads_registration_second-revoked-user")).toBeNull();
+});
