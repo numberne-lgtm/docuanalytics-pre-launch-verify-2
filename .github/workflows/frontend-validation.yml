@@ -29,6 +29,9 @@ jobs:
       - name: Backend Python syntax check
         working-directory: .
         run: python -m py_compile backend/server.py
+      - name: Isolated backend registration tests (no database or email service)
+        working-directory: backend
+        run: python -m unittest -v test_registration_tracking.py
       - name: Production build
         env:
           CI: 'false'
