@@ -20,6 +20,8 @@ jobs:
           node-version: '20'
       - name: Install dependencies
         run: npm install --legacy-peer-deps --no-audit --no-fund
+      - name: Fix AJV dependency compatibility
+        run: npm install --no-save --legacy-peer-deps --no-audit --no-fund ajv@^8 ajv-keywords@^5
       - name: Unit tests
         env:
           CI: 'true'
