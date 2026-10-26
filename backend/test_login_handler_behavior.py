@@ -29,6 +29,8 @@ class LoginHandlerBehaviorTests(unittest.IsolatedAsyncioTestCase):
         tree = ast.parse(pathlib.Path("server.py").read_text(encoding="utf-8"))
         handler = next(n for n in tree.body if isinstance(n, ast.AsyncFunctionDef) and n.name == "login")
         handler.decorator_list = []
+        handler.args.args[0].annotation = None
+        handler.args.args[1].annotation = None
         namespace = {
             "db": SimpleNamespace(users=FakeUsers(user)),
             "HTTPException": FakeHTTPException,
