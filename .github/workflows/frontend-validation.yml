@@ -34,3 +34,24 @@ jobs:
           CI: 'false'
           REACT_APP_BACKEND_URL: https://example.invalid
         run: npm run build
+      - name: Isolated preview smoke test (no production services)
+        working-directory: frontend
+        run: |
+          python -m http.server 8765 --directory build > /tmp/docuanalytics-preview.log 2>&1 &
+          PREVIEW_PID=$!
+          trap 'kill $PREVIEW_PID 2>/dev/null || true' EXIT
+          python - <<'PY'
+          import time, urllib.request
+          for attempt in range(30):
+              try:
+                  with urllib.request.urlopen("http://127.0.0.1:8765/", timeout=2) as response:
+                      html = response.read().decode("utf-8")
+                      assert response.status == 200
+                      assert "<html" in html.lower()
+                      print("Isolated frontend preview responds with HTTP 200")
+                      break
+              except (OSError, AssertionError):
+                  if attempt == 29:
+                      raise
+                  time.sleep(1)
+          PY
