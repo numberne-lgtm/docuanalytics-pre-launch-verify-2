@@ -26,6 +26,9 @@ jobs:
         env:
           CI: 'true'
         run: npm test -- --watch=false --runInBand
+      - name: Backend Python syntax check
+        working-directory: .
+        run: python -m py_compile backend/server.py
       - name: Production build
         env:
           CI: 'false'
