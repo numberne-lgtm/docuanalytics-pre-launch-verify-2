@@ -1312,10 +1312,14 @@ async def verify_email(token: str):
     if not rec:
         return RedirectResponse(url=f"{PUBLIC_BASE_URL}/?verify=invalid", status_code=302)
     now = datetime.now(timezone.utc).isoformat()
-    u = await db.users.find_one({"user_id": rec["user_id"]}, {"_id": 0})
-    if u and not u.get("email_verified"):
-        await db.users.update_one({"user_id": rec["user_id"]},
-                                  {"$set": {"email_verified": True, "email_verified_at": now, "credits": FREE_CREDITS, "updated_at": now}})
+    # Claim the account verification exactly once, even if several valid
+    # verification links were issued for the same account.
+    verified = await db.users.update_one(
+        {"user_id": rec["user_id"], "email_verified": {"$ne": True}},
+        {"$set": {"email_verified": True, "email_verified_at": now,
+                  "credits": FREE_CREDITS, "updated_at": now}},
+    )
+    if verified.modified_count == 1:
         await _apply_referral(rec.get("ref"), rec["user_id"], rec.get("ip"), now)
     return RedirectResponse(url=f"{PUBLIC_BASE_URL}/?verify=ok", status_code=302)
 
