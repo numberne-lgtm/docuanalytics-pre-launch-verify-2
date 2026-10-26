@@ -88,6 +88,11 @@
 .ws-send-form{display:flex;flex-direction:column;gap:.45rem;max-width:560px}
 .ws-switch{display:inline-flex;align-items:center;gap:.5rem;cursor:pointer;font-size:.88rem;flex-basis:100%}
 .ws-switch input{width:1.05rem;height:1.05rem;accent-color:#2f6bff}
+.ws-cmsg{flex-basis:100%;resize:vertical}
+.ws-logo-box{display:flex;align-items:center;gap:.6rem;flex-wrap:wrap}
+.ws-logo-img{max-height:56px;max-width:180px;background:#fff;padding:4px;border-radius:6px}
+.ws-studio-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:.5rem;width:100%}
+.ws-email-row{display:flex;align-items:center;gap:.7rem;flex-wrap:wrap;padding:.6rem 0;border-bottom:1px solid var(--border-color)}
 .ws-bar-actions{display:flex;gap:.5rem;flex-wrap:wrap;margin-left:auto}
 [data-testid="client-360"] .ws-bar{justify-content:flex-start;margin-bottom:.5rem}
 @media (max-width:600px){.ws-bar-actions{margin-left:0}.ws-tabs{-webkit-mask-image:linear-gradient(90deg,#000 85%,transparent);mask-image:linear-gradient(90deg,#000 85%,transparent);padding-right:1.5rem}}

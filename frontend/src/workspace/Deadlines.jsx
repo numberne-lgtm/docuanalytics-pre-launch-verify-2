@@ -29,6 +29,7 @@ function Row({ d, onChanged }) {
   const [label, setLabel] = useState(d.label);
   const [days, setDays] = useState((d.status === "confirmed" ? d.notify_days : d.notify_pref) ?? DEFAULT_DAYS);
   const [toClient, setToClient] = useState(!!d.notify_client);
+  const [cmsg, setCmsg] = useState(d.client_message || "");
   const [err, setErr] = useState("");
   const run = (p) => { setErr(""); return p.then(() => { setEdit(false); onChanged(); }).catch((e) => setErr(errMsg(e))); };
   return (
@@ -55,7 +56,11 @@ function Row({ d, onChanged }) {
               <span>Avvisa anche il cliente via email (stessi giorni)</span>
             </label>
           )}
-          <button className="as-btn as-btn-primary" onClick={() => run(ws.patch(`/deadlines/${d.reminder_id}`, { label, due_date: date || undefined, notify_days: days, ...(d.client_id ? { notify_client: toClient } : {}) }))} data-testid="deadline-edit-save">Salva</button>
+          {d.client_id && toClient && (
+            <textarea className="as-input ws-cmsg" rows={3} maxLength={500} value={cmsg} onChange={(e) => setCmsg(e.target.value)}
+              placeholder="Messaggio personale per il cliente (facoltativo)" data-testid="deadline-edit-client-message" />
+          )}
+          <button className="as-btn as-btn-primary" onClick={() => run(ws.patch(`/deadlines/${d.reminder_id}`, { label, due_date: date || undefined, notify_days: days, ...(d.client_id ? { notify_client: toClient, client_message: cmsg } : {}) }))} data-testid="deadline-edit-save">Salva</button>
         </div>
       )}
       {err && <div className="ws-error">{err}</div>}

@@ -10,11 +10,11 @@ import logging
 from datetime import datetime, timezone, timedelta
 from typing import Optional, List
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Request, UploadFile, File
 from fastapi.responses import Response
 from pydantic import BaseModel, Field
 
-from . import core
+from . import core, studio
 
 logger = logging.getLogger("docuanalytics.workspace")
 RISK_ORDER = {"high": 0, "medium": 1, "low": 2}
@@ -60,6 +60,7 @@ class DeadlinePatch(BaseModel):
     kind: Optional[str] = None
     notify_days: Optional[List[int]] = None
     notify_client: Optional[bool] = None
+    client_message: Optional[str] = Field(None, max_length=500)
 
 
 class ConfirmReq(BaseModel):
@@ -93,6 +94,19 @@ class ReportSendReq(BaseModel):
 
 class SettingsReq(BaseModel):
     weekly_digest: bool
+
+
+class StudioReq(BaseModel):
+    name: Optional[str] = Field("", max_length=120)
+    address: Optional[str] = Field("", max_length=200)
+    phone: Optional[str] = Field("", max_length=40)
+    email: Optional[str] = Field("", max_length=120)
+    website: Optional[str] = Field("", max_length=120)
+
+
+EMAIL_STATUS = {"sent": "Inviata", "failed": "Non riuscita", "skipped_reserved_domain": "Non inviata (indirizzo di prova)",
+                "disabled": "Non inviata (servizio email non attivo)"}
+EMAIL_KIND = {"client_report": "Report PDF", "client_reminder": "Avviso scadenza"}
 
 
 class AuditReq(BaseModel):
@@ -163,7 +177,7 @@ def build_workspace_router(db, get_current_user, llm_key, default_notify_days, s
         dl = core.days_left(rm.get("due_date"))
         status = rm.get("status") or "confirmed"
         return {k: rm.get(k) for k in ("reminder_id", "label", "due_date", "raw_date", "kind", "analysis_id", "client_id",
-                                       "doc_type", "source", "notify_days")} | {"notify_pref": rm.get("notify_pref"), "notify_client": bool(rm.get("notify_client")),
+                                       "doc_type", "source", "notify_days")} | {"notify_pref": rm.get("notify_pref"), "notify_client": bool(rm.get("notify_client")), "client_message": rm.get("client_message") or "",
             "status": status, "days_left": dl, "kind_label": core.KIND_LABEL.get(rm.get("kind") or "other", "Scadenza"),
             "priority": core.deadline_priority(dl, status)}
 
@@ -389,6 +403,8 @@ def build_workspace_router(db, get_current_user, llm_key, default_notify_days, s
             if req.notify_client and not x.get("client_id"):
                 raise HTTPException(400, "Collega prima la scadenza a un cliente.")
             upd["notify_client"] = req.notify_client
+        if req.client_message is not None:
+            upd["client_message"] = req.client_message.strip()
         if req.notify_days is not None:
             upd["notify_days" if (x.get("status") or "confirmed") == "confirmed" else "notify_pref"] = _notify(req.notify_days)
         if req.due_date is not None:
@@ -639,17 +655,19 @@ def build_workspace_router(db, get_current_user, llm_key, default_notify_days, s
         sender = u.get("name") or u["email"]
         pdf = core.client_report_pdf(c, docs, dls, sender)
         note = (req.message or "").strip()
+        sig, sig_att = await studio.client_signature(db, llm_key, uid)
         html = ("<div style=\"font-family:Arial,sans-serif;max-width:520px;margin:0 auto;color:#152033\">"
                 f"<h2 style=\"color:#315efb\">Riepilogo documenti e scadenze</h2><p>Gentile {core.esc(c['name'])},</p>"
                 + (f"<p style=\"white-space:pre-line\">{core.esc(note)}</p>" if note else
                    "<p>in allegato trova il riepilogo dei documenti e delle scadenze confermate.</p>")
                 + f"<p>Inviato da {core.esc(sender)} tramite DocuAnalytics AI. Per domande rispondi a questa email.</p>"
-                "<p style=\"font-size:12px;color:#667085\">I dati sono estratti automaticamente dai documenti e vanno verificati sugli originali.</p></div>")
+                "<p style=\"font-size:12px;color:#667085\">I dati sono estratti automaticamente dai documenti e vanno verificati sugli originali.</p>"
+                + sig + "</div>")
         ok = await send_email(to, f"Riepilogo documenti e scadenze — {c['name']}", html, reply_to=u["email"],
-                              attachments=[{"filename": f"report-{core.slug(c['name'])}.pdf", "content": list(pdf)}],
-                              kind="client_report", user_id=uid)
+                              attachments=[{"filename": f"report-{core.slug(c['name'])}.pdf", "content": list(pdf)}] + sig_att,
+                              kind="client_report", user_id=uid, client_id=cid)
         if not ok:
-            last = await db.email_log.find_one({"user_id": uid, "kind": "client_report"}, sort=[("at", -1)])
+            last = await db.email_log.find_one({"user_id": uid, "kind": "client_report", "client_id": cid}, sort=[("at", -1)])
             raise HTTPException(400, "Indirizzo non consentito per l'invio." if (last or {}).get("status") == "skipped_reserved_domain"
                                 else "Invio non riuscito. Riprova tra poco.")
         if not c.get("email"):
@@ -724,5 +742,77 @@ def build_workspace_router(db, get_current_user, llm_key, default_notify_days, s
         if res.upserted_id is not None:
             asyncio.create_task(_run_weekly(run_id))
         return {"accepted": True, "duplicate": res.upserted_id is None}
+
+
+    @r.get("/clients/{cid}/emails")
+    async def client_emails(cid: str, request: Request):
+        u = await _user(request)
+        await _client(u["user_id"], cid)
+        out = []
+        async for x in db.email_log.find({"user_id": u["user_id"], "client_id": cid}, {"_id": 0}).sort("at", -1).limit(100):
+            out.append({"at": x["at"], "kind": EMAIL_KIND.get(x["kind"], x["kind"]), "to": x.get("to"), "subject": x.get("subject") or "",
+                        "status": x.get("status"), "status_label": EMAIL_STATUS.get(x.get("status"), x.get("status"))})
+        return {"emails": out}
+
+    @r.get("/studio")
+    async def get_studio(request: Request):
+        u = await _user(request)
+        st = dict(u.get("studio") or {})
+        return {k: st.get(k, "") for k in ("name", "address", "phone", "email", "website")} | {"has_logo": bool(st.get("logo_path"))}
+
+    @r.put("/studio")
+    async def put_studio(req: StudioReq, request: Request):
+        u = await _user(request)
+        data = {k: (v or "").strip() for k, v in req.model_dump().items()}
+        data["email"] = _email(data["email"])
+        await db.users.update_one({"user_id": u["user_id"]}, {"$set": {f"studio.{k}": v for k, v in data.items()}})
+        return await get_studio(request)
+
+    @r.post("/studio/logo")
+    async def upload_logo(request: Request, file: UploadFile = File(...)):
+        u = await _user(request)
+        ctype = (file.content_type or "").lower()
+        if ctype not in ("image/png", "image/jpeg"):
+            raise HTTPException(400, "Carica un'immagine PNG o JPG.")
+        data = await file.read(1_000_001)
+        if len(data) > 1_000_000:
+            raise HTTPException(400, "Il logo deve pesare al massimo 1 MB.")
+        if not (data.startswith(b"\x89PNG") or data.startswith(b"\xff\xd8")):
+            raise HTTPException(400, "File immagine non valido.")
+        path = f"{studio.APP_NAME}/logos/{u['user_id']}/{uuid.uuid4()}.{'png' if ctype == 'image/png' else 'jpg'}"
+        try:
+            path = await studio.put_logo(llm_key, path, data, ctype)
+        except Exception as e:
+            logger.exception(f"logo upload: {e}")
+            raise HTTPException(400, "Caricamento non riuscito. Riprova tra poco.")
+        old = ((u.get("studio") or {}).get("logo_path"))
+        if old:
+            await db.files.update_one({"storage_path": old}, {"$set": {"is_deleted": True}})
+        await db.files.insert_one({"id": str(uuid.uuid4()), "user_id": u["user_id"], "kind": "studio_logo", "storage_path": path,
+                                   "original_filename": (file.filename or "")[:120], "content_type": ctype, "size": len(data),
+                                   "is_deleted": False, "created_at": _now()})
+        await db.users.update_one({"user_id": u["user_id"]}, {"$set": {"studio.logo_path": path, "studio.logo_type": ctype}})
+        return {"has_logo": True}
+
+    @r.get("/studio/logo")
+    async def studio_logo(request: Request):
+        u = await _user(request)
+        st = u.get("studio") or {}
+        if not st.get("logo_path"):
+            raise HTTPException(404, "Nessun logo")
+        try:
+            data = await studio.get_logo(llm_key, st["logo_path"])
+        except Exception:
+            raise HTTPException(404, "Logo non disponibile")
+        return Response(data, media_type=st.get("logo_type") or "image/png", headers={"Cache-Control": "private, no-store"})
+
+    @r.delete("/studio/logo")
+    async def delete_logo(request: Request):
+        u = await _user(request)
+        old = (u.get("studio") or {}).get("logo_path")
+        if old:
+            await db.files.update_one({"storage_path": old}, {"$set": {"is_deleted": True}})
+        await db.users.update_one({"user_id": u["user_id"]}, {"$unset": {"studio.logo_path": "", "studio.logo_type": ""}})
+        return {"has_logo": False}
 
     return r

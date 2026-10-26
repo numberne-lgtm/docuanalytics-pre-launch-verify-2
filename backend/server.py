@@ -208,7 +208,8 @@ _NO_MAIL_TLDS = (".test", ".invalid", ".example", ".localhost")
 
 
 async def _send_email_bg(to_email: str, subject: str, html: str, reply_to: Optional[str] = None,
-                         attachments: Optional[list] = None, kind: str = "system", user_id: Optional[str] = None) -> bool:
+                         attachments: Optional[list] = None, kind: str = "system", user_id: Optional[str] = None,
+                         client_id: Optional[str] = None) -> bool:
     dom = (to_email or "").rsplit("@", 1)[-1].lower()
     status = "sent"
     if dom in _NO_MAIL_DOMAINS or dom.endswith(_NO_MAIL_TLDS):
@@ -229,7 +230,8 @@ async def _send_email_bg(to_email: str, subject: str, html: str, reply_to: Optio
             logger.error(f"send email failed: {e}")
             status = "failed"
     if kind != "system":
-        await db.email_log.insert_one({"kind": kind, "user_id": user_id, "to": to_email, "status": status,
+        await db.email_log.insert_one({"kind": kind, "user_id": user_id, "client_id": client_id, "to": to_email,
+                                       "subject": subject[:200], "status": status,
                                        "at": datetime.now(timezone.utc).isoformat()})
     if status != "sent":
         logger.info(f"[email {status}] '{subject}' to {to_email}")
@@ -577,16 +579,17 @@ async def delete_reminder(reminder_id: str, user_id: Optional[str] = None, reque
     return {"ok": True}
 
 
-def _client_reminder_html(label, due_str, days_left, sender):
+def _client_reminder_html(label, due_str, days_left, sender, message="", signature=""):
     when = "oggi" if days_left == 0 else f"tra {days_left} giorni"
     return (
         "<div style=\"font-family:Arial,sans-serif;max-width:480px;margin:0 auto;color:#152033\">"
         "<h2 style=\"color:#315efb\">Promemoria scadenza</h2>"
         f"<p>La scadenza <b>{html_escape(label)}</b> è <b>{when}</b>.</p>"
         f"<p style=\"font-size:15px\">Data scadenza: <b>{due_str}</b></p>"
-        f"<p>Promemoria inviato da {html_escape(sender)} tramite DocuAnalytics AI. Per domande rispondi a questa email.</p>"
+        + (f"<p style=\"white-space:pre-line\">{html_escape(message)}</p>" if message else "")
+        + f"<p>Promemoria inviato da {html_escape(sender)} tramite DocuAnalytics AI. Per domande rispondi a questa email.</p>"
         "<p style=\"font-size:12px;color:#667085\">Informazione basata su dati estratti dai documenti: verifica sempre sugli originali.</p>"
-        "</div>"
+        + signature + "</div>"
     )
 
 
@@ -615,10 +618,13 @@ async def _check_reminders():
                     sent.add(d)
                     changed = True
             if days_left == d and d not in sent_client and client and client.get("email"):
+                sig, sig_att = await _studio.client_signature(db, EMERGENT_LLM_KEY, r.get("user_id"))
                 ok = await _send_email_bg(
                     client["email"], f"Promemoria scadenza: {r.get('label', '')}",
-                    _client_reminder_html(r.get("label", ""), due.strftime("%d/%m/%Y"), days_left, r.get("email", "")),
-                    reply_to=r.get("email"), kind="client_reminder", user_id=r.get("user_id"))
+                    _client_reminder_html(r.get("label", ""), due.strftime("%d/%m/%Y"), days_left, r.get("email", ""),
+                                          r.get("client_message", ""), sig),
+                    reply_to=r.get("email"), attachments=sig_att or None, kind="client_reminder",
+                    user_id=r.get("user_id"), client_id=r.get("client_id"))
                 if ok:
                     sent_client.add(d)
                     changed = True
@@ -1507,6 +1513,7 @@ app.include_router(build_assistant_router(db, PACKAGES, FREE_CREDITS, REFERRAL_B
 from privacy_admin.router import build_privacy_router
 app.include_router(build_privacy_router(db, ADMIN_TOKEN))
 from workspace.router import build_workspace_router
+from workspace import studio as _studio
 app.include_router(build_workspace_router(db, get_current_user, EMERGENT_LLM_KEY, REMINDER_DEFAULT_DAYS, _send_email_bg,
                                           _ENV_FILE.get("WEBHOOK_CRON_SECRET") or os.environ.get("WEBHOOK_CRON_SECRET"), PUBLIC_BASE_URL))
 app.add_middleware(

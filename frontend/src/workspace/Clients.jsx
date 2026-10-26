@@ -3,11 +3,13 @@ import { FileDown } from "lucide-react";
 import { ws, errMsg, fmtDate, download } from "./api";
 import CalendarExport from "./CalendarExport";
 import { ClientEmail, SendReport } from "./ClientMail";
+import StudioSettings from "./StudioSettings";
+import ClientEmails from "./ClientEmails";
 import { Level } from "./RiskDashboard";
 import { DocCard } from "./Documents";
 import { DeadlineList } from "./Deadlines";
 
-const TABS = [["overview", "Panoramica"], ["docs", "Documenti"], ["risks", "Rischi"], ["deadlines", "Scadenze"], ["activity", "Attività"]];
+const TABS = [["overview", "Panoramica"], ["docs", "Documenti"], ["risks", "Rischi"], ["deadlines", "Scadenze"], ["emails", "Email inviate"], ["activity", "Attività"]];
 const REG = [["rea", "REA"], ["pec", "PEC"], ["registered_office", "Sede"], ["legal_form", "Forma giuridica"], ["share_capital", "Capitale sociale"]];
 
 function NewClient({ onCreated }) {
@@ -45,6 +47,7 @@ export function ClientList({ onOpen, reloadKey, onChanged }) {
           ))}
         </div>
       )}
+      <StudioSettings />
     </div>
   );
 }
@@ -91,6 +94,7 @@ export function Client360({ cid, onBack, onOpenDoc, reloadKey, onChanged }) {
         <DeadlineList items={d.deadlines} onChanged={onChanged} />
         <CalendarExport path={`/clients/${cid}`} title={`Esporta le scadenze di ${c.name}`} fileName={`scadenze-${slug}.ics`} tid="client-calendar" />
       </>}
+      {tab === "emails" && <ClientEmails cid={cid} reloadKey={reloadKey} />}
       {tab === "activity" && d.activity.map((a, i) => <div key={i} className="ws-act"><span className="ws-muted">{fmtDate(a.at)}</span> {a.text}</div>)}
     </div>
   );
