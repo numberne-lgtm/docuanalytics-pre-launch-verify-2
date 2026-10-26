@@ -339,3 +339,11 @@ IMPLEMENTATO E TESTATO (19/19 backend + frontend E2E, 100%):
 - _send_email_bg: optional reply_to/attachments/kind; never sends to reserved test domains; logs non-system emails in email_log.
 - BLOCKER (user config): Resend rejects sender domain docuanalytics.it (not verified) — ALL real emails fail (also existing reminders/verification). Needs domain verification in Resend or a verified sender.
 - Tests: iteration_28.json, backend/tests/test_email_digest_client_mail.py.
+
+## 2026-10-26 — Studio signature, client email history, personal reminder message (PREVIEW ONLY)
+- users.studio {name,address,phone,email,website,logo_path,logo_type}; GET/PUT /api/workspace/studio; logo POST/GET/DELETE /studio/logo (Emergent Object Storage via workspace/studio.py, db.files soft-delete, type from magic bytes, ≤1MB). Signature + inline CID logo appended to client report and client reminder emails.
+- email_log now stores client_id + subject; GET /clients/{cid}/emails -> Client 360 tab "Email inviate".
+- reminders.client_message (≤500) included in client reminder; client_attempts caps retries at 2 per notify day.
+- Sender change to @docuanalytics.online NOT done: user will verify domain on Resend first (then update SENDER_EMAIL via secrets card).
+- Tests: iteration_29.json, backend/tests/test_studio_signature_email_log.py.
+

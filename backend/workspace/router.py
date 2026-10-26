@@ -411,7 +411,7 @@ def build_workspace_router(db, get_current_user, llm_key, default_notify_days, s
             iso, _ = core.parse_date(req.due_date)
             if not iso:
                 raise HTTPException(400, "Data non valida.")
-            upd.update({"due_date": iso, "sent": [], "sent_client": []})
+            upd.update({"due_date": iso, "sent": [], "sent_client": [], "client_attempts": {}})
         await db.reminders.update_one({"reminder_id": rid}, {"$set": {**upd, "edited_at": _now()}})
         return _dl_out(await _own_deadline(u["user_id"], rid))
 
@@ -777,7 +777,11 @@ def build_workspace_router(db, get_current_user, llm_key, default_notify_days, s
         data = await file.read(1_000_001)
         if len(data) > 1_000_000:
             raise HTTPException(400, "Il logo deve pesare al massimo 1 MB.")
-        if not (data.startswith(b"\x89PNG") or data.startswith(b"\xff\xd8")):
+        if data.startswith(b"\x89PNG"):
+            ctype = "image/png"
+        elif data.startswith(b"\xff\xd8"):
+            ctype = "image/jpeg"
+        else:
             raise HTTPException(400, "File immagine non valido.")
         path = f"{studio.APP_NAME}/logos/{u['user_id']}/{uuid.uuid4()}.{'png' if ctype == 'image/png' else 'jpg'}"
         try:

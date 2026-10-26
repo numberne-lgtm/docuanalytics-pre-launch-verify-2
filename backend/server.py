@@ -605,6 +605,7 @@ async def _check_reminders():
             continue
         sent = set(r.get("sent", []))
         sent_client = set(r.get("sent_client", []))
+        attempts = dict(r.get("client_attempts") or {})
         changed = False
         client = None
         if r.get("notify_client") and r.get("client_id"):
@@ -617,7 +618,9 @@ async def _check_reminders():
                 if ok:
                     sent.add(d)
                     changed = True
-            if days_left == d and d not in sent_client and client and client.get("email"):
+            if days_left == d and d not in sent_client and client and client.get("email") and attempts.get(str(d), 0) < 2:
+                attempts[str(d)] = attempts.get(str(d), 0) + 1
+                changed = True
                 sig, sig_att = await _studio.client_signature(db, EMERGENT_LLM_KEY, r.get("user_id"))
                 ok = await _send_email_bg(
                     client["email"], f"Promemoria scadenza: {r.get('label', '')}",
@@ -629,7 +632,7 @@ async def _check_reminders():
                     sent_client.add(d)
                     changed = True
         if changed:
-            await db.reminders.update_one({"reminder_id": r["reminder_id"]}, {"$set": {"sent": sorted(sent), "sent_client": sorted(sent_client)}})
+            await db.reminders.update_one({"reminder_id": r["reminder_id"]}, {"$set": {"sent": sorted(sent), "sent_client": sorted(sent_client), "client_attempts": attempts}})
 
 
 async def _reminder_loop():

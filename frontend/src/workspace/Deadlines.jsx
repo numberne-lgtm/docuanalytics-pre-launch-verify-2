@@ -60,6 +60,7 @@ function Row({ d, onChanged }) {
             <textarea className="as-input ws-cmsg" rows={3} maxLength={500} value={cmsg} onChange={(e) => setCmsg(e.target.value)}
               placeholder="Messaggio personale per il cliente (facoltativo)" data-testid="deadline-edit-client-message" />
           )}
+          {d.client_id && toClient && <span className="ws-muted ws-count" data-testid="deadline-edit-client-message-count">{cmsg.length}/500</span>}
           <button className="as-btn as-btn-primary" onClick={() => run(ws.patch(`/deadlines/${d.reminder_id}`, { label, due_date: date || undefined, notify_days: days, ...(d.client_id ? { notify_client: toClient, client_message: cmsg } : {}) }))} data-testid="deadline-edit-save">Salva</button>
         </div>
       )}

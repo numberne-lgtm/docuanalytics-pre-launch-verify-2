@@ -35,7 +35,7 @@ export function SendReport({ c, onSent }) {
     setBusy(true); setErr(""); setOk("");
     ws.post(`/clients/${c.client_id}/report/send`, { to, message: msg || undefined })
       .then((r) => { setOk(`Report inviato a ${r.to}.`); setOpen(false); setMsg(""); onSent(); })
-      .catch((e) => setErr(errMsg(e))).finally(() => setBusy(false));
+      .catch((e) => { setErr(errMsg(e)); onSent(); }).finally(() => setBusy(false));
   };
   return (
     <div className="ws-send" data-testid="client-report-send">
