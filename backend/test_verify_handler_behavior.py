@@ -63,25 +63,16 @@ class ActualVerificationHandlerTests(unittest.IsolatedAsyncioTestCase):
         namespace = {
             "db": db, "datetime": datetime, "timezone": timezone,
             "PUBLIC_BASE_URL": "https://example.invalid", "FREE_CREDITS": 3,
-            "_apply_referral": apply_referral,
+            "_apply_referral": apply_referral, "FakeRedirectResponse": RedirectResponse,
         }
         # Handler's local import is replaced only to avoid importing FastAPI here.
-        handler.body[0] = ast.ImportFrom(module="__main__", names=[ast.alias(name="RedirectResponse")], level=0)
-        # Use a dedicated module namespace for import resolution under unittest.
-        import sys
-        module_self = sys.modules[__name__]
-        original = getattr(module_self, "RedirectResponse", None)
-        try:
-            sys.modules["__main__"].RedirectResponse = RedirectResponse
-            exec(compile(ast.fix_missing_locations(module), "<verify_email>", "exec"), namespace)
-            verify = namespace["verify_email"]
-            results = await asyncio.gather(*(
-                verify(token) for token in
-                ["synthetic-token-1", "synthetic-token-2", "synthetic-token-1"] * 8
-            ))
-        finally:
-            if original is None:
-                pass
+        handler.body[0] = ast.Assign(targets=[ast.Name(id="RedirectResponse", ctx=ast.Store())], value=ast.Name(id="FakeRedirectResponse", ctx=ast.Load()))
+        exec(compile(ast.fix_missing_locations(module), "<verify_email>", "exec"), namespace)
+        verify = namespace["verify_email"]
+        results = await asyncio.gather(*(
+            verify(token) for token in
+            ["synthetic-token-1", "synthetic-token-2", "synthetic-token-1"] * 8
+        ))
         self.assertEqual(db.users.user["credits"], 3)
         self.assertTrue(db.users.user["email_verified"])
         self.assertEqual(len(referrals), 1)
