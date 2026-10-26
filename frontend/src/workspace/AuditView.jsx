@@ -7,6 +7,23 @@ const Sources = ({ values }) => (
   <ul className="ws-src">{(values || []).map((v, i) => <li key={i}><b>{v.ref}</b>{v.filename ? ` (${v.filename})` : ""}: {v.value || v.excerpt}</li>)}</ul>
 );
 
+const CAT = { invoice: "Fattura", contract: "Contratto", visura: "Visura camerale", f24: "Modello F24" };
+
+function TypeHint({ docs }) {
+  const count = {};
+  docs.forEach((d) => { count[d.category] = (count[d.category] || 0) + 1; });
+  const alone = docs.filter((d) => count[d.category] === 1);
+  if (!alone.length) return null;
+  const types = [...new Set(docs.map((d) => CAT[d.category] || d.doc_type || "Altro documento"))].join(", ");
+  return (
+    <div className="ws-hint" data-testid="audit-type-hint">
+      {Object.keys(count).length === docs.length
+        ? `Documenti di tipo diverso (${types}): i dati non sono confrontabili campo per campo. Il confronto è possibile solo su soggetti, P.IVA e codici fiscali; se non risultano coincidenze o differenze, le sezioni restano vuote.`
+        : `${alone.map((d) => d.ref).join(", ")} non ha altri documenti dello stesso tipo: per ${alone.length === 1 ? "questo documento" : "questi documenti"} il confronto è limitato a soggetti, P.IVA e codici fiscali.`}
+    </div>
+  );
+}
+
 export default function AuditView({ ids, auditId, onBack, onCredits }) {
   const [credits, setCredits] = useState(null);
   const [a, setA] = useState(null);
@@ -33,6 +50,7 @@ export default function AuditView({ ids, auditId, onBack, onCredits }) {
       <h2 className="ws-h2">Multi-Document Audit</h2>
       <div className="ws-tags">{a.documents.map((d) => <span key={d.ref} className="ws-tag"><b>{d.ref}</b>: {d.doc_type || ""} {d.filename}</span>)}</div>
       <p className="ws-muted">{a.note} I risultati sono confronti tra dati estratti, non verità accertate.</p>
+      <TypeHint docs={a.documents} />
       {SECTIONS.map(([k, label, cls]) => (
         <section key={k} className="ws-card" data-testid={`audit-${k}`}>
           <h3 className="ws-h3"><span className={`ws-level ${cls}`}>{label}</span> ({r[k].length})</h3>

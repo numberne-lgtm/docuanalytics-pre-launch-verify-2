@@ -9,6 +9,8 @@ Ambiente: SOLO PREVIEW (https://pre-launch-verify-2.preview.emergentagent.com). 
 - Restano: email reali, cron reale del lunedì, UX confronto tra documenti di tipo diverso (sezioni vuote senza spiegazione), limite registrazioni 5/ora che rende instabili le suite di test consecutive.
 - Nessun deploy.
 
+- 2026-10-26: avviso nel confronto per documenti di tipo diverso (AuditView.jsx, workspace.css), verificato in UI su 3 casi. Mittente ancora non verificato su Resend → cambio mittente e test email reali in attesa.
+
 ## 1. Implementato (preview, testato)
 - FASE 1 Area di lavoro (/area): Cliente 360, Risk Dashboard, Scadenze automatiche, Multi-Document Audit + analisi approfondita AI (1 credito, anti doppio addebito, rimborso su errore, blocco con scadenza 3 min).
 - Collaudo finale FASE 1 (iteration_24) + correzioni: associazione automatica robusta (formati AI diversi, prefissi P.IVA, analisi vecchie/parziali), duplicati P.IVA/CF in modifica cliente rifiutati.
