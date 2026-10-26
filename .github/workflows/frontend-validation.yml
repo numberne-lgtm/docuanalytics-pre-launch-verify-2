@@ -32,6 +32,24 @@ jobs:
       - name: Isolated backend registration tests (no database or email service)
         working-directory: backend
         run: python -m unittest -v test_registration_tracking.py test_verification_atomicity.py
+      - name: Start isolated MongoDB service
+        run: |
+          docker run -d --name docuanalytics-ci-mongo -p 127.0.0.1:27019:27017 mongo:7
+          for i in $(seq 1 30); do
+            if docker exec docuanalytics-ci-mongo mongosh --quiet --eval 'db.adminCommand({ping:1}).ok' | grep -q 1; then exit 0; fi
+            sleep 2
+          done
+          exit 1
+      - name: Test concurrent verification token claims against isolated MongoDB
+        working-directory: backend
+        env:
+          TEST_MONGO_URL: mongodb://127.0.0.1:27019/
+        run: |
+          python -m pip install --quiet pymongo
+          python -m unittest -v test_mongo_token_concurrency.py
+      - name: Stop isolated MongoDB service
+        if: always()
+        run: docker rm -f docuanalytics-ci-mongo || true
       - name: Production build
         env:
           CI: 'false'
