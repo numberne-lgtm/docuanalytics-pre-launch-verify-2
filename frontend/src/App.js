@@ -9,10 +9,11 @@ import {
   Sparkles, Copy, Play, Lock, Facebook, Linkedin, Youtube, Globe,
   ShieldCheck, Trash2, BadgeCheck, Ban, ChevronDown,
   Clock, AlertTriangle, Search, Rocket, Scale, FileSignature, TrendingUp,
-  Users, Briefcase, Files, Server, ArrowRight, Mail, History, FileDown, FileCode, Pencil, Bell, CalendarClock, Trash2
+  Users, Briefcase, Files, Server, ArrowRight, Mail, History, FileDown, FileCode, Pencil, Bell, CalendarClock
 } from "lucide-react";
 import { createPortal } from "react-dom";
 import { BlogIndex, BlogPost } from "./Blog";
+import { adsConsentChosen, initAdsPixel, setAdsMeasurementConsent, trackAdsRegistration } from "./openaiAds";
 import { MT, MARK, SECTORS, DEMO, validatePiva, validateCF } from "./content";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -56,6 +57,21 @@ const scrollToId = (id) => {
 };
 /* lightweight GA4 event helper (no-op if gtag not present) */
 const track = (event, params = {}) => { try { if (window.gtag) window.gtag("event", event, params); } catch (e) { /* noop */ } };
+
+initAdsPixel();
+
+function AdsMeasurementConsent() {
+  const [choiceMade, setChoiceMade] = useState(adsConsentChosen);
+  if (choiceMade) return null;
+  const choose = (granted) => { setAdsMeasurementConsent(granted); setChoiceMade(true); };
+  return (
+    <div role="group" aria-label="Consenso alla misurazione pubblicitaria" className="privacy-banner">
+      <span>Possiamo usare cookie di misurazione pubblicitaria OpenAI Ads per capire se una visita porta a una registrazione. Puoi rifiutare senza perdere funzionalità.</span>
+      <button type="button" onClick={() => choose(false)}>Rifiuta</button>
+      <button type="button" onClick={() => choose(true)}>Accetta</button>
+    </div>
+  );
+}
 
 /* Hero A/B test: assign a sticky 50/50 variant, persisted in localStorage */
 function useHeroVariant() {
@@ -727,6 +743,7 @@ function Home() {
           <ShieldCheck size={22} className="pb-ic" />
           <span>{t("priv_banner")}</span>
         </div>
+        <AdsMeasurementConsent />
         <div className="trust-badges" data-testid="trust-badges">
           <div className="trust-badge"><Lock size={16} /> <span>{t("badge_nostore")}</span></div>
           <div className="trust-badge"><Trash2 size={16} /> <span>{t("badge_delete")}</span></div>
@@ -1991,8 +2008,14 @@ function AuthModal({ user, onClose, onAuthed, notify }) {
         const { data } = await axios.post(`${API}/auth/register`, {
           email, password, name, user_id: user.user_id, ref: localStorage.getItem("da_ref") || undefined,
         });
+        if (data.verification_required) {
+          notify("Controlla la tua email per confermare la registrazione.");
+          onClose();
+          return;
+        }
         onAuthed(data.token, data.user); notify(`${t("n_welcome")}, ${data.user.name}! 🎉`); onClose();
         track("sign_up", { method: "email", hero_variant: localStorage.getItem("da_hero_ab") || "A" });
+        trackAdsRegistration(data.user?.user_id);
       } else {
         const { data } = await axios.post(`${API}/auth/login`, { email, password });
         onAuthed(data.token, data.user); notify(t("n_login_ok")); onClose();
