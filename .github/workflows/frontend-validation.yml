@@ -46,7 +46,7 @@ jobs:
           TEST_MONGO_URL: mongodb://127.0.0.1:27019/
         run: |
           python -m pip install --quiet pymongo
-          python -m unittest -v test_mongo_token_concurrency.py
+          python -m unittest -v test_mongo_token_concurrency.py test_mongo_account_verification.py
       - name: Stop isolated MongoDB service
         if: always()
         run: docker rm -f docuanalytics-ci-mongo || true
