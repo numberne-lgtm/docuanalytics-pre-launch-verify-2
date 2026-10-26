@@ -27,7 +27,7 @@ test("opt-in initializes measurement and tracks a completed registration once", 
   expect(typeof window.oaiq).toBe("function");
   expect(trackAdsRegistration("new-user")).toBe(true);
   expect(trackAdsRegistration("new-user")).toBe(false);
-  expect(sessionStorage.getItem("da_ads_registration_new-user")).toBe("sent");
+  expect(localStorage.getItem("da_ads_registration_new-user")).toBe("sent");
 });
 
 test("revoking consent disables further registration measurement", () => {
@@ -35,4 +35,12 @@ test("revoking consent disables further registration measurement", () => {
   setAdsMeasurementConsent(false);
   expect(adsConsentGranted()).toBe(false);
   expect(trackAdsRegistration("after-revocation")).toBe(false);
+});
+
+test("registration conversion stays deduplicated after browser session storage resets", () => {
+  setAdsMeasurementConsent(true);
+  expect(trackAdsRegistration("persistent-user")).toBe(true);
+  sessionStorage.clear();
+  expect(trackAdsRegistration("persistent-user")).toBe(false);
+  expect(localStorage.getItem("da_ads_registration_persistent-user")).toBe("sent");
 });
