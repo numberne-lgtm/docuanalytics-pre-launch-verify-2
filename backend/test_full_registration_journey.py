@@ -135,6 +135,21 @@ class RegistrationJourneyTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(logged_in["user"]["credits"], 3)
         self.assertEqual(len(referrals), 1)
 
+        # Duplicate registrations must not issue another token or reset credits.
+        with self.assertRaises(FakeHTTPException) as duplicate:
+            await namespace["register"](SimpleNamespace(
+                email=credentials.email, password="another-password",
+                name="Duplicate", user_id=None, ref=None), request)
+        self.assertEqual(duplicate.exception.status_code, 409)
+        self.assertEqual(len(db.email_verifications.records), 1)
+        self.assertEqual(next(iter(db.users.records.values()))["credits"], 3)
+
+        # An incorrect password must not issue an authentication token.
+        with self.assertRaises(FakeHTTPException) as bad_password:
+            await namespace["login"](SimpleNamespace(
+                email=credentials.email, password="wrong-password"), request)
+        self.assertEqual(bad_password.exception.status_code, 401)
+
 
 if __name__ == "__main__":
     unittest.main()
