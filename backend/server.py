@@ -8,6 +8,7 @@ import logging
 import uuid
 from pathlib import Path
 from datetime import datetime, timezone, timedelta
+from registration_tracking import recently_verified_registration
 from typing import Optional
 
 from fastapi import FastAPI, APIRouter, HTTPException, Request, Header
@@ -1351,16 +1352,9 @@ async def login(req: LoginReq, request: Request):
         u["referral_code"] = code
     # Only a newly email-verified account is eligible for the signup conversion.
     # Return no email, verification token, or other personal data to the ads SDK.
-    verified_at = u.get("email_verified_at")
-    recently_verified_registration = False
-    if verified_at:
-        try:
-            age = datetime.now(timezone.utc) - datetime.fromisoformat(verified_at)
-            recently_verified_registration = timedelta(0) <= age <= timedelta(hours=24)
-        except (ValueError, TypeError):
-            pass
+    eligible_registration = recently_verified_registration(u.get("email_verified_at"))
     return {"token": _make_token(u["user_id"], email), "user": _public_user(u),
-            "recently_verified_registration": recently_verified_registration}
+            "recently_verified_registration": eligible_registration}
 
 
 @api.get("/auth/me")
