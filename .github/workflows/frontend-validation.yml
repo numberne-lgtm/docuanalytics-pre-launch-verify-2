@@ -1,0 +1,89 @@
+name: Frontend validation (draft PR)
+on:
+  push:
+    branches:
+      - feature/openai-ads-registration-tracking
+  pull_request:
+    branches:
+      - main
+jobs:
+  frontend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install dependencies
+        run: npm install --legacy-peer-deps --no-audit --no-fund
+      - name: Fix AJV dependency compatibility
+        run: npm install --no-save --legacy-peer-deps --no-audit --no-fund ajv@^8 ajv-keywords@^5
+      - name: Unit tests
+        env:
+          CI: 'true'
+        run: npm test -- --watch=false --runInBand
+      - name: Backend Python syntax check
+        working-directory: .
+        run: python -m py_compile backend/server.py
+      - name: Isolated backend registration tests (no database or email service)
+        working-directory: backend
+        run: python -m unittest -v test_registration_tracking.py test_verification_atomicity.py test_account_verification_handler.py test_login_verification_guards.py test_verify_handler_behavior.py test_login_handler_behavior.py test_verification_login_journey.py test_registration_ads_contract.py test_full_registration_journey.py
+      - name: HTTP ASGI registration integration test (synthetic only)
+        working-directory: backend
+        run: |
+          python -m pip install --quiet fastapi httpx
+          python -m unittest -v test_registration_http_asgi.py
+      - name: Start isolated MongoDB service
+        run: |
+          docker run -d --name docuanalytics-ci-mongo -p 127.0.0.1:27019:27017 mongo:7
+          for i in $(seq 1 30); do
+            if docker exec docuanalytics-ci-mongo mongosh --quiet --eval 'db.adminCommand({ping:1}).ok' | grep -q 1; then exit 0; fi
+            sleep 2
+          done
+          exit 1
+      - name: Test concurrent verification token claims against isolated MongoDB
+        working-directory: backend
+        env:
+          TEST_MONGO_URL: mongodb://127.0.0.1:27019/
+        run: |
+          python -m pip install --quiet pymongo
+          python -m unittest -v test_mongo_token_concurrency.py test_mongo_account_verification.py
+      - name: Stop isolated MongoDB service
+        if: always()
+        run: docker rm -f docuanalytics-ci-mongo || true
+      - name: Production build
+        env:
+          CI: 'false'
+          REACT_APP_BACKEND_URL: https://example.invalid
+        run: npm run build
+      - name: Chromium browser consent journey (external traffic blocked)
+        working-directory: frontend
+        run: |
+          python -m pip install --quiet playwright
+          python -m playwright install --with-deps chromium
+          python tests/browser_consent_smoke.py
+      - name: Isolated preview smoke test (no production services)
+        working-directory: frontend
+        run: |
+          python -m http.server 8765 --directory build > /tmp/docuanalytics-preview.log 2>&1 &
+          PREVIEW_PID=$!
+          trap 'kill $PREVIEW_PID 2>/dev/null || true' EXIT
+          python - <<'PY'
+          import time, urllib.request
+          for attempt in range(30):
+              try:
+                  with urllib.request.urlopen("http://127.0.0.1:8765/", timeout=2) as response:
+                      html = response.read().decode("utf-8")
+                      assert response.status == 200
+                      assert "<html" in html.lower()
+                      print("Isolated frontend preview responds with HTTP 200")
+                      break
+              except (OSError, AssertionError):
+                  if attempt == 29:
+                      raise
+                  time.sleep(1)
+          PY

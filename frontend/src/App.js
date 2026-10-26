@@ -9,10 +9,11 @@ import {
   Sparkles, Copy, Play, Lock, Facebook, Linkedin, Youtube, Globe,
   ShieldCheck, Trash2, BadgeCheck, Ban, ChevronDown,
   Clock, AlertTriangle, Search, Rocket, Scale, FileSignature, TrendingUp,
-  Users, Briefcase, Files, Server, ArrowRight, Mail, History, FileDown, FileCode, Pencil, Bell, CalendarClock, Trash2
+  Users, Briefcase, Files, Server, ArrowRight, Mail, History, FileDown, FileCode, Pencil, Bell, CalendarClock
 } from "lucide-react";
 import { createPortal } from "react-dom";
 import { BlogIndex, BlogPost } from "./Blog";
+import { adsConsentChosen, initAdsPixel, setAdsMeasurementConsent, trackAdsRegistration } from "./openaiAds";
 import { MT, MARK, SECTORS, DEMO, validatePiva, validateCF } from "./content";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -56,6 +57,25 @@ const scrollToId = (id) => {
 };
 /* lightweight GA4 event helper (no-op if gtag not present) */
 const track = (event, params = {}) => { try { if (window.gtag) window.gtag("event", event, params); } catch (e) { /* noop */ } };
+
+initAdsPixel();
+
+function AdsMeasurementConsent() {
+  const [choice, setChoice] = useState(() => adsConsentChosen() ? (localStorage.getItem("da_ads_measurement_consent") === "yes" ? "yes" : "no") : null);
+  const [editing, setEditing] = useState(false);
+  const choose = (granted) => { setAdsMeasurementConsent(granted); setChoice(granted ? "yes" : "no"); setEditing(false); };
+  if (choice !== null && !editing) {
+    return <div className="privacy-banner"><span>Misurazione pubblicitaria: {choice === "yes" ? "attiva" : "disattivata"}.</span>
+      <button type="button" onClick={() => setEditing(true)}>Modifica preferenze</button></div>;
+  }
+  return (
+    <div role="group" aria-label="Consenso alla misurazione pubblicitaria" className="privacy-banner">
+      <span>Possiamo usare cookie di misurazione pubblicitaria OpenAI Ads per capire se una visita porta a una registrazione. Puoi rifiutare o revocare il consenso senza perdere funzionalità.</span>
+      <button type="button" onClick={() => choose(false)}>Rifiuta</button>
+      <button type="button" onClick={() => choose(true)}>Accetta</button>
+    </div>
+  );
+}
 
 /* Hero A/B test: assign a sticky 50/50 variant, persisted in localStorage */
 function useHeroVariant() {
@@ -727,6 +747,7 @@ function Home() {
           <ShieldCheck size={22} className="pb-ic" />
           <span>{t("priv_banner")}</span>
         </div>
+        <AdsMeasurementConsent />
         <div className="trust-badges" data-testid="trust-badges">
           <div className="trust-badge"><Lock size={16} /> <span>{t("badge_nostore")}</span></div>
           <div className="trust-badge"><Trash2 size={16} /> <span>{t("badge_delete")}</span></div>
@@ -830,6 +851,43 @@ function Home() {
       {remOpen && <RemindersModal onClose={() => setRemOpen(false)} notify={notify} />}
       {guideOpen && <ServicesGuideModal onClose={() => setGuideOpen(false)} />}
       <Toast msg={toast} />
+    </div>
+  );
+}
+
+function RemindersModal({ onClose, notify }) {
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const { t } = useI18n();
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { data } = await axios.get(`${API}/reminders`);
+      setItems(data.reminders || []);
+    } catch (e) {
+      notify(e?.response?.data?.detail || "Impossibile caricare le scadenze");
+    } finally { setLoading(false); }
+  }, []);
+  useEffect(() => { load(); }, [load]);
+  const remove = async (id) => {
+    try {
+      await axios.delete(`${API}/reminders/${encodeURIComponent(id)}`);
+      setItems(old => old.filter(item => item.reminder_id !== id));
+    } catch (e) { notify(e?.response?.data?.detail || "Impossibile eliminare la scadenza"); }
+  };
+  return (
+    <div className="modal-bg" onClick={onClose}>
+      <div className="modal glass pad fade" style={{ maxWidth: 600 }} onClick={e => e.stopPropagation()} role="dialog" aria-modal="true" aria-label="Scadenze">
+        <div className="modal-head"><h2 className="section-title"><Bell size={20} /> Scadenze e promemoria</h2>
+          <button className="close-x" onClick={onClose} aria-label="Chiudi"><X size={18} /></button>
+        </div>
+        {loading ? <p>Caricamento...</p> : items.length === 0 ? <p>Nessuna scadenza attiva.</p> : (
+          <div>{items.map(item => <div key={item.reminder_id} className="flex aic gap" style={{ justifyContent: "space-between", padding: "12px 0", borderBottom: "1px solid #7774" }}>
+            <div><strong>{item.label}</strong><div>{item.due_date} {item.doc_type ? `— ${item.doc_type}` : ""}</div></div>
+            <button className="btn btn-sm btn-ghost" onClick={() => remove(item.reminder_id)} aria-label="Elimina promemoria"><Trash2 size={16} /></button>
+          </div>)}</div>
+        )}
+      </div>
     </div>
   );
 }
@@ -1991,12 +2049,19 @@ function AuthModal({ user, onClose, onAuthed, notify }) {
         const { data } = await axios.post(`${API}/auth/register`, {
           email, password, name, user_id: user.user_id, ref: localStorage.getItem("da_ref") || undefined,
         });
+        if (data.verification_required) {
+          notify("Controlla la tua email per confermare la registrazione.");
+          onClose();
+          return;
+        }
         onAuthed(data.token, data.user); notify(`${t("n_welcome")}, ${data.user.name}! 🎉`); onClose();
         track("sign_up", { method: "email", hero_variant: localStorage.getItem("da_hero_ab") || "A" });
+        trackAdsRegistration(data.user?.user_id);
       } else {
         const { data } = await axios.post(`${API}/auth/login`, { email, password });
         onAuthed(data.token, data.user); notify(t("n_login_ok")); onClose();
         track("login", { method: "email" });
+        if (data.recently_verified_registration) trackAdsRegistration(data.user?.user_id);
       }
     } catch (e) {
       setErr(fmtErr(e?.response?.data?.detail) || t("auth_err"));

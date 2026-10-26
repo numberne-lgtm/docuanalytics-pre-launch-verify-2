@@ -8,6 +8,7 @@ import logging
 import uuid
 from pathlib import Path
 from datetime import datetime, timezone, timedelta
+from registration_tracking import recently_verified_registration
 from typing import Optional
 
 from fastapi import FastAPI, APIRouter, HTTPException, Request, Header
@@ -1303,15 +1304,22 @@ async def register(req: RegisterReq, request: Request):
 @api.get("/auth/verify")
 async def verify_email(token: str):
     from fastapi.responses import RedirectResponse
-    rec = await db.email_verifications.find_one({"token": token})
-    if not rec or rec.get("used"):
+    # Atomically claim the token so concurrent requests cannot redeem it twice.
+    rec = await db.email_verifications.find_one_and_update(
+        {"token": token, "used": False},
+        {"$set": {"used": True}},
+    )
+    if not rec:
         return RedirectResponse(url=f"{PUBLIC_BASE_URL}/?verify=invalid", status_code=302)
-    await db.email_verifications.update_one({"token": token}, {"$set": {"used": True}})
     now = datetime.now(timezone.utc).isoformat()
-    u = await db.users.find_one({"user_id": rec["user_id"]}, {"_id": 0})
-    if u and not u.get("email_verified"):
-        await db.users.update_one({"user_id": rec["user_id"]},
-                                  {"$set": {"email_verified": True, "credits": FREE_CREDITS, "updated_at": now}})
+    # Claim the account verification exactly once, even if several valid
+    # verification links were issued for the same account.
+    verified = await db.users.update_one(
+        {"user_id": rec["user_id"], "email_verified": {"$ne": True}},
+        {"$set": {"email_verified": True, "email_verified_at": now,
+                  "credits": FREE_CREDITS, "updated_at": now}},
+    )
+    if verified.modified_count == 1:
         await _apply_referral(rec.get("ref"), rec["user_id"], rec.get("ip"), now)
     return RedirectResponse(url=f"{PUBLIC_BASE_URL}/?verify=ok", status_code=302)
 
@@ -1349,7 +1357,11 @@ async def login(req: LoginReq, request: Request):
         code = _gen_ref_code()
         await db.users.update_one({"user_id": u["user_id"]}, {"$set": {"referral_code": code}})
         u["referral_code"] = code
-    return {"token": _make_token(u["user_id"], email), "user": _public_user(u)}
+    # Only a newly email-verified account is eligible for the signup conversion.
+    # Return no email, verification token, or other personal data to the ads SDK.
+    eligible_registration = recently_verified_registration(u.get("email_verified_at"))
+    return {"token": _make_token(u["user_id"], email), "user": _public_user(u),
+            "recently_verified_registration": eligible_registration}
 
 
 @api.get("/auth/me")
