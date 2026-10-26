@@ -1304,10 +1304,13 @@ async def register(req: RegisterReq, request: Request):
 @api.get("/auth/verify")
 async def verify_email(token: str):
     from fastapi.responses import RedirectResponse
-    rec = await db.email_verifications.find_one({"token": token})
-    if not rec or rec.get("used"):
+    # Atomically claim the token so concurrent requests cannot redeem it twice.
+    rec = await db.email_verifications.find_one_and_update(
+        {"token": token, "used": False},
+        {"$set": {"used": True}},
+    )
+    if not rec:
         return RedirectResponse(url=f"{PUBLIC_BASE_URL}/?verify=invalid", status_code=302)
-    await db.email_verifications.update_one({"token": token}, {"$set": {"used": True}})
     now = datetime.now(timezone.utc).isoformat()
     u = await db.users.find_one({"user_id": rec["user_id"]}, {"_id": 0})
     if u and not u.get("email_verified"):
