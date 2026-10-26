@@ -2061,6 +2061,7 @@ function AuthModal({ user, onClose, onAuthed, notify }) {
         const { data } = await axios.post(`${API}/auth/login`, { email, password });
         onAuthed(data.token, data.user); notify(t("n_login_ok")); onClose();
         track("login", { method: "email" });
+        if (data.recently_verified_registration) trackAdsRegistration(data.user?.user_id);
       }
     } catch (e) {
       setErr(fmtErr(e?.response?.data?.detail) || t("auth_err"));
