@@ -98,3 +98,22 @@ test("revoking consent between verified logins prevents a second conversion", ()
   expect(measures).toHaveLength(1);
   expect(localStorage.getItem("da_ads_registration_second-revoked-user")).toBeNull();
 });
+
+test("re-granting consent does not replay a previously measured registration", () => {
+  setAdsMeasurementConsent(true);
+  expect(trackAdsRegistration("consent-cycle-user")).toBe(true);
+  setAdsMeasurementConsent(false);
+  setAdsMeasurementConsent(true);
+  expect(trackAdsRegistration("consent-cycle-user")).toBe(false);
+  const measures = window.oaiq.q.map(args => Array.from(args)).filter(args => args[0] === "measure");
+  expect(measures).toHaveLength(1);
+});
+
+test("a missing user ID never produces an advertising conversion", () => {
+  setAdsMeasurementConsent(true);
+  expect(trackAdsRegistration(undefined)).toBe(false);
+  expect(trackAdsRegistration(null)).toBe(false);
+  expect(trackAdsRegistration("")).toBe(false);
+  const measures = window.oaiq.q.map(args => Array.from(args)).filter(args => args[0] === "measure");
+  expect(measures).toHaveLength(0);
+});
