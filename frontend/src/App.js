@@ -863,7 +863,7 @@ function RemindersModal({ onClose, notify }) {
     } catch (e) {
       notify(e?.response?.data?.detail || "Impossibile caricare le scadenze");
     } finally { setLoading(false); }
-  }, [notify]);
+  }, []);
   useEffect(() => { load(); }, [load]);
   const remove = async (id) => {
     try {
