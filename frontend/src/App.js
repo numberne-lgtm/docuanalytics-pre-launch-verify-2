@@ -61,12 +61,16 @@ const track = (event, params = {}) => { try { if (window.gtag) window.gtag("even
 initAdsPixel();
 
 function AdsMeasurementConsent() {
-  const [choiceMade, setChoiceMade] = useState(adsConsentChosen);
-  if (choiceMade) return null;
-  const choose = (granted) => { setAdsMeasurementConsent(granted); setChoiceMade(true); };
+  const [choice, setChoice] = useState(() => adsConsentChosen() ? (localStorage.getItem("da_ads_measurement_consent") === "yes" ? "yes" : "no") : null);
+  const [editing, setEditing] = useState(false);
+  const choose = (granted) => { setAdsMeasurementConsent(granted); setChoice(granted ? "yes" : "no"); setEditing(false); };
+  if (choice !== null && !editing) {
+    return <div className="privacy-banner"><span>Misurazione pubblicitaria: {choice === "yes" ? "attiva" : "disattivata"}.</span>
+      <button type="button" onClick={() => setEditing(true)}>Modifica preferenze</button></div>;
+  }
   return (
     <div role="group" aria-label="Consenso alla misurazione pubblicitaria" className="privacy-banner">
-      <span>Possiamo usare cookie di misurazione pubblicitaria OpenAI Ads per capire se una visita porta a una registrazione. Puoi rifiutare senza perdere funzionalità.</span>
+      <span>Possiamo usare cookie di misurazione pubblicitaria OpenAI Ads per capire se una visita porta a una registrazione. Puoi rifiutare o revocare il consenso senza perdere funzionalità.</span>
       <button type="button" onClick={() => choose(false)}>Rifiuta</button>
       <button type="button" onClick={() => choose(true)}>Accetta</button>
     </div>
