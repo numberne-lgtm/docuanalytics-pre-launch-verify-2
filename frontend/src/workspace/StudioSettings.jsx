@@ -44,7 +44,11 @@ export default function StudioSettings() {
   const [f, setF] = useState(null);
   const [msg, setMsg] = useState("");
   const [err, setErr] = useState("");
-  useEffect(() => { ws.get("/studio").then(setF).catch((e) => setErr(errMsg(e))); }, []);
+  useEffect(() => {
+    let live = true;
+    ws.get("/studio").then((d) => live && setF(d)).catch((e) => live && setErr(errMsg(e)));
+    return () => { live = false; };
+  }, []);
   if (!f) return err ? <div className="ws-error">{err}</div> : null;
   const save = (e) => { e.preventDefault(); setMsg(""); setErr(""); ws.put("/studio", f).then((r) => { setF(r); setMsg("Firma salvata."); }).catch((x) => setErr(errMsg(x))); };
   return (

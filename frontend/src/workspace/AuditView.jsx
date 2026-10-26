@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ws, errMsg, fieldLabel } from "./api";
 
 const SECTIONS = [["consistent", "Coerenze", "lv-low"], ["differences", "Differenze", "lv-medium"], ["anomalies", "Possibili anomalie", "lv-high"], ["to_verify", "Da verificare", "lv-medium"]];
@@ -12,7 +12,10 @@ export default function AuditView({ ids, auditId, onBack, onCredits }) {
   const [a, setA] = useState(null);
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
+  const started = useRef(false);
   useEffect(() => {
+    if (started.current) return;
+    started.current = true;
     const p = auditId ? ws.get(`/audits/${auditId}`) : ws.post("/audits", { analysis_ids: ids });
     p.then(setA).catch((e) => setErr(errMsg(e)));
   }, [ids, auditId]);

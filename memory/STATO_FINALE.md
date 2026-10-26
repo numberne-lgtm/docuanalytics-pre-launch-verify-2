@@ -2,6 +2,13 @@
 
 Ambiente: SOLO PREVIEW (https://pre-launch-verify-2.preview.emergentagent.com). Nessun deploy eseguito in questa sessione. FASE 2 non iniziata.
 
+## Aggiornamento 2026-10-26 (ripresa dai problemi aperti)
+- Mittente: invariato (noreply@docuanalytics.it in backend/.env SENDER_EMAIL). docuanalytics.online NON ancora verificato su Resend (utente). La chiave Resend è "solo invio": lo stato dominio non è leggibile dall'app. Proposta approvata: dopo "Verified", cambio solo SENDER_EMAIL (slot preview) a "DocuAnalytics AI <notifiche@docuanalytics.online>" via modulo sicuro + invio di prova a nunberne@gmail.com. Test email reali: ANCORA DA FARE.
+- 2 analisi AI reali (fattura PNG, contratto PDF): entrambe associate automaticamente al cliente giusto (P.IVA esatta), 3 scadenze rilevate, storico OK. Associazione Cliente 360 RICONFERMATA.
+- Ritest completo (iteration_30): tutte le aree PASS. Corretti 2 bug minori solo-preview (StrictMode): firma studio che cancellava il testo digitato; doppio record di confronto per clic. File: StudioSettings.jsx, AuditView.jsx.
+- Restano: email reali, cron reale del lunedì, UX confronto tra documenti di tipo diverso (sezioni vuote senza spiegazione), limite registrazioni 5/ora che rende instabili le suite di test consecutive.
+- Nessun deploy.
+
 ## 1. Implementato (preview, testato)
 - FASE 1 Area di lavoro (/area): Cliente 360, Risk Dashboard, Scadenze automatiche, Multi-Document Audit + analisi approfondita AI (1 credito, anti doppio addebito, rimborso su errore, blocco con scadenza 3 min).
 - Collaudo finale FASE 1 (iteration_24) + correzioni: associazione automatica robusta (formati AI diversi, prefissi P.IVA, analisi vecchie/parziali), duplicati P.IVA/CF in modifica cliente rifiutati.
