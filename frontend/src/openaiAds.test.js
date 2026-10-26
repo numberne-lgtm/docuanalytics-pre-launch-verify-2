@@ -44,3 +44,22 @@ test("registration conversion stays deduplicated after browser session storage r
   expect(trackAdsRegistration("persistent-user")).toBe(false);
   expect(localStorage.getItem("da_ads_registration_persistent-user")).toBe("sent");
 });
+
+test("verified registration sends the expected conversion payload to the SDK queue", () => {
+  setAdsMeasurementConsent(true);
+  expect(trackAdsRegistration("verified-synthetic-user")).toBe(true);
+  const calls = window.oaiq.q.map(args => Array.from(args));
+  const measurements = calls.filter(args => args[0] === "measure");
+  expect(measurements).toHaveLength(1);
+  expect(measurements[0]).toEqual([
+    "measure", "registration_completed", { type: "customer_action" },
+    { event_id: "registration_verified-synthetic-user" },
+  ]);
+});
+
+test("no advertising script or conversion is created when consent is rejected", () => {
+  setAdsMeasurementConsent(false);
+  expect(trackAdsRegistration("rejected-synthetic-user")).toBe(false);
+  expect(document.querySelectorAll('script[src*="bzrcdn.openai.com"]')).toHaveLength(0);
+  expect(localStorage.getItem("da_ads_registration_rejected-synthetic-user")).toBeNull();
+});
