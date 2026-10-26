@@ -60,6 +60,12 @@ jobs:
           CI: 'false'
           REACT_APP_BACKEND_URL: https://example.invalid
         run: npm run build
+      - name: Chromium browser consent journey (external traffic blocked)
+        working-directory: frontend
+        run: |
+          python -m pip install --quiet playwright
+          python -m playwright install --with-deps chromium
+          python tests/browser_consent_smoke.py
       - name: Isolated preview smoke test (no production services)
         working-directory: frontend
         run: |
