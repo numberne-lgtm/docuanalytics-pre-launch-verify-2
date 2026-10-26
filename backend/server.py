@@ -1311,7 +1311,7 @@ async def verify_email(token: str):
     u = await db.users.find_one({"user_id": rec["user_id"]}, {"_id": 0})
     if u and not u.get("email_verified"):
         await db.users.update_one({"user_id": rec["user_id"]},
-                                  {"$set": {"email_verified": True, "credits": FREE_CREDITS, "updated_at": now}})
+                                  {"$set": {"email_verified": True, "email_verified_at": now, "credits": FREE_CREDITS, "updated_at": now}})
         await _apply_referral(rec.get("ref"), rec["user_id"], rec.get("ip"), now)
     return RedirectResponse(url=f"{PUBLIC_BASE_URL}/?verify=ok", status_code=302)
 
@@ -1349,7 +1349,18 @@ async def login(req: LoginReq, request: Request):
         code = _gen_ref_code()
         await db.users.update_one({"user_id": u["user_id"]}, {"$set": {"referral_code": code}})
         u["referral_code"] = code
-    return {"token": _make_token(u["user_id"], email), "user": _public_user(u)}
+    # Only a newly email-verified account is eligible for the signup conversion.
+    # Return no email, verification token, or other personal data to the ads SDK.
+    verified_at = u.get("email_verified_at")
+    recently_verified_registration = False
+    if verified_at:
+        try:
+            age = datetime.now(timezone.utc) - datetime.fromisoformat(verified_at)
+            recently_verified_registration = timedelta(0) <= age <= timedelta(hours=24)
+        except (ValueError, TypeError):
+            pass
+    return {"token": _make_token(u["user_id"], email), "user": _public_user(u),
+            "recently_verified_registration": recently_verified_registration}
 
 
 @api.get("/auth/me")
