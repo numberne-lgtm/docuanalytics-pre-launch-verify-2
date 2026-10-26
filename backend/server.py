@@ -6,6 +6,7 @@ import asyncio
 import tempfile
 import logging
 import uuid
+from html import escape as html_escape
 from pathlib import Path
 from datetime import datetime, timezone, timedelta
 from typing import Optional
@@ -202,20 +203,37 @@ def _generic_500(context: str, e: Exception):
     return HTTPException(500, "Si è verificato un errore. Riprova tra poco.")
 
 
-async def _send_email_bg(to_email: str, subject: str, html: str) -> bool:
-    if not RESEND_API_KEY:
-        logger.info(f"[email disabled] would send '{subject}' to {to_email}")
-        return False
-    try:
-        import resend
-        resend.api_key = RESEND_API_KEY
-        await asyncio.to_thread(resend.Emails.send, {
-            "from": SENDER_EMAIL, "to": [to_email], "subject": subject, "html": html,
-        })
-        return True
-    except Exception as e:
-        logger.error(f"send email failed: {e}")
-        return False
+_NO_MAIL_DOMAINS = ("example.com", "example.org", "example.net")
+_NO_MAIL_TLDS = (".test", ".invalid", ".example", ".localhost")
+
+
+async def _send_email_bg(to_email: str, subject: str, html: str, reply_to: Optional[str] = None,
+                         attachments: Optional[list] = None, kind: str = "system", user_id: Optional[str] = None) -> bool:
+    dom = (to_email or "").rsplit("@", 1)[-1].lower()
+    status = "sent"
+    if dom in _NO_MAIL_DOMAINS or dom.endswith(_NO_MAIL_TLDS):
+        status = "skipped_reserved_domain"
+    elif not RESEND_API_KEY:
+        status = "disabled"
+    else:
+        try:
+            import resend
+            resend.api_key = RESEND_API_KEY
+            msg = {"from": SENDER_EMAIL, "to": [to_email], "subject": subject, "html": html}
+            if reply_to:
+                msg["reply_to"] = reply_to
+            if attachments:
+                msg["attachments"] = attachments
+            await asyncio.to_thread(resend.Emails.send, msg)
+        except Exception as e:
+            logger.error(f"send email failed: {e}")
+            status = "failed"
+    if kind != "system":
+        await db.email_log.insert_one({"kind": kind, "user_id": user_id, "to": to_email, "status": status,
+                                       "at": datetime.now(timezone.utc).isoformat()})
+    if status != "sent":
+        logger.info(f"[email {status}] '{subject}' to {to_email}")
+    return status == "sent"
 
 
 def _verify_email_html(link: str) -> str:
@@ -559,6 +577,19 @@ async def delete_reminder(reminder_id: str, user_id: Optional[str] = None, reque
     return {"ok": True}
 
 
+def _client_reminder_html(label, due_str, days_left, sender):
+    when = "oggi" if days_left == 0 else f"tra {days_left} giorni"
+    return (
+        "<div style=\"font-family:Arial,sans-serif;max-width:480px;margin:0 auto;color:#152033\">"
+        "<h2 style=\"color:#315efb\">Promemoria scadenza</h2>"
+        f"<p>La scadenza <b>{html_escape(label)}</b> è <b>{when}</b>.</p>"
+        f"<p style=\"font-size:15px\">Data scadenza: <b>{due_str}</b></p>"
+        f"<p>Promemoria inviato da {html_escape(sender)} tramite DocuAnalytics AI. Per domande rispondi a questa email.</p>"
+        "<p style=\"font-size:12px;color:#667085\">Informazione basata su dati estratti dai documenti: verifica sempre sugli originali.</p>"
+        "</div>"
+    )
+
+
 async def _check_reminders():
     today = datetime.now(timezone.utc).date()
     async for r in db.reminders.find({"active": True}):
@@ -568,7 +599,11 @@ async def _check_reminders():
             continue
         days_left = (due - today).days
         sent = set(r.get("sent", []))
+        sent_client = set(r.get("sent_client", []))
         changed = False
+        client = None
+        if r.get("notify_client") and r.get("client_id"):
+            client = await db.clients.find_one({"client_id": r["client_id"], "user_id": r.get("user_id")}, {"_id": 0})
         for d in r.get("notify_days", []):
             if days_left == d and d not in sent and r.get("email"):
                 ok = await _send_email_bg(
@@ -577,8 +612,16 @@ async def _check_reminders():
                 if ok:
                     sent.add(d)
                     changed = True
+            if days_left == d and d not in sent_client and client and client.get("email"):
+                ok = await _send_email_bg(
+                    client["email"], f"Promemoria scadenza: {r.get('label', '')}",
+                    _client_reminder_html(r.get("label", ""), due.strftime("%d/%m/%Y"), days_left, r.get("email", "")),
+                    reply_to=r.get("email"), kind="client_reminder", user_id=r.get("user_id"))
+                if ok:
+                    sent_client.add(d)
+                    changed = True
         if changed:
-            await db.reminders.update_one({"reminder_id": r["reminder_id"]}, {"$set": {"sent": sorted(sent)}})
+            await db.reminders.update_one({"reminder_id": r["reminder_id"]}, {"$set": {"sent": sorted(sent), "sent_client": sorted(sent_client)}})
 
 
 async def _reminder_loop():
@@ -1462,7 +1505,8 @@ app.include_router(build_assistant_router(db, PACKAGES, FREE_CREDITS, REFERRAL_B
 from privacy_admin.router import build_privacy_router
 app.include_router(build_privacy_router(db, ADMIN_TOKEN))
 from workspace.router import build_workspace_router
-app.include_router(build_workspace_router(db, get_current_user, EMERGENT_LLM_KEY, REMINDER_DEFAULT_DAYS))
+app.include_router(build_workspace_router(db, get_current_user, EMERGENT_LLM_KEY, REMINDER_DEFAULT_DAYS, _send_email_bg,
+                                          _ENV_FILE.get("WEBHOOK_CRON_SECRET") or os.environ.get("WEBHOOK_CRON_SECRET"), PUBLIC_BASE_URL))
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,

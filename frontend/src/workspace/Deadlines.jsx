@@ -3,6 +3,7 @@ import { ws, errMsg, fmtDate, dueText } from "./api";
 import { Level } from "./RiskDashboard";
 import DateField from "./DateField";
 import CalendarExport from "./CalendarExport";
+import DigestSettings from "./DigestSettings";
 
 const CHOICES = [[30, "30 gg"], [15, "15 gg"], [7, "7 gg"], [3, "3 gg"], [1, "1 g"], [0, "Il giorno stesso"]];
 const DEFAULT_DAYS = [30, 7, 1];
@@ -27,6 +28,7 @@ function Row({ d, onChanged }) {
   const [date, setDate] = useState(d.due_date || "");
   const [label, setLabel] = useState(d.label);
   const [days, setDays] = useState((d.status === "confirmed" ? d.notify_days : d.notify_pref) ?? DEFAULT_DAYS);
+  const [toClient, setToClient] = useState(!!d.notify_client);
   const [err, setErr] = useState("");
   const run = (p) => { setErr(""); return p.then(() => { setEdit(false); onChanged(); }).catch((e) => setErr(errMsg(e))); };
   return (
@@ -34,7 +36,7 @@ function Row({ d, onChanged }) {
       <div className="ws-dl-main">
         <Level level={d.priority} />
         <span><b>{d.label}</b> <span className="ws-muted">· {d.kind_label !== d.label && `${d.kind_label} · `} {d.due_date ? fmtDate(d.due_date) : `"${d.raw_date}"`} · {dueText(d.status === "to_verify" ? null : d.days_left)}</span>
-          {d.status === "confirmed" && <span className="ws-muted ws-dl-notify" data-testid={`deadline-notify-${d.reminder_id}`}> · {daysText(d.notify_days)}</span>}</span>
+          {d.status === "confirmed" && <span className="ws-muted ws-dl-notify" data-testid={`deadline-notify-${d.reminder_id}`}> · {daysText(d.notify_days)}{d.notify_client && d.notify_days?.length ? " · anche al cliente" : ""}</span>}</span>
         <span className={`ws-tag st-${d.status}`} data-testid={`deadline-status-${d.reminder_id}`}>{d.status === "to_verify" ? "DA VERIFICARE" : d.status === "detected" ? "Rilevata" : "Confermata"}</span>
       </div>
       <div className="ws-dl-actions">
@@ -47,7 +49,13 @@ function Row({ d, onChanged }) {
           <input className="as-input" value={label} onChange={(e) => setLabel(e.target.value)} data-testid="deadline-edit-label" />
           <DateField value={date} onChange={setDate} testid="deadline-edit-date" />
           <NotifyPicker value={days} onChange={setDays} testid="deadline-edit-notify" />
-          <button className="as-btn as-btn-primary" onClick={() => run(ws.patch(`/deadlines/${d.reminder_id}`, { label, due_date: date || undefined, notify_days: days }))} data-testid="deadline-edit-save">Salva</button>
+          {d.client_id && (
+            <label className="ws-switch" data-testid="deadline-edit-client-label">
+              <input type="checkbox" checked={toClient} onChange={(e) => setToClient(e.target.checked)} data-testid="deadline-edit-notify-client" />
+              <span>Avvisa anche il cliente via email (stessi giorni)</span>
+            </label>
+          )}
+          <button className="as-btn as-btn-primary" onClick={() => run(ws.patch(`/deadlines/${d.reminder_id}`, { label, due_date: date || undefined, notify_days: days, ...(d.client_id ? { notify_client: toClient } : {}) }))} data-testid="deadline-edit-save">Salva</button>
         </div>
       )}
       {err && <div className="ws-error">{err}</div>}
@@ -93,6 +101,7 @@ export default function Deadlines({ reloadKey, onChanged }) {
       <DeadlineList items={b[tab]} onChanged={onChanged} />
       <AddDeadline onChanged={onChanged} />
       <CalendarExport />
+      <DigestSettings />
     </div>
   );
 }

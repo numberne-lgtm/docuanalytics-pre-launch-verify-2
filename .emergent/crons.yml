@@ -1,0 +1,9 @@
+crons:
+  - name: weekly-digest
+    description: "Sends the Monday 8am summary email (week deadlines + documents to check) to users who enabled it"
+    cron: "0 8 * * 1"
+    timezone: "Europe/Rome"
+    # Cron endpoints must ack 2xx immediately; enqueue/background the actual work.
+    endpoint: "{{BASE_URL}}/api/workspace/cron/weekly-digest"
+    method: POST
+    enabled: true

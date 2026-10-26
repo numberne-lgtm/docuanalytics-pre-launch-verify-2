@@ -1,6 +1,9 @@
 """Workspace API: Cliente 360, Risk Dashboard, automatic deadlines (on existing reminders), Multi-Document Audit."""
 import json
+import re
 import uuid
+import hmac
+import asyncio
 import hashlib
 import secrets
 import logging
@@ -25,6 +28,7 @@ class ClientReq(BaseModel):
     name: str = Field(..., min_length=1, max_length=200)
     piva: Optional[str] = ""
     cf: Optional[str] = ""
+    email: Optional[str] = ""
     from_analysis_id: Optional[str] = None
 
 
@@ -32,6 +36,7 @@ class ClientPatch(BaseModel):
     name: Optional[str] = Field(None, min_length=1, max_length=200)
     piva: Optional[str] = None
     cf: Optional[str] = None
+    email: Optional[str] = None
     notes: Optional[str] = Field(None, max_length=2000)
 
 
@@ -46,6 +51,7 @@ class DeadlineReq(BaseModel):
     analysis_id: Optional[str] = None
     client_id: Optional[str] = None
     notify_days: Optional[List[int]] = None
+    notify_client: bool = False
 
 
 class DeadlinePatch(BaseModel):
@@ -53,6 +59,7 @@ class DeadlinePatch(BaseModel):
     due_date: Optional[str] = None
     kind: Optional[str] = None
     notify_days: Optional[List[int]] = None
+    notify_client: Optional[bool] = None
 
 
 class ConfirmReq(BaseModel):
@@ -69,11 +76,30 @@ def _notify(days):
     return sorted(set(days), reverse=True)
 
 
+EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]{2,}$")
+
+
+def _email(v):
+    v = (v or "").strip().lower()
+    if v and not EMAIL_RE.match(v):
+        raise HTTPException(400, "Indirizzo email non valido.")
+    return v
+
+
+class ReportSendReq(BaseModel):
+    to: Optional[str] = None
+    message: Optional[str] = Field(None, max_length=1500)
+
+
+class SettingsReq(BaseModel):
+    weekly_digest: bool
+
+
 class AuditReq(BaseModel):
     analysis_ids: List[str] = Field(..., min_length=2, max_length=10)
 
 
-def build_workspace_router(db, get_current_user, llm_key, default_notify_days) -> APIRouter:
+def build_workspace_router(db, get_current_user, llm_key, default_notify_days, send_email, cron_secret, app_url) -> APIRouter:
     r = APIRouter(prefix="/api/workspace")
 
     async def _user(request: Request) -> dict:
@@ -137,7 +163,7 @@ def build_workspace_router(db, get_current_user, llm_key, default_notify_days) -
         dl = core.days_left(rm.get("due_date"))
         status = rm.get("status") or "confirmed"
         return {k: rm.get(k) for k in ("reminder_id", "label", "due_date", "raw_date", "kind", "analysis_id", "client_id",
-                                       "doc_type", "source", "notify_days")} | {"notify_pref": rm.get("notify_pref"),
+                                       "doc_type", "source", "notify_days")} | {"notify_pref": rm.get("notify_pref"), "notify_client": bool(rm.get("notify_client")),
             "status": status, "days_left": dl, "kind_label": core.KIND_LABEL.get(rm.get("kind") or "other", "Scadenza"),
             "priority": core.deadline_priority(dl, status)}
 
@@ -265,7 +291,7 @@ def build_workspace_router(db, get_current_user, llm_key, default_notify_days) -
                 if (piva and s["piva"] == piva) or (cf and s["cf"] == cf) or core.norm_name(s["name"]) == core.norm_name(req.name):
                     extra = s.get("extra") or {}
                     break
-        c = {"client_id": str(uuid.uuid4()), "user_id": uid, "name": req.name.strip(), "piva": piva, "cf": cf,
+        c = {"client_id": str(uuid.uuid4()), "user_id": uid, "name": req.name.strip(), "piva": piva, "cf": cf, "email": _email(req.email),
              "registry": extra, "notes": "", "created_at": _now()}
         await db.clients.insert_one(dict(c))
         if req.from_analysis_id:
@@ -300,7 +326,9 @@ def build_workspace_router(db, get_current_user, llm_key, default_notify_days) -
     async def patch_client(cid: str, req: ClientPatch, request: Request):
         u = await _user(request)
         await _client(u["user_id"], cid)
-        upd = {k: (core.norm_id(v) if k in ("piva", "cf") else v.strip()) for k, v in req.model_dump().items() if v is not None}
+        upd = {k: (core.norm_id(v) if k in ("piva", "cf") else _email(v) if k == "email" else v.strip()) for k, v in req.model_dump().items() if v is not None}
+        if upd.get("email") == "" and "email" in upd:
+            await db.reminders.update_many({"user_id": u["user_id"], "client_id": cid}, {"$set": {"notify_client": False}})
         if "name" in upd and not upd["name"]:
             raise HTTPException(400, "Il nome non può essere vuoto.")
         for k in ("piva", "cf"):
@@ -339,6 +367,7 @@ def build_workspace_router(db, get_current_user, llm_key, default_notify_days) -
         doc = {"reminder_id": str(uuid.uuid4()), "user_id": u["user_id"], "email": u["email"], "analysis_id": req.analysis_id,
                "client_id": req.client_id, "doc_type": "", "label": req.label.strip(), "due_date": iso, "kind": req.kind or "other",
                "status": "confirmed", "source": "manual", "sent": [], "active": True,
+               "notify_client": bool(req.notify_client and req.client_id),
                "notify_days": _notify(req.notify_days) if req.notify_days is not None else list(default_notify_days),
                "created_at": _now()}
         await db.reminders.insert_one(dict(doc))
@@ -355,6 +384,10 @@ def build_workspace_router(db, get_current_user, llm_key, default_notify_days) -
         u = await _user(request)
         x = await _own_deadline(u["user_id"], rid)
         upd = {k: v for k, v in {"label": req.label, "kind": req.kind}.items() if v}
+        if req.notify_client is not None:
+            if req.notify_client and not x.get("client_id"):
+                raise HTTPException(400, "Collega prima la scadenza a un cliente.")
+            upd["notify_client"] = req.notify_client
         if req.notify_days is not None:
             upd["notify_days" if (x.get("status") or "confirmed") == "confirmed" else "notify_pref"] = _notify(req.notify_days)
         if req.due_date is not None:
@@ -584,5 +617,111 @@ def build_workspace_router(db, get_current_user, llm_key, default_notify_days) -
         pdf = core.client_report_pdf(c, docs, dls, u.get("name") or u.get("email") or "")
         return Response(pdf, media_type="application/pdf",
                         headers={"Content-Disposition": f'attachment; filename="report-{core.slug(c["name"])}.pdf"', "Cache-Control": "no-store"})
+
+
+    async def _sent_today(uid, kind):
+        since = (datetime.now(timezone.utc) - timedelta(days=1)).isoformat()
+        return await db.email_log.count_documents({"user_id": uid, "kind": kind, "at": {"$gte": since}})
+
+    @r.post("/clients/{cid}/report/send")
+    async def client_report_send(cid: str, req: ReportSendReq, request: Request):
+        u = await _user(request)
+        uid = u["user_id"]
+        c = await _client(uid, cid)
+        to = _email(req.to) or c.get("email")
+        if not to:
+            raise HTTPException(400, "Inserisci l'email del cliente.")
+        if await _sent_today(uid, "client_report") >= 20:
+            raise HTTPException(429, "Limite giornaliero di invii raggiunto (20). Riprova domani.")
+        docs = [a async for a in db.analyses.find({"user_id": uid, "client_id": cid}, {"_id": 0}).sort("created_at", -1)]
+        dls = [d for d in await _deadlines(uid, {"client_id": cid}) if d["status"] == "confirmed" and d["due_date"]]
+        sender = u.get("name") or u["email"]
+        pdf = core.client_report_pdf(c, docs, dls, sender)
+        note = (req.message or "").strip()
+        html = ("<div style=\"font-family:Arial,sans-serif;max-width:520px;margin:0 auto;color:#152033\">"
+                f"<h2 style=\"color:#315efb\">Riepilogo documenti e scadenze</h2><p>Gentile {core.esc(c['name'])},</p>"
+                + (f"<p style=\"white-space:pre-line\">{core.esc(note)}</p>" if note else
+                   "<p>in allegato trova il riepilogo dei documenti e delle scadenze confermate.</p>")
+                + f"<p>Inviato da {core.esc(sender)} tramite DocuAnalytics AI. Per domande rispondi a questa email.</p>"
+                "<p style=\"font-size:12px;color:#667085\">I dati sono estratti automaticamente dai documenti e vanno verificati sugli originali.</p></div>")
+        ok = await send_email(to, f"Riepilogo documenti e scadenze — {c['name']}", html, reply_to=u["email"],
+                              attachments=[{"filename": f"report-{core.slug(c['name'])}.pdf", "content": list(pdf)}],
+                              kind="client_report", user_id=uid)
+        if not ok:
+            last = await db.email_log.find_one({"user_id": uid, "kind": "client_report"}, sort=[("at", -1)])
+            raise HTTPException(400, "Indirizzo non consentito per l'invio." if (last or {}).get("status") == "skipped_reserved_domain"
+                                else "Invio non riuscito. Riprova tra poco.")
+        if not c.get("email"):
+            await db.clients.update_one({"client_id": cid, "user_id": uid}, {"$set": {"email": to}})
+        await db.clients.update_one({"client_id": cid, "user_id": uid}, {"$set": {"last_report_sent": {"to": to, "at": _now()}}})
+        return {"ok": True, "to": to}
+
+    @r.get("/settings")
+    async def get_settings(request: Request):
+        u = await _user(request)
+        return {"weekly_digest": bool(u.get("weekly_digest")), "email": u["email"]}
+
+    @r.put("/settings")
+    async def put_settings(req: SettingsReq, request: Request):
+        u = await _user(request)
+        await db.users.update_one({"user_id": u["user_id"]}, {"$set": {"weekly_digest": req.weekly_digest}})
+        return {"weekly_digest": req.weekly_digest, "email": u["email"]}
+
+    async def _digest(u):
+        uid = u["user_id"]
+        await _sync(u)
+        clients = {c["client_id"]: c["name"] async for c in db.clients.find({"user_id": uid}, {"_id": 0, "client_id": 1, "name": 1})}
+        dls = await _deadlines(uid)
+        week = [d for d in dls if d["days_left"] is not None and 0 <= d["days_left"] <= 7 and d["status"] != "to_verify"]
+        overdue = [d for d in dls if d["days_left"] is not None and d["days_left"] < 0 and d["status"] == "confirmed"]
+        unsure = [d for d in dls if d["status"] == "to_verify"]
+        docs = [_doc_out(a, {}) async for a in db.analyses.find({"user_id": uid}, {"_id": 0}).sort("created_at", -1).limit(500)]
+        check = [d for d in docs if d["risk_level"] in ("high", "medium")]
+        check.sort(key=lambda d: RISK_ORDER[d["risk_level"]])
+        return core.digest_html(week, overdue, unsure, check[:15], len(check), clients, app_url)
+
+    async def _send_digest(u, kind="weekly_digest"):
+        html = await _digest(u)
+        return await send_email(u["email"], "Il tuo riepilogo settimanale — DocuAnalytics AI", html, kind=kind, user_id=u["user_id"])
+
+    @r.post("/digest/preview")
+    async def digest_preview(request: Request):
+        u = await _user(request)
+        if await _sent_today(u["user_id"], "digest_preview") >= 5:
+            raise HTTPException(429, "Limite di anteprime raggiunto per oggi.")
+        if not await _send_digest(u, "digest_preview"):
+            raise HTTPException(400, "Invio non riuscito per questo indirizzo.")
+        return {"ok": True, "to": u["email"]}
+
+    async def _run_weekly(run_id):
+        week = datetime.now(timezone.utc).strftime("%G-W%V")
+        async for u in db.users.find({"weekly_digest": True, "email": {"$nin": [None, ""]}}, {"_id": 0}):
+            lock = await db.users.update_one({"user_id": u["user_id"], "last_digest_week": {"$ne": week}},
+                                             {"$set": {"last_digest_week": week}})
+            if not lock.modified_count:
+                continue
+            try:
+                await _send_digest(u)
+            except Exception as e:
+                logger.exception(f"weekly digest {u['user_id']}: {e}")
+        await db.cron_runs.update_one({"run_id": run_id}, {"$set": {"done_at": _now()}})
+
+    @r.post("/cron/weekly-digest")
+    async def cron_weekly_digest(request: Request):
+        # Cron endpoints must ack 2xx immediately; enqueue/background the actual work.
+        auth = request.headers.get("authorization") or ""
+        if not cron_secret or not auth.startswith("Bearer ") or not hmac.compare_digest(auth[7:], cron_secret):
+            raise HTTPException(401, "Unauthorized")
+        try:
+            body = await request.json()
+        except Exception:
+            body = {}
+        if not isinstance(body, dict):
+            raise HTTPException(400, "Invalid body")
+        run_id = request.headers.get("x-webhook-id") or body.get("run_id") or str(uuid.uuid4())
+        res = await db.cron_runs.update_one({"run_id": run_id}, {"$setOnInsert": {"run_id": run_id, "job": "weekly-digest", "at": _now()}}, upsert=True)
+        if res.upserted_id is not None:
+            asyncio.create_task(_run_weekly(run_id))
+        return {"accepted": True, "duplicate": res.upserted_id is None}
 
     return r

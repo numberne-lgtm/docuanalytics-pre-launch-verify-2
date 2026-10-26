@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { FileDown } from "lucide-react";
 import { ws, errMsg, fmtDate, download } from "./api";
 import CalendarExport from "./CalendarExport";
+import { ClientEmail, SendReport } from "./ClientMail";
 import { Level } from "./RiskDashboard";
 import { DocCard } from "./Documents";
 import { DeadlineList } from "./Deadlines";
@@ -67,6 +68,8 @@ export function Client360({ cid, onBack, onOpenDoc, reloadKey, onChanged }) {
         <span className="ws-bar-actions"><button className="as-btn ws-btn-icon" onClick={pdf} disabled={pdfBusy} data-testid="client-report-pdf"><FileDown size={14} /> {pdfBusy ? "Preparazione…" : "Report PDF per il cliente"}</button>
         <button className="as-btn" data-testid="client-delete" onClick={() => window.confirm("Eliminare la scheda cliente? Documenti e scadenze restano, senza associazione.") && ws.del(`/clients/${cid}`).then(() => { onChanged(); onBack(); }).catch((e) => setErr(errMsg(e)))}>Elimina scheda</button></span></div>
       {pdfErr && <div className="ws-error" data-testid="client-report-error">{pdfErr}</div>}
+      <ClientEmail key={c.email || ""} c={c} onChanged={onChanged} />
+      <SendReport key={`s-${c.email || ""}`} c={c} onSent={onChanged} />
       <p className="ws-muted">{c.piva ? `P.IVA ${c.piva}` : "P.IVA non disponibile"} · {c.cf ? `CF ${c.cf}` : "CF non disponibile"}</p>
       <div className="ws-tabs">{TABS.map(([k, l]) => <button key={k} className={tab === k ? "on" : ""} onClick={() => setTab(k)} data-testid={`client-tab-${k}`}>{l}</button>)}</div>
       {tab === "overview" && (

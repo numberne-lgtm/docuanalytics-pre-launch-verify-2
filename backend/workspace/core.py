@@ -436,3 +436,39 @@ th {background-color: #eef3ff; font-size: 9pt;} .k {color: #475467; width: 35%;}
         writer.end_page()
     writer.close()
     return buf.getvalue()
+
+
+def esc(v) -> str:
+    import html as H
+    return H.escape(str(v or ""))
+
+
+def digest_html(week, overdue, unsure, check, n_check, clients, app_url) -> str:
+    """Weekly Monday summary for the professional (not the client)."""
+    def dl_rows(items):
+        return "".join(
+            f"<tr><td style='padding:4px 8px;white-space:nowrap'>{_fmt(d['due_date'])}</td><td style='padding:4px 8px'>{esc(d['label'])}"
+            f"{(' · ' + esc(clients[d['client_id']])) if d.get('client_id') in clients else ''}</td>"
+            f"<td style='padding:4px 8px;color:#667085'>{'Confermata' if d['status'] == 'confirmed' else 'Rilevata'}</td></tr>" for d in items)
+
+    def section(title, body):
+        return f"<h3 style='color:#0a1022;margin:18px 0 6px;font-size:15px'>{title}</h3>{body}"
+
+    tbl = lambda rows: f"<table style='border-collapse:collapse;width:100%;font-size:13px'>{rows}</table>"
+    none = "<p style='color:#667085;font-size:13px'>Nessuna.</p>"
+    doc_rows = "".join(
+        f"<tr><td style='padding:4px 8px'>{'🔴' if d['risk_level'] == 'high' else '🟠'}</td><td style='padding:4px 8px'>{esc(d['doc_type'] or d['filename'])}"
+        f"{(' · ' + esc(d['filename'])) if d['doc_type'] else ''}</td><td style='padding:4px 8px;color:#667085'>{esc((d['flags'][0]['message'] if d['flags'] else ''))[:120]}</td></tr>"
+        for d in check)
+    more = f"<p style='font-size:12px;color:#667085'>…e altri {n_check - len(check)} documenti.</p>" if n_check > len(check) else ""
+    return (
+        "<div style='font-family:Arial,sans-serif;max-width:600px;margin:0 auto;color:#152033'>"
+        "<h2 style='color:#315efb;margin-bottom:4px'>Il tuo riepilogo settimanale</h2>"
+        f"<p style='color:#667085;margin-top:0'>Settimana dal {date.today().strftime('%d/%m/%Y')}</p>"
+        + section(f"Scadenze dei prossimi 7 giorni ({len(week)})", tbl(dl_rows(week)) if week else none)
+        + section(f"Scadenze superate ({len(overdue)})", tbl(dl_rows(overdue)) if overdue else none)
+        + section(f"Date da verificare ({len(unsure)})", f"<p style='font-size:13px'>{len(unsure)} date rilevate nei documenti attendono la tua conferma.</p>" if unsure else none)
+        + section(f"Documenti da verificare ({n_check})", (tbl(doc_rows) + more) if check else none)
+        + f"<p style='margin-top:20px'><a href='{app_url}/area' style='background:#2f6bff;color:#fff;padding:10px 16px;border-radius:999px;text-decoration:none'>Apri l'Area di lavoro</a></p>"
+        "<p style='font-size:12px;color:#667085'>Ricevi questa email perché hai attivato il riepilogo del lunedì. Puoi disattivarlo dall'Area di lavoro › Scadenze.</p></div>"
+    )

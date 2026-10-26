@@ -7,6 +7,7 @@ export const ws = {
   get: (p) => axios.get(base + p, { headers: headers() }).then((r) => r.data),
   post: (p, d = {}) => axios.post(base + p, d, { headers: headers() }).then((r) => r.data),
   patch: (p, d) => axios.patch(base + p, d, { headers: headers() }).then((r) => r.data),
+  put: (p, d) => axios.put(base + p, d, { headers: headers() }).then((r) => r.data),
   del: (p) => axios.delete(base + p, { headers: headers() }).then((r) => r.data),
 };
 
