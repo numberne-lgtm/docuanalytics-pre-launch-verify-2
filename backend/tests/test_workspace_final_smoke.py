@@ -327,7 +327,7 @@ class TestDeep:
             async def cur(req):
                 return await mdb_async.users.find_one({"user_id": B["uid"]}, {"_id": 0})
             app = FastAPI()
-            app.include_router(build_workspace_router(mdb_async, cur, "fake", [7, 1]))
+            app.include_router(build_workspace_router(mdb_async, cur, "fake", [7, 1], None, None, "http://t"))
             async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://t") as c:
                 return await c.post(f"/api/workspace/audits/{a['audit_id']}/deep")
         try:

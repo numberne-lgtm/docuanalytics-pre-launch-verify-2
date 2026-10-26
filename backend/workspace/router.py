@@ -169,7 +169,8 @@ def build_workspace_router(db, get_current_user, llm_key, default_notify_days, s
 
     async def _deadlines(uid, flt=None):
         q = {"user_id": uid, "active": True, **(flt or {})}
-        return [_dl_out(x) async for x in db.reminders.find(q, {"_id": 0}).sort("due_date", 1)]
+        mailable = {c["client_id"] async for c in db.clients.find({"user_id": uid, "email": {"$nin": [None, ""]}}, {"_id": 0, "client_id": 1})}
+        return [_dl_out(x) | {"client_has_email": x.get("client_id") in mailable} async for x in db.reminders.find(q, {"_id": 0}).sort("due_date", 1)]
 
     def _buckets(dls):
         b = {"today": [], "next7": [], "next30": [], "overdue": [], "to_verify": [], "later": []}
@@ -394,7 +395,7 @@ def build_workspace_router(db, get_current_user, llm_key, default_notify_days, s
             iso, _ = core.parse_date(req.due_date)
             if not iso:
                 raise HTTPException(400, "Data non valida.")
-            upd.update({"due_date": iso, "sent": []})
+            upd.update({"due_date": iso, "sent": [], "sent_client": []})
         await db.reminders.update_one({"reminder_id": rid}, {"$set": {**upd, "edited_at": _now()}})
         return _dl_out(await _own_deadline(u["user_id"], rid))
 

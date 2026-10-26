@@ -330,3 +330,12 @@ IMPLEMENTATO E TESTATO (19/19 backend + frontend E2E, 100%):
 - GET /api/workspace/clients/{cid}/report.pdf — reduced client-facing PDF (pymupdf Story): identifiers, public registry, documents+extracted fields, confirmed deadlines, disclaimer. No risk/red flags/unconfirmed deadlines.
 - Per-client calendar: /clients/{cid}/calendar.ics and /clients/{cid}/calendar/feed (GET/POST/DELETE), token hash in clients.calendar_feed, public /feed/{token}.ics resolves user or client feed.
 - Tests: iteration_27.json, backend/tests/test_client_autolink_report_feed.py.
+
+
+## 2026-10-26 — Client report email, weekly digest, client reminders (PREVIEW ONLY, no deploy)
+- Clients have optional `email`. POST /api/workspace/clients/{cid}/report/send (PDF attached, reply_to = professional, 20/day limit).
+- Weekly digest opt-in: users.weekly_digest via GET/PUT /api/workspace/settings; POST /digest/preview (5/day); cron .emergent/crons.yml `weekly-digest` Mon 08:00 Europe/Rome -> POST /api/workspace/cron/weekly-digest (Bearer WEBHOOK_CRON_SECRET, idempotent cron_runs, users.last_digest_week).
+- Per-deadline `notify_client` (requires client_id); _check_reminders sends to client email with reply_to, tracks sent_client; explicit confirmed-status guard.
+- _send_email_bg: optional reply_to/attachments/kind; never sends to reserved test domains; logs non-system emails in email_log.
+- BLOCKER (user config): Resend rejects sender domain docuanalytics.it (not verified) — ALL real emails fail (also existing reminders/verification). Needs domain verification in Resend or a verified sender.
+- Tests: iteration_28.json, backend/tests/test_email_digest_client_mail.py.

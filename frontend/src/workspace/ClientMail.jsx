@@ -39,7 +39,7 @@ export function SendReport({ c, onSent }) {
   };
   return (
     <div className="ws-send" data-testid="client-report-send">
-      {!open && <button className="as-btn ws-btn-icon" onClick={() => { setTo(c.email || ""); setOpen(true); setOk(""); }} data-testid="client-report-send-open"><Send size={14} /> Invia report via email</button>}
+      {!open && <button className="as-btn ws-btn-icon" onClick={() => { setTo(c.email || ""); setOpen(true); setOk(""); setErr(""); }} data-testid="client-report-send-open"><Send size={14} /> Invia report via email</button>}
       {open && (
         <div className="ws-card ws-send-form" data-testid="client-report-send-form">
           <label className="ws-muted">Destinatario</label>
@@ -49,7 +49,7 @@ export function SendReport({ c, onSent }) {
           <p className="ws-muted">Il PDF in versione ridotta viene allegato. Le risposte del cliente arrivano al tuo indirizzo email.</p>
           <div className="ws-dl-actions">
             <button className="as-btn as-btn-primary" onClick={send} disabled={busy || !to} data-testid="client-report-send-btn">{busy ? "Invio…" : "Invia"}</button>
-            <button className="as-btn" onClick={() => setOpen(false)} data-testid="client-report-send-cancel">Annulla</button>
+            <button className="as-btn" onClick={() => { setOpen(false); setErr(""); }} data-testid="client-report-send-cancel">Annulla</button>
           </div>
         </div>
       )}

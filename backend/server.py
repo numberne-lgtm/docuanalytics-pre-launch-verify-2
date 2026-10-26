@@ -598,6 +598,8 @@ async def _check_reminders():
         except Exception:
             continue
         days_left = (due - today).days
+        if (r.get("status") or "confirmed") != "confirmed":
+            continue
         sent = set(r.get("sent", []))
         sent_client = set(r.get("sent_client", []))
         changed = False
