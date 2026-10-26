@@ -31,7 +31,7 @@ jobs:
         run: python -m py_compile backend/server.py
       - name: Isolated backend registration tests (no database or email service)
         working-directory: backend
-        run: python -m unittest -v test_registration_tracking.py test_verification_atomicity.py
+        run: python -m unittest -v test_registration_tracking.py test_verification_atomicity.py test_account_verification_handler.py
       - name: Start isolated MongoDB service
         run: |
           docker run -d --name docuanalytics-ci-mongo -p 127.0.0.1:27019:27017 mongo:7
