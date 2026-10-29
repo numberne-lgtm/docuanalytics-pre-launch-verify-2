@@ -11,6 +11,8 @@ Ambiente: SOLO PREVIEW (https://pre-launch-verify-2.preview.emergentagent.com). 
 
 - 2026-10-26: avviso nel confronto per documenti di tipo diverso (AuditView.jsx, workspace.css), verificato in UI su 3 casi. Mittente ancora non verificato su Resend → cambio mittente e test email reali in attesa.
 
+- 2026-10-29: SENDER_EMAIL (solo slot preview) = "DocuAnalytics AI <notifiche@docuanalytics.online>". 3 invii reali a nunberne@gmail.com (report, avviso cliente, riepilogo) RIFIUTATI da Resend: "The docuanalytics.online domain is not verified". Nessun bug di codice. Probabile chiave RESEND_API_KEY di un account/team Resend diverso da quello dove è stato verificato il dominio, oppure verifica non ancora attiva. Account di prova nunberne@gmail.com + dati test lasciati in preview per ripetere (script /app/memory/mailtest.py report|digest|log; .mailtest.json).
+
 ## 1. Implementato (preview, testato)
 - FASE 1 Area di lavoro (/area): Cliente 360, Risk Dashboard, Scadenze automatiche, Multi-Document Audit + analisi approfondita AI (1 credito, anti doppio addebito, rimborso su errore, blocco con scadenza 3 min).
 - Collaudo finale FASE 1 (iteration_24) + correzioni: associazione automatica robusta (formati AI diversi, prefissi P.IVA, analisi vecchie/parziali), duplicati P.IVA/CF in modifica cliente rifiutati.
