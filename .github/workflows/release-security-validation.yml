@@ -1,0 +1,49 @@
+name: Release security validation (draft PR)
+
+on:
+  pull_request:
+    branches: [main, release/emergent-current]
+    paths:
+      - "backend/server.py"
+      - "backend/test_paypal_*.py"
+      - "frontend/**"
+      - ".github/workflows/release-security-validation.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  paypal-security:
+    name: PayPal security regression (isolated)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Backend syntax
+        run: python -m py_compile backend/server.py
+      - name: Focused PayPal policy and ownership tests
+        run: python -m unittest -v backend.test_paypal_sale_policy backend.test_paypal_subscription_claim
+
+  frontend-build:
+    name: Frontend production build (no deploy)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Install dependencies without altering repository
+        run: npm install --legacy-peer-deps --no-audit --no-fund
+        env:
+          CI: "true"
+      - name: Compile frontend
+        run: npm run build
+        env:
+          CI: "false"
+          REACT_APP_BACKEND_URL: "https://example.invalid"
