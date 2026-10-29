@@ -9,7 +9,7 @@ import {
   Sparkles, Copy, Play, Lock, Facebook, Linkedin, Youtube, Globe,
   ShieldCheck, Trash2, BadgeCheck, Ban, ChevronDown,
   Clock, AlertTriangle, Search, Rocket, Scale, FileSignature, TrendingUp,
-  Users, Briefcase, Files, Server, ArrowRight, Mail, History, FileDown, FileCode, Pencil, Bell, CalendarClock, Trash2
+  Users, Briefcase, Files, Server, ArrowRight, Mail, History, FileDown, FileCode, Pencil, Bell, CalendarClock
 } from "lucide-react";
 import { createPortal } from "react-dom";
 import { BlogIndex, BlogPost } from "./Blog";
