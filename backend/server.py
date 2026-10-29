@@ -1537,6 +1537,8 @@ app.include_router(build_assistant_router(db, PACKAGES, FREE_CREDITS, REFERRAL_B
                                           _client_ip, ADMIN_TOKEN, EMERGENT_LLM_KEY, get_current_user))
 from privacy_admin.router import build_privacy_router
 app.include_router(build_privacy_router(db, ADMIN_TOKEN))
+from paypal_sandbox_probe import router as _pp_sandbox_probe  # TEMPORARY sandbox probe
+app.include_router(_pp_sandbox_probe)
 from workspace.router import build_workspace_router
 from workspace import studio as _studio
 app.include_router(build_workspace_router(db, get_current_user, EMERGENT_LLM_KEY, REMINDER_DEFAULT_DAYS, _send_email_bg,
