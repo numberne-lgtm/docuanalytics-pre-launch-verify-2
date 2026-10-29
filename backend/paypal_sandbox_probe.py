@@ -9,7 +9,7 @@ from fastapi import APIRouter, Request
 
 SANDBOX = "https://api-m.sandbox.paypal.com"
 ENV_PATH = Path(__file__).parent / ".env"
-OUT_DIR = Path("/tmp/paypal_probe")
+OUT_DIR = Path("/app/export/paypal_probe")
 HDRS = ["paypal-auth-algo", "paypal-cert-url", "paypal-transmission-id", "paypal-transmission-sig", "paypal-transmission-time"]
 
 router = APIRouter(prefix="/api/paypal-sandbox")
