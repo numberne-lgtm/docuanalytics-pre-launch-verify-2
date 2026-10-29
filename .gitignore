@@ -103,3 +103,11 @@ frontend/node_modules/.cache/default-development/12.pack
 frontend/node_modules/.cache/default-development/13.pack
 frontend/node_modules/.cache/default-development/14.pack
 frontend/node_modules/.cache/default-development/2.pack
+
+# Local exports, reports and agent notes (may contain personal data)
+/export/
+/test_reports/
+/memory/
+*.log
+.ruff_cache/
+.pytest_cache/

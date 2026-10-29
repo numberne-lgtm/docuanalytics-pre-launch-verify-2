@@ -7,7 +7,7 @@ import pytest
 import requests
 
 BASE_URL = os.environ.get("REACT_APP_BACKEND_URL", "https://pre-launch-verify-2.preview.emergentagent.com").rstrip("/")
-ADMIN_TOKEN = "da_admin_54AWdXcE1Reuo4V0gLC5KSeSBvsg83O1"
+ADMIN_TOKEN = os.environ.get("ADMIN_TOKEN", "")
 API = f"{BASE_URL}/api/assistant"
 
 
