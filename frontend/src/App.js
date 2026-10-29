@@ -1745,7 +1745,7 @@ function PaypalCheckout({ user, packs, subs, notify, onClose }) {
       btn = window.paypalSub.Buttons({
         style: { color: "blue", shape: "pill", label: "subscribe", height: 45 },
         createSubscription: (d, actions) => actions.subscription.create({ plan_id: planId }),
-        onApprove: async (d) => { try { const { data: res } = await axios.post(`${API}/paypal/subscription/activate`, { user_id: user.user_id, package_id: selSub, subscription_id: d.subscriptionID }); if (res.status === "active") { track("purchase", { method: "paypal_sub", credits: res.credits_added }); notify(`${t("n_sub_ok")} +${res.credits_added}. ${t("n_renew")}`); refresh(); onClose(); } else notify(t("n_pay_fail")); } catch { notify(t("n_pay_fail")); } },
+        onApprove: async (d) => { try { const { data: res } = await axios.post(`${API}/paypal/subscription/activate`, { user_id: user.user_id, package_id: selSub, subscription_id: d.subscriptionID }); if (res.status === "active") { track("purchase", { method: "paypal_sub", credits: res.credits_added }); notify(res.credits_added > 0 ? `${t("n_sub_ok")} +${res.credits_added}. ${t("n_renew")}` : "Abbonamento attivato. I crediti verranno aggiunti dopo la conferma del pagamento PayPal."); refresh(); onClose(); } else notify(t("n_pay_fail")); } catch { notify(t("n_pay_fail")); } },
         onError: () => notify(t("n_pay_start_err")),
       });
       if (btn.isEligible && !btn.isEligible()) return;
