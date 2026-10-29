@@ -1108,35 +1108,21 @@ async def paypal_sub_activate(req: PaypalSubActivateReq, request: Request):
                   "package_id": package_id, "package_name": pkg["name"], "credits": pkg["credits"],
                   "amount": pkg["amount"], "status": "active", "cancel_at_period_end": False, "updated_at": now},
          "$setOnInsert": {"created_at": now}}, upsert=True)
-    # The activation grant must be committed with the balance in one transaction.
+    # Activation does not prove a completed payment. Grant only on a verified sale.
     activation_sid = f"pp_sub_{req.subscription_id}"
     granted = 0
-    async with await client.start_session() as mongo_session:
-        async with mongo_session.start_transaction():
-            prior = await db.payment_transactions.find_one(
-                {"session_id": activation_sid}, session=mongo_session
-            )
-            if prior:
-                if prior.get("user_id") != req.user_id:
-                    raise HTTPException(403, "Attivazione già associata a un altro account")
-            else:
-                await db.payment_transactions.insert_one({
-                    "session_id": activation_sid, "provider": "paypal",
-                    "subscription_id_ref": req.subscription_id,
-                    "user_id": req.user_id, "package_id": package_id,
-                    "credits": pkg["credits"], "amount": pkg["amount"],
-                    "is_subscription": True, "kind": "activation",
-                    "status": "completed", "payment_status": "paid",
-                    "credited": True, "created_at": now, "updated_at": now,
-                }, session=mongo_session)
-                result = await db.users.update_one(
-                    {"user_id": req.user_id},
-                    {"$inc": {"credits": int(pkg["credits"])}},
-                    session=mongo_session,
-                )
-                if result.matched_count != 1:
-                    raise RuntimeError("Activation owner missing; rolling back")
-                granted = int(pkg["credits"])
+    await db.payment_transactions.update_one(
+        {"session_id": activation_sid},
+        {"$setOnInsert": {
+            "session_id": activation_sid, "provider": "paypal",
+            "subscription_id_ref": req.subscription_id, "user_id": req.user_id,
+            "package_id": package_id, "credits": pkg["credits"], "amount": pkg["amount"],
+            "is_subscription": True, "kind": "activation", "status": "pending",
+            "payment_status": "pending", "credited": False,
+            "created_at": now, "updated_at": now,
+        }},
+        upsert=True,
+    )
     u = await db.users.find_one({"user_id": req.user_id}, {"_id": 0})
     return {"status": "active", "credits_added": granted, "user_credits": u["credits"] if u else None}
 
@@ -1186,8 +1172,8 @@ async def paypal_webhook(request: Request):
         )
         if not sdoc:
             raise HTTPException(503, "Abbonamento PayPal non ancora registrato")
-        # The first sale belongs to activation; subsequent sales grant renewal credits.
-        # Each sale ID is unique and the insert and balance update commit together.
+        # Credit each verified sale once. Preserve legacy subscriptions whose first
+        # allocation was already granted on activation, without granting it again.
         now = datetime.now(timezone.utc).isoformat()
         async with await client.start_session() as mongo_session:
             async with mongo_session.start_transaction():
@@ -1200,7 +1186,11 @@ async def paypal_webhook(request: Request):
                         {"subscription_id_ref": sub_id, "kind": "sale"},
                         session=mongo_session,
                     )
-                    credit = prior >= 1
+                    activation = await db.payment_transactions.find_one(
+                        {"session_id": f"pp_sub_{sub_id}"}, session=mongo_session
+                    )
+                    legacy_first_sale = prior == 0 and bool(activation and activation.get("credited"))
+                    credit = not legacy_first_sale
                     await db.payment_transactions.insert_one({
                         "session_id": sid, "provider": "paypal",
                         "subscription_id_ref": sub_id, "user_id": sdoc["user_id"],
@@ -1216,7 +1206,7 @@ async def paypal_webhook(request: Request):
                             session=mongo_session,
                         )
                         if result.matched_count != 1:
-                            raise RuntimeError("PayPal renewal owner missing; rolling back")
+                            raise RuntimeError("PayPal sale owner missing; rolling back")
     elif event in ("BILLING.SUBSCRIPTION.CANCELLED", "BILLING.SUBSCRIPTION.EXPIRED", "BILLING.SUBSCRIPTION.SUSPENDED"):
         sub_id = resource.get("id")
         if sub_id:
