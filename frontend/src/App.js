@@ -991,9 +991,9 @@ function Results({ result, analysisId, notify, credits, onTopup, onAgain, aiMode
 
       <div className="results-grid">
         <div className="glass pad">
-          <div className="flex between aic mb1">
+          <div className="flex between aic mb1" style={{ flexWrap: "wrap", gap: ".6rem" }}>
             <strong style={{ fontSize: ".95rem" }}>{t("ex_data")}</strong>
-            <div className="flex gap">
+            <div className="flex gap" style={{ flexWrap: "wrap" }}>
               <button className="btn btn-sm btn-primary" data-testid="export-sync-btn" onClick={() => setExportOpen(true)}><FileDown size={14} /> {t("export_sync")}</button>
               <ReminderFromAnalysis analysisId={analysisId} guess={deadline} docType={result.doc_type} loggedIn={!!userEmail} notify={notify} />
               <button className="btn btn-sm" data-testid="export-csv" onClick={() => exportData("csv")}><Download size={14} /> CSV</button>

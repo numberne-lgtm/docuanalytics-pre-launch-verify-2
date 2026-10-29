@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import { BellPlus, X, Check } from "lucide-react";
 import { ws, errMsg, fmtDate } from "./api";
 import DateField from "./DateField";
@@ -44,7 +45,7 @@ export default function ReminderFromAnalysis({ analysisId, guess, docType, logge
     setOpen(true); setErr(""); setDone(""); setDoc(null);
     load().catch((e) => setErr(errMsg(e)));
   };
-  const run = (p) => { setSaving(true); setErr(""); p.then(() => { setDone("Promemoria salvato nell'Area di lavoro › Scadenze."); notify("Promemoria creato"); return load(); }).catch((e) => setErr(errMsg(e))).finally(() => setSaving(false)); };
+  const run = (p) => { setSaving(true); setErr(""); setDone(""); p.then(() => { setDone("Promemoria salvato nell'Area di lavoro › Scadenze."); notify("Promemoria creato"); return load(); }).catch((e) => setErr(errMsg(e))).finally(() => setSaving(false)); };
   const confirmExisting = (d) => (v) => run(ws.patch(`/deadlines/${d.reminder_id}`, v).then(() => ws.post(`/deadlines/${d.reminder_id}/confirm`, { notify: true })));
   const createNew = (v) => run(ws.post("/deadlines", { ...v, analysis_id: analysisId, client_id: doc?.client_id || undefined }));
 
@@ -54,7 +55,7 @@ export default function ReminderFromAnalysis({ analysisId, guess, docType, logge
   return (
     <>
       <button className="btn btn-sm btn-ghost" onClick={start} data-testid="create-reminder-btn"><BellPlus size={14} /> Crea promemoria</button>
-      {open && (
+      {open && createPortal(
         <div className="ws-panel" onClick={() => setOpen(false)}>
           <div className="ws-panel-in ws-rem-panel" onClick={(e) => e.stopPropagation()} data-testid="reminder-modal">
             <div className="ws-bar"><h3 className="ws-h3">Crea promemoria</h3>
@@ -70,14 +71,17 @@ export default function ReminderFromAnalysis({ analysisId, guess, docType, logge
                   init={{ key: d.reminder_id, label: d.label, date: d.due_date || "", note: d.note, uncertain: d.status === "to_verify" || !d.due_date }} />
               ))}
               {pending.length === 0 && (
-                <Editor key="new" saving={saving} onSave={createNew}
-                  init={{ key: "new", label: guess?.label || `Scadenza ${docType || "documento"}`, date: toIso(guess?.due), uncertain: !toIso(guess?.due) }} />
+                <Editor key={`new-${confirmed.length}`} saving={saving} onSave={createNew}
+                  init={{ key: "new", label: guess?.label || `Scadenza ${docType || "documento"}`,
+                    date: confirmed.some((d) => d.due_date === toIso(guess?.due)) ? "" : toIso(guess?.due),
+                    uncertain: !toIso(guess?.due) || confirmed.some((d) => d.due_date === toIso(guess?.due)) }} />
               )}
             </>}
             {done && <p className="ws-ok" data-testid="reminder-done">{done}</p>}
             {err && <div className="ws-error" data-testid="reminder-error">{err}</div>}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );

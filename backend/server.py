@@ -404,7 +404,7 @@ Nella sezione audit, esegui controlli di quadratura (es. saldo F24, netto busta 
         "full_text": text,
     }
 
-    await db.users.update_one({"user_id": uid}, {"$inc": {"credits": -1}})
+    await db.users.update_one({"user_id": uid, "credits": {"$gt": 0}}, {"$inc": {"credits": -1}})
     u2 = await db.users.find_one({"user_id": uid}, {"_id": 0})
 
     analysis_id = str(uuid.uuid4())
