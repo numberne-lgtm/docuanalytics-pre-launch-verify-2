@@ -1127,6 +1127,11 @@ async def paypal_sub_activate(req: PaypalSubActivateReq, request: Request):
     return {"status": "active", "credits_added": granted, "user_credits": u["credits"] if u else None}
 
 
+def _paypal_sale_should_credit(prior_sales: int, activation: Optional[dict]) -> bool:
+    """First legacy sale was prepaid on activation; every new sale must be paid."""
+    return not (prior_sales == 0 and bool(activation and activation.get("credited")))
+
+
 async def _verify_paypal_webhook(headers, raw_body, event):
     if not PAYPAL_WEBHOOK_ID:
         return False
@@ -1189,8 +1194,7 @@ async def paypal_webhook(request: Request):
                     activation = await db.payment_transactions.find_one(
                         {"session_id": f"pp_sub_{sub_id}"}, session=mongo_session
                     )
-                    legacy_first_sale = prior == 0 and bool(activation and activation.get("credited"))
-                    credit = not legacy_first_sale
+                    credit = _paypal_sale_should_credit(prior, activation)
                     await db.payment_transactions.insert_one({
                         "session_id": sid, "provider": "paypal",
                         "subscription_id_ref": sub_id, "user_id": sdoc["user_id"],
