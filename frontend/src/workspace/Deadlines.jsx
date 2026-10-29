@@ -37,7 +37,8 @@ function Row({ d, onChanged }) {
       <div className="ws-dl-main">
         <Level level={d.priority} />
         <span><b>{d.label}</b> <span className="ws-muted">· {d.kind_label !== d.label && `${d.kind_label} · `} {d.due_date ? fmtDate(d.due_date) : `"${d.raw_date}"`} · {dueText(d.status === "to_verify" ? null : d.days_left)}</span>
-          {d.status === "confirmed" && <span className="ws-muted ws-dl-notify" data-testid={`deadline-notify-${d.reminder_id}`}> · {daysText(d.notify_days)}{d.notify_client && d.notify_days?.length ? (d.client_has_email ? " · anche al cliente" : " · cliente senza email: avviso non inviabile") : ""}</span>}</span>
+          {d.status === "confirmed" && <span className="ws-muted ws-dl-notify" data-testid={`deadline-notify-${d.reminder_id}`}> · {daysText(d.notify_days)}{d.notify_client && d.notify_days?.length ? (d.client_has_email ? " · anche al cliente" : " · cliente senza email: avviso non inviabile") : ""}</span>}
+          {d.note && <span className="ws-muted ws-dl-notify" data-testid={`deadline-note-${d.reminder_id}`}>{d.note}</span>}</span>
         <span className={`ws-tag st-${d.status}`} data-testid={`deadline-status-${d.reminder_id}`}>{d.status === "to_verify" ? "DA VERIFICARE" : d.status === "detected" ? "Rilevata" : "Confermata"}</span>
       </div>
       <div className="ws-dl-actions">

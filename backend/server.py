@@ -295,9 +295,24 @@ async def get_session(user_id: str):
     return {"user_id": u["user_id"], "credits": u["credits"], "email": u.get("email")}
 
 
+AI_TIMEOUT_ANALYZE = 90
+AI_TIMEOUT_COPILOT = 45
+_ANALYZING: set = set()
+
+
 @api.post("/analyze")
 async def analyze(req: AnalyzeReq, request: Request):
     uid = await _auth_user_id(request, req.user_id)
+    if uid in _ANALYZING:
+        raise HTTPException(409, "Un'analisi è già in corso: attendi il risultato prima di avviarne un'altra.")
+    _ANALYZING.add(uid)
+    try:
+        return await _analyze(req, uid)
+    finally:
+        _ANALYZING.discard(uid)
+
+
+async def _analyze(req: AnalyzeReq, uid: str):
     u = await db.users.find_one({"user_id": uid}, {"_id": 0})
     if not u:
         raise HTTPException(404, "User not found")
@@ -354,7 +369,7 @@ Nella sezione audit, esegui controlli di quadratura (es. saldo F24, netto busta 
                        system_message="Estrai dati strutturati dai documenti e rispondi solo in JSON valido.").with_model(prov_sdk, model_id)
         if prov_sdk == "gemini":
             file_content = FileContentWithMimeType(file_path=tmp.name, mime_type=req.mime_type)
-            resp = await chat.send_message(UserMessage(text=prompt, file_contents=[file_content]))
+            resp = await asyncio.wait_for(chat.send_message(UserMessage(text=prompt, file_contents=[file_content])), AI_TIMEOUT_ANALYZE)
         else:
             # Claude & OpenAI use vision: send the image directly, or render PDF pages to PNG
             from emergentintegrations.llm.chat import ImageContent
@@ -368,8 +383,12 @@ Nella sezione audit, esegui controlli di quadratura (es. saldo F24, netto busta 
                     pix = page.get_pixmap(matrix=fitz.Matrix(2, 2))
                     images_b64.append(base64.b64encode(pix.tobytes("png")).decode())
                 doc.close()
-            resp = await chat.send_message(UserMessage(
-                text=prompt, file_contents=[ImageContent(image_base64=b) for b in images_b64]))
+            resp = await asyncio.wait_for(chat.send_message(UserMessage(
+                text=prompt, file_contents=[ImageContent(image_base64=b) for b in images_b64])), AI_TIMEOUT_ANALYZE)
+    except asyncio.TimeoutError:
+        logger.warning(f"analyze timeout after {AI_TIMEOUT_ANALYZE}s for {uid}")
+        raise HTTPException(408, f"L'analisi ha superato il tempo massimo ({AI_TIMEOUT_ANALYZE} secondi). "
+                                 "Nessun credito è stato scalato: riprova o carica un file più leggero.")
     except Exception as e:
         raise _generic_500("analyze", e)
     finally:
@@ -412,7 +431,10 @@ async def chat_copilot(req: ChatReq, request: Request):
         prov_sdk, model_id, _ = _resolve_model(req.model)
         chat = LlmChat(api_key=EMERGENT_LLM_KEY, session_id=f"chat-{req.analysis_id}",
                        system_message=f"Sei un copilot AI. Rispondi in italiano basandoti SOLO su questo documento:\n\n{context[:12000]}").with_model(prov_sdk, model_id)
-        resp = await chat.send_message(UserMessage(text=req.question))
+        resp = await asyncio.wait_for(chat.send_message(UserMessage(text=req.question)), AI_TIMEOUT_COPILOT)
+    except asyncio.TimeoutError:
+        logger.warning(f"copilot timeout after {AI_TIMEOUT_COPILOT}s")
+        raise HTTPException(408, f"Il Copilot non ha risposto entro {AI_TIMEOUT_COPILOT} secondi. Riprova tra poco.")
     except Exception as e:
         raise _generic_500("copilot", e)
     return {"answer": resp if isinstance(resp, str) else str(resp)}

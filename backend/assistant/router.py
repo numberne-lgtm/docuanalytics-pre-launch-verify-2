@@ -1,5 +1,6 @@
 """Isolated, portable public sales-assistant module for DocuAnalytics AI."""
 import os
+import asyncio
 import re
 import time
 import uuid
@@ -22,6 +23,7 @@ MAX_MSG_CHARS = 500
 MAX_HISTORY = 6
 MAX_HISTORY_CHARS = 600
 MAX_REPLY_TOKENS = int(os.environ.get("ASSISTANT_MAX_REPLY_TOKENS", "1500"))
+AI_TIMEOUT = 25
 EVENTS = {"visit", "message", "cta_register", "cta_trial", "cta_pricing", "profile_select", "limit_reached"}
 SERVER_ONLY_EVENTS = {"message", "signup_completed"}
 SIGNUP_WINDOW_HOURS = 48
@@ -136,10 +138,13 @@ def build_assistant_router(db, packages: dict, free_credits: int, referral_bonus
             try:
                 chat = LlmChat(api_key=llm_key, session_id=f"assistant-{uuid.uuid4()}",
                                system_message=system).with_model(prov, model).with_params(max_tokens=MAX_REPLY_TOKENS)
-                resp = await chat.send_message(UserMessage(text=text))
+                resp = await asyncio.wait_for(chat.send_message(UserMessage(text=text)), AI_TIMEOUT)
                 out = (resp if isinstance(resp, str) else str(resp)).strip()
                 if out:
                     return out, model
+            except asyncio.TimeoutError:
+                last_err = TimeoutError(f"timeout {AI_TIMEOUT}s")
+                logger.warning(f"assistant provider {model} timed out after {AI_TIMEOUT}s, trying fallback")
             except Exception as e:
                 last_err = e
                 logger.warning(f"assistant provider {model} failed: {e}")

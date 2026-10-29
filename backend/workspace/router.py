@@ -52,6 +52,7 @@ class DeadlineReq(BaseModel):
     client_id: Optional[str] = None
     notify_days: Optional[List[int]] = None
     notify_client: bool = False
+    note: Optional[str] = Field("", max_length=500)
 
 
 class DeadlinePatch(BaseModel):
@@ -61,6 +62,7 @@ class DeadlinePatch(BaseModel):
     notify_days: Optional[List[int]] = None
     notify_client: Optional[bool] = None
     client_message: Optional[str] = Field(None, max_length=500)
+    note: Optional[str] = Field(None, max_length=500)
 
 
 class ConfirmReq(BaseModel):
@@ -177,7 +179,7 @@ def build_workspace_router(db, get_current_user, llm_key, default_notify_days, s
         dl = core.days_left(rm.get("due_date"))
         status = rm.get("status") or "confirmed"
         return {k: rm.get(k) for k in ("reminder_id", "label", "due_date", "raw_date", "kind", "analysis_id", "client_id",
-                                       "doc_type", "source", "notify_days")} | {"notify_pref": rm.get("notify_pref"), "notify_client": bool(rm.get("notify_client")), "client_message": rm.get("client_message") or "",
+                                       "doc_type", "source", "notify_days")} | {"notify_pref": rm.get("notify_pref"), "notify_client": bool(rm.get("notify_client")), "client_message": rm.get("client_message") or "", "note": rm.get("note") or "",
             "status": status, "days_left": dl, "kind_label": core.KIND_LABEL.get(rm.get("kind") or "other", "Scadenza"),
             "priority": core.deadline_priority(dl, status)}
 
@@ -379,12 +381,15 @@ def build_workspace_router(db, get_current_user, llm_key, default_notify_days, s
             await _analysis(u["user_id"], req.analysis_id)
         if req.client_id:
             await _client(u["user_id"], req.client_id)
+        if req.analysis_id and await db.reminders.find_one({"user_id": u["user_id"], "analysis_id": req.analysis_id,
+                                                             "due_date": iso, "active": True}, {"_id": 1}):
+            raise HTTPException(409, "Esiste già un promemoria con questa data per questo documento.")
         doc = {"reminder_id": str(uuid.uuid4()), "user_id": u["user_id"], "email": u["email"], "analysis_id": req.analysis_id,
                "client_id": req.client_id, "doc_type": "", "label": req.label.strip(), "due_date": iso, "kind": req.kind or "other",
                "status": "confirmed", "source": "manual", "sent": [], "active": True,
                "notify_client": bool(req.notify_client and req.client_id),
                "notify_days": _notify(req.notify_days) if req.notify_days is not None else list(default_notify_days),
-               "created_at": _now()}
+               "note": (req.note or "").strip(), "created_at": _now()}
         await db.reminders.insert_one(dict(doc))
         return _dl_out(doc)
 
@@ -405,6 +410,8 @@ def build_workspace_router(db, get_current_user, llm_key, default_notify_days, s
             upd["notify_client"] = req.notify_client
         if req.client_message is not None:
             upd["client_message"] = req.client_message.strip()
+        if req.note is not None:
+            upd["note"] = req.note.strip()
         if req.notify_days is not None:
             upd["notify_days" if (x.get("status") or "confirmed") == "confirmed" else "notify_pref"] = _notify(req.notify_days)
         if req.due_date is not None:

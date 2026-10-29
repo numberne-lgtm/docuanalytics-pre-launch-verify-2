@@ -21,6 +21,7 @@ import { reportAssistantSignup } from "./assistant/signupTracking";
 import AdminPrivacy from "./AdminPrivacy";
 import PrivacyPage from "./PrivacyPage";
 import Workspace from "./workspace/Workspace";
+import ReminderFromAnalysis from "./workspace/ReminderFromAnalysis";
 import { MT, MARK, SECTORS, DEMO, validatePiva, validateCF } from "./content";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -908,8 +909,6 @@ function Results({ result, analysisId, notify, credits, onTopup, onAgain, aiMode
   const [msgs, setMsgs] = useState([]);
   const [loading, setLoading] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
-  const [remSaved, setRemSaved] = useState(false);
-  const [remBusy, setRemBusy] = useState(false);
   const fieldsN = (result.fields || []).length;
   const checksN = (result.audit || []).length;
 
@@ -920,20 +919,6 @@ function Results({ result, analysisId, notify, credits, onTopup, onAgain, aiMode
     return null;
   })();
 
-  const createReminder = async () => {
-    setRemBusy(true);
-    try {
-      await axios.post(`${API}/reminders`, {
-        user_id: localStorage.getItem("da_uid"), analysis_id: analysisId,
-        doc_type: deadline.doc, label: deadline.label, due_date: deadline.due,
-      });
-      setRemSaved(true);
-      notify(t("reminder_created"));
-    } catch (e) {
-      notify(e?.response?.data?.detail || t("export_fail"));
-    } finally { setRemBusy(false); }
-  };
-
   const ask = async () => {
     if (!q.trim()) return;
     const question = q; setQ(""); setMsgs((m) => [...m, { r: "u", t: question }]); setLoading(true);
@@ -941,7 +926,7 @@ function Results({ result, analysisId, notify, credits, onTopup, onAgain, aiMode
       const { data } = await axios.post(`${API}/chat`, { user_id: localStorage.getItem("da_uid"), analysis_id: analysisId, question, model: aiModel });
       setMsgs((m) => [...m, { r: "a", t: data.answer }]);
       track("copilot_used", {});
-    } catch { setMsgs((m) => [...m, { r: "a", t: t("n_copilot_err") }]); }
+    } catch (e) { setMsgs((m) => [...m, { r: "a", t: e?.response?.status === 408 ? e.response.data.detail : t("n_copilot_err") }]); }
     finally { setLoading(false); }
   };
 
@@ -1010,6 +995,7 @@ function Results({ result, analysisId, notify, credits, onTopup, onAgain, aiMode
             <strong style={{ fontSize: ".95rem" }}>{t("ex_data")}</strong>
             <div className="flex gap">
               <button className="btn btn-sm btn-primary" data-testid="export-sync-btn" onClick={() => setExportOpen(true)}><FileDown size={14} /> {t("export_sync")}</button>
+              <ReminderFromAnalysis analysisId={analysisId} guess={deadline} docType={result.doc_type} loggedIn={!!userEmail} notify={notify} />
               <button className="btn btn-sm" data-testid="export-csv" onClick={() => exportData("csv")}><Download size={14} /> CSV</button>
               <button className="btn btn-sm" data-testid="export-json" onClick={() => exportData("json")}><Download size={14} /> JSON</button>
             </div>

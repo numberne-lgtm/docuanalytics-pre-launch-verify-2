@@ -89,6 +89,9 @@
 .ws-switch{display:inline-flex;align-items:center;gap:.5rem;cursor:pointer;font-size:.88rem;flex-basis:100%}
 .ws-switch input{width:1.05rem;height:1.05rem;accent-color:#2f6bff}
 .ws-cmsg{flex-basis:100%;resize:vertical}
+.ws-rem-edit{display:flex;flex-direction:column;gap:.5rem;padding:.9rem 0;border-bottom:1px solid var(--border-color)}
+.ws-rem-edit .as-btn-primary{align-self:flex-start}
+.ws-rem-panel .ws-bar{justify-content:space-between}
 .ws-hint{border:1px solid #f59e0b66;background:#f59e0b14;color:#fcd9a0;border-radius:10px;padding:.7rem .9rem;margin:.6rem 0 1rem;font-size:.9rem}
 .ws-studio-form .as-btn{justify-self:start;align-self:center}
 .ws-dl-edit .as-btn-primary{align-self:flex-start}
