@@ -970,7 +970,7 @@ async def paypal_order(req: PaypalOrderReq, request: Request):
     order_id = r.json()["id"]
     now = datetime.now(timezone.utc).isoformat()
     await db.payment_transactions.insert_one({
-        "session_id": order_id, "provider": "paypal", "user_id": req.user_id,
+        "_id": f"paypal:order:{order_id}", "session_id": order_id, "provider": "paypal", "user_id": req.user_id,
         "package_id": req.package_id, "credits": pkg["credits"], "amount": pkg["amount"],
         "currency": "eur", "is_subscription": False, "status": "initiated",
         "payment_status": "pending", "credited": False, "created_at": now, "updated_at": now})
@@ -1114,6 +1114,7 @@ async def paypal_sub_activate(req: PaypalSubActivateReq, request: Request):
     await db.payment_transactions.update_one(
         {"session_id": activation_sid},
         {"$setOnInsert": {
+            "_id": f"paypal:activation:{req.subscription_id}",
             "session_id": activation_sid, "provider": "paypal",
             "subscription_id_ref": req.subscription_id, "user_id": req.user_id,
             "package_id": package_id, "credits": pkg["credits"], "amount": pkg["amount"],
@@ -1196,6 +1197,7 @@ async def paypal_webhook(request: Request):
                     )
                     credit = _paypal_sale_should_credit(prior, activation)
                     await db.payment_transactions.insert_one({
+                        "_id": f"paypal:sale:{sale_id}",
                         "session_id": sid, "provider": "paypal",
                         "subscription_id_ref": sub_id, "user_id": sdoc["user_id"],
                         "package_id": sdoc.get("package_id"),
