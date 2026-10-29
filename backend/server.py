@@ -675,14 +675,52 @@ async def _record_subscription(record, sub_id, customer_id):
 
 
 async def _credit_if_paid(record):
-    """Idempotently grant credits when a transaction is paid."""
-    if record.get("payment_status") == "paid" and not record.get("credited"):
-        res = await db.payment_transactions.update_one(
-            {"session_id": record["session_id"], "credited": {"$ne": True}},
-            {"$set": {"credited": True, "updated_at": datetime.now(timezone.utc).isoformat()}},
-        )
-        if res.modified_count == 1:
-            await add_credits(record["user_id"], int(record["credits"]))
+    """Atomically grant a paid transaction exactly once, or fail closed."""
+    if record.get("payment_status") != "paid":
+        return 0
+    async with await client.start_session() as mongo_session:
+        async with mongo_session.start_transaction():
+            updated = await db.payment_transactions.update_one(
+                {"session_id": record["session_id"], "payment_status": "paid", "credited": {"$ne": True}},
+                {"$set": {"credited": True, "updated_at": datetime.now(timezone.utc).isoformat()}},
+                session=mongo_session,
+            )
+            if not updated.modified_count:
+                return 0
+            granted = await db.users.update_one(
+                {"user_id": record["user_id"]},
+                {"$inc": {"credits": int(record["credits"])}},
+                session=mongo_session,
+            )
+            if granted.matched_count != 1:
+                raise RuntimeError("Credit owner not found; rolling back payment grant")
+            return int(record["credits"])
+
+
+async def _credit_renewal_once(invoice_id, sub_id, user_id, credits):
+    """Invoice-idempotent renewal grant; requires MongoDB transactions."""
+    if not invoice_id or not sub_id or not user_id or int(credits) <= 0:
+        raise ValueError("Invalid renewal grant")
+    async with await client.start_session() as mongo_session:
+        async with mongo_session.start_transaction():
+            existing = await db.credit_grants.find_one(
+                {"_id": "stripe:renewal:" + invoice_id}, session=mongo_session
+            )
+            if existing:
+                return 0
+            await db.credit_grants.insert_one(
+                {"_id": "stripe:renewal:" + invoice_id, "subscription_id": sub_id,
+                 "user_id": user_id, "credits": int(credits),
+                 "created_at": datetime.now(timezone.utc).isoformat()},
+                session=mongo_session,
+            )
+            granted = await db.users.update_one(
+                {"user_id": user_id}, {"$inc": {"credits": int(credits)}},
+                session=mongo_session,
+            )
+            if granted.matched_count != 1:
+                raise RuntimeError("Renewal owner not found; rolling back")
+            return int(credits)
 
 
 @api.get("/payments/status/{session_id}")
@@ -693,7 +731,7 @@ async def payment_status(session_id: str):
     if record.get("payment_status") != "paid":
         try:
             s = stripe.checkout.Session.retrieve(session_id)
-            if s.payment_status == "paid" or s.status == "complete":
+            if s.payment_status == "paid":
                 await db.payment_transactions.update_one(
                     {"session_id": session_id, "payment_status": {"$ne": "paid"}},
                     {"$set": {"status": "completed", "payment_status": "paid",
@@ -736,7 +774,7 @@ async def stripe_webhook(request: Request):
         # Authoritative re-check against Stripe before crediting (protects against spoofed/unsigned events).
         try:
             s = stripe.checkout.Session.retrieve(sid)
-            if not (s.payment_status == "paid" or s.status == "complete"):
+            if not (s.payment_status == "paid"):
                 return {"status": "ignored"}
         except Exception:
             return {"status": "ignored"}
@@ -754,21 +792,32 @@ async def stripe_webhook(request: Request):
                 await _record_subscription(record, s.get("subscription"), s.get("customer"))
 
     elif etype == "invoice.payment_succeeded":
-        # Recurring renewal -> top up monthly credits (skip the first invoice which is handled above).
         if obj.get("billing_reason") == "subscription_cycle":
+            invoice_id = obj.get("id")
             sub_id = obj.get("subscription")
             try:
+                if not invoice_id or not sub_id:
+                    raise ValueError("Missing renewal invoice or subscription")
+                invoice = stripe.Invoice.retrieve(invoice_id)
+                if invoice.get("paid") is not True or invoice.get("subscription") != sub_id:
+                    raise ValueError("Invoice not paid or subscription mismatch")
+                owner = await db.subscriptions.find_one({"subscription_id": sub_id}, {"_id": 0})
+                if not owner or owner.get("provider", "stripe") != "stripe":
+                    raise ValueError("Unknown Stripe subscription")
                 sub = stripe.Subscription.retrieve(sub_id)
                 meta = sub.get("metadata", {}) or {}
-                uid, credits = meta.get("user_id"), int(meta.get("credits", 0) or 0)
-                if uid and credits:
-                    await add_credits(uid, credits)
-                    await db.subscriptions.update_one(
-                        {"subscription_id": sub_id},
-                        {"$set": {"status": "active", "last_renewal": datetime.now(timezone.utc).isoformat()}},
-                    )
+                uid = owner["user_id"]
+                credits = int(owner["credits"])
+                if meta.get("user_id") != uid or int(meta.get("credits", 0) or 0) != credits:
+                    raise ValueError("Subscription metadata mismatch")
+                await _credit_renewal_once(invoice_id, sub_id, uid, credits)
+                await db.subscriptions.update_one(
+                    {"subscription_id": sub_id},
+                    {"$set": {"status": "active", "last_renewal": datetime.now(timezone.utc).isoformat()}},
+                )
             except Exception as e:
-                logger.warning(f"renewal credit error: {e}")
+                logger.exception("renewal credit failed: %s", e)
+                raise HTTPException(503, "Rinnovo non elaborato; riprovare")
 
     elif etype in ("customer.subscription.deleted", "customer.subscription.canceled"):
         await db.subscriptions.update_one(
