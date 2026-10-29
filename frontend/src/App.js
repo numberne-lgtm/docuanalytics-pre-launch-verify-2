@@ -1809,6 +1809,10 @@ function PricingModal({ user, onClose, notify }) {
   const subPkgs = info?.packages?.filter((p) => p.type === "sub") || [];
 
   const buyStripe = async (id) => {
+    if (!localStorage.getItem("da_token")) {
+      notify("Accedi o registrati prima di effettuare un acquisto.");
+      return;
+    }
     setLoading(id);
     track("begin_checkout", { method: "stripe", plan: id });
     try {
@@ -1820,6 +1824,10 @@ function PricingModal({ user, onClose, notify }) {
   };
 
   const orderCrypto = async () => {
+    if (!localStorage.getItem("da_token")) {
+      notify("Accedi o registrati prima di effettuare un acquisto.");
+      return;
+    }
     try {
       const { data } = await axios.post(`${API}/crypto/order`, { user_id: user.user_id, package_id: selPkg, coin });
       notify(`${data.order_id} — ${data.message}`);
