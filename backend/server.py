@@ -632,7 +632,7 @@ def _create_stripe_session(pkg, req):
 
 @api.post("/payments/checkout")
 async def checkout(req: CheckoutReq, request: Request):
-    req.user_id = await _auth_user_id(request, req.user_id)
+    req.user_id = (await get_current_user(request))["user_id"]
     pkg = PACKAGES.get(req.package_id)
     if not pkg:
         raise HTTPException(400, "Pacchetto non valido")
@@ -906,7 +906,7 @@ async def crypto_info():
 
 @api.post("/crypto/order")
 async def crypto_order(req: CryptoOrderReq, request: Request):
-    req.user_id = await _auth_user_id(request, req.user_id)
+    req.user_id = (await get_current_user(request))["user_id"]
     pkg = PACKAGES.get(req.package_id)
     if not pkg:
         raise HTTPException(400, "Pacchetto non valido")
@@ -951,7 +951,7 @@ async def paypal_config():
 
 @api.post("/paypal/order")
 async def paypal_order(req: PaypalOrderReq, request: Request):
-    req.user_id = await _auth_user_id(request, req.user_id)
+    req.user_id = (await get_current_user(request))["user_id"]
     pkg = PACKAGES.get(req.package_id)
     if not pkg:
         raise HTTPException(400, "Pacchetto non valido")
@@ -1076,7 +1076,7 @@ async def paypal_sub_plan(req: PaypalSubReq):
 
 @api.post("/paypal/subscription/activate")
 async def paypal_sub_activate(req: PaypalSubActivateReq, request: Request):
-    req.user_id = await _auth_user_id(request, req.user_id)
+    req.user_id = (await get_current_user(request))["user_id"]
     token = await _paypal_token()
     async with httpx.AsyncClient(timeout=30) as c:
         r = await c.get(f"{PAYPAL_BASE}/v1/billing/subscriptions/{req.subscription_id}", headers=_pp_headers(token))
