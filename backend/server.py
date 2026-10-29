@@ -1179,19 +1179,44 @@ async def paypal_webhook(request: Request):
     if event == "PAYMENT.SALE.COMPLETED":
         sub_id = resource.get("billing_agreement_id")
         sale_id = resource.get("id")
-        if sub_id and sale_id:
-            sdoc = await db.subscriptions.find_one({"subscription_id": sub_id, "provider": "paypal"}, {"_id": 0})
-            if sdoc and not await db.payment_transactions.find_one({"session_id": f"pp_sale_{sale_id}"}):
-                prior = await db.payment_transactions.count_documents({"subscription_id_ref": sub_id, "kind": "sale"})
-                now = datetime.now(timezone.utc).isoformat()
-                credit = prior >= 1  # first sale already covered by activation
-                await db.payment_transactions.insert_one({
-                    "session_id": f"pp_sale_{sale_id}", "provider": "paypal", "subscription_id_ref": sub_id,
-                    "user_id": sdoc["user_id"], "package_id": sdoc.get("package_id"), "credits": sdoc.get("credits"),
-                    "is_subscription": True, "kind": "sale", "status": "completed", "payment_status": "paid",
-                    "credited": credit, "created_at": now, "updated_at": now})
-                if credit:
-                    await add_credits(sdoc["user_id"], int(sdoc.get("credits", 0) or 0))
+        if not sub_id or not sale_id:
+            raise HTTPException(400, "Identificativo vendita o abbonamento mancante")
+        sdoc = await db.subscriptions.find_one(
+            {"subscription_id": sub_id, "provider": "paypal"}, {"_id": 0}
+        )
+        if not sdoc:
+            raise HTTPException(503, "Abbonamento PayPal non ancora registrato")
+        # The first sale belongs to activation; subsequent sales grant renewal credits.
+        # Each sale ID is unique and the insert and balance update commit together.
+        now = datetime.now(timezone.utc).isoformat()
+        async with await client.start_session() as mongo_session:
+            async with mongo_session.start_transaction():
+                sid = f"pp_sale_{sale_id}"
+                existing = await db.payment_transactions.find_one(
+                    {"session_id": sid}, session=mongo_session
+                )
+                if not existing:
+                    prior = await db.payment_transactions.count_documents(
+                        {"subscription_id_ref": sub_id, "kind": "sale"},
+                        session=mongo_session,
+                    )
+                    credit = prior >= 1
+                    await db.payment_transactions.insert_one({
+                        "session_id": sid, "provider": "paypal",
+                        "subscription_id_ref": sub_id, "user_id": sdoc["user_id"],
+                        "package_id": sdoc.get("package_id"),
+                        "credits": sdoc.get("credits"), "is_subscription": True,
+                        "kind": "sale", "status": "completed", "payment_status": "paid",
+                        "credited": credit, "created_at": now, "updated_at": now,
+                    }, session=mongo_session)
+                    if credit:
+                        result = await db.users.update_one(
+                            {"user_id": sdoc["user_id"]},
+                            {"$inc": {"credits": int(sdoc.get("credits", 0) or 0)}},
+                            session=mongo_session,
+                        )
+                        if result.matched_count != 1:
+                            raise RuntimeError("PayPal renewal owner missing; rolling back")
     elif event in ("BILLING.SUBSCRIPTION.CANCELLED", "BILLING.SUBSCRIPTION.EXPIRED", "BILLING.SUBSCRIPTION.SUSPENDED"):
         sub_id = resource.get("id")
         if sub_id:
