@@ -1127,10 +1127,12 @@ async def paypal_capture(req: PaypalCaptureReq, request: Request):
         data = {}
     status = data.get("status")
     if r.status_code in (200, 201) and status == "COMPLETED":
+        captures = ((data.get("purchase_units") or [{}])[0].get("payments") or {}).get("captures") or [{}]
         await db.payment_transactions.update_one(
             {"session_id": req.order_id, "payment_status": {"$ne": "paid"}},
             {"$set": {"status": "completed", "payment_status": "paid",
-                      "paypal_capture": data.get("id"),
+                      "paypal_order_id": data.get("id"),
+                      "paypal_capture": captures[0].get("id"),
                       "updated_at": datetime.now(timezone.utc).isoformat()}})
         record = await db.payment_transactions.find_one({"session_id": req.order_id}, {"_id": 0})
         await _credit_if_paid(record)
