@@ -1316,6 +1316,16 @@ async def paypal_webhook(request: Request):
                     {"session_id": sid}, session=mongo_session
                 )
                 if not existing:
+                    # Serialize distinct sales for this subscription before deciding
+                    # which legacy sale was prepaid. Without a shared write, parallel
+                    # snapshots can all see zero prior sales and suppress every grant.
+                    locked = await db.subscriptions.update_one(
+                        {"subscription_id": sub_id, "provider": "paypal"},
+                        {"$inc": {"credit_event_version": 1}},
+                        session=mongo_session,
+                    )
+                    if locked.matched_count != 1:
+                        raise RuntimeError("PayPal subscription missing; rolling back")
                     prior = await db.payment_transactions.count_documents(
                         {"subscription_id_ref": sub_id, "kind": "sale"},
                         session=mongo_session,
