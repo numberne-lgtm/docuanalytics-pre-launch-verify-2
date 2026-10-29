@@ -1068,11 +1068,46 @@ async def _paypal_ensure_plan(package_id):
 
 
 @api.post("/paypal/subscription/plan")
-async def paypal_sub_plan(req: PaypalSubReq):
+async def paypal_sub_plan(req: PaypalSubReq, request: Request):
+    user_id = (await get_current_user(request))["user_id"]
     if not (PAYPAL_CLIENT_ID and PAYPAL_SECRET):
         raise HTTPException(500, "PayPal non configurato")
     plan_id = await _paypal_ensure_plan(req.package_id)
-    return {"plan_id": plan_id, "package_id": req.package_id}
+    # PayPal echoes custom_id on the subscription fetched by the backend.
+    # A random server-issued binding prevents an unrelated account from claiming it.
+    custom_id = "da-" + uuid.uuid4().hex
+    await db.paypal_subscription_intents.insert_one({
+        "_id": custom_id, "user_id": user_id,
+        "package_id": req.package_id, "plan_id": plan_id,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    })
+    return {"plan_id": plan_id, "package_id": req.package_id,
+            "custom_id": custom_id}
+
+
+def _paypal_subscription_claim_valid(user_id: str, package_id: str, plan_id: str,
+                                     subscription: dict, intent: Optional[dict],
+                                     existing_owner: Optional[dict]) -> bool:
+    """A fresh claim must match a server-issued PayPal custom_id bound to its user.
+    Legacy subscriptions without custom_id remain accessible only to their recorded owner.
+    """
+    if existing_owner and (
+        existing_owner.get("provider") != "paypal" or
+        existing_owner.get("user_id") != user_id or
+        existing_owner.get("package_id") != package_id
+    ):
+        return False
+    custom_id = subscription.get("custom_id")
+    if isinstance(custom_id, str) and custom_id:
+        return bool(
+            intent and intent.get("_id") == custom_id and
+            intent.get("user_id") == user_id and
+            intent.get("package_id") == package_id and
+            intent.get("plan_id") == plan_id
+        )
+    return bool(existing_owner and existing_owner.get("user_id") == user_id and
+                existing_owner.get("provider") == "paypal" and
+                existing_owner.get("package_id") == package_id)
 
 
 @api.post("/paypal/subscription/activate")
@@ -1096,11 +1131,19 @@ async def paypal_sub_activate(req: PaypalSubActivateReq, request: Request):
     pkg = PACKAGES.get(package_id)
     if not pkg or pkg["type"] != "sub":
         raise HTTPException(400, "Pacchetto abbonamento non valido")
+    existing_owner = await db.subscriptions.find_one(
+        {"subscription_id": req.subscription_id}, {"_id": 0}
+    )
+    custom_id = sub.get("custom_id")
+    intent = await db.paypal_subscription_intents.find_one(
+        {"_id": custom_id}
+    ) if isinstance(custom_id, str) and custom_id else None
+    if not _paypal_subscription_claim_valid(
+        req.user_id, package_id, plan_id, sub, intent, existing_owner
+    ):
+        raise HTTPException(403, "Abbonamento PayPal non associato a questo account")
     if status not in ("ACTIVE", "APPROVED"):
         return {"status": status or "pending", "credits_added": 0}
-    existing_owner = await db.subscriptions.find_one({"subscription_id": req.subscription_id}, {"_id": 0})
-    if existing_owner and (existing_owner.get("user_id") != req.user_id or existing_owner.get("provider") != "paypal"):
-        raise HTTPException(403, "Abbonamento già associato a un altro account")
     now = datetime.now(timezone.utc).isoformat()
     await db.subscriptions.update_one(
         {"subscription_id": req.subscription_id},
