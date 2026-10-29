@@ -9,7 +9,7 @@ import {
   Sparkles, Copy, Play, Lock, Facebook, Linkedin, Youtube, Globe,
   ShieldCheck, Trash2, BadgeCheck, Ban, ChevronDown,
   Clock, AlertTriangle, Search, Rocket, Scale, FileSignature, TrendingUp,
-  Users, Briefcase, Files, Server, ArrowRight, Mail, History, FileDown, FileCode, Pencil, Bell, CalendarClock, Trash2
+  Users, Briefcase, Files, Server, ArrowRight, Mail, History, FileDown, FileCode, Pencil, Bell, CalendarClock
 } from "lucide-react";
 import { createPortal } from "react-dom";
 import { BlogIndex, BlogPost } from "./Blog";
@@ -1738,14 +1738,14 @@ function PaypalCheckout({ user, packs, subs, notify, onClose }) {
     let closed = false; let btn = null;
     subRef.current.replaceChildren();
     (async () => {
-      let planId;
-      try { const { data } = await axios.post(`${API}/paypal/subscription/plan`, { package_id: selSub }); planId = data.plan_id; }
+      let planId; let customId;
+      try { const { data } = await axios.post(`${API}/paypal/subscription/plan`, { package_id: selSub }); planId = data.plan_id; customId = data.custom_id; }
       catch { notify(t("n_pay_start_err")); return; }
       if (closed) return;
       btn = window.paypalSub.Buttons({
         style: { color: "blue", shape: "pill", label: "subscribe", height: 45 },
-        createSubscription: (d, actions) => actions.subscription.create({ plan_id: planId }),
-        onApprove: async (d) => { try { const { data: res } = await axios.post(`${API}/paypal/subscription/activate`, { user_id: user.user_id, package_id: selSub, subscription_id: d.subscriptionID }); if (res.status === "active") { track("purchase", { method: "paypal_sub", credits: res.credits_added }); notify(`${t("n_sub_ok")} +${res.credits_added}. ${t("n_renew")}`); refresh(); onClose(); } else notify(t("n_pay_fail")); } catch { notify(t("n_pay_fail")); } },
+        createSubscription: (d, actions) => actions.subscription.create({ plan_id: planId, custom_id: customId }),
+        onApprove: async (d) => { try { const { data: res } = await axios.post(`${API}/paypal/subscription/activate`, { user_id: user.user_id, package_id: selSub, subscription_id: d.subscriptionID }); if (res.status === "active") { track("purchase", { method: "paypal_sub", credits: res.credits_added }); notify(res.credits_added > 0 ? `${t("n_sub_ok")} +${res.credits_added}. ${t("n_renew")}` : "Abbonamento attivato. I crediti verranno aggiunti dopo la conferma del pagamento PayPal."); refresh(); onClose(); } else notify(t("n_pay_fail")); } catch { notify(t("n_pay_fail")); } },
         onError: () => notify(t("n_pay_start_err")),
       });
       if (btn.isEligible && !btn.isEligible()) return;
@@ -1809,6 +1809,10 @@ function PricingModal({ user, onClose, notify }) {
   const subPkgs = info?.packages?.filter((p) => p.type === "sub") || [];
 
   const buyStripe = async (id) => {
+    if (!localStorage.getItem("da_token")) {
+      notify("Accedi o registrati prima di effettuare un acquisto.");
+      return;
+    }
     setLoading(id);
     track("begin_checkout", { method: "stripe", plan: id });
     try {
@@ -1820,6 +1824,10 @@ function PricingModal({ user, onClose, notify }) {
   };
 
   const orderCrypto = async () => {
+    if (!localStorage.getItem("da_token")) {
+      notify("Accedi o registrati prima di effettuare un acquisto.");
+      return;
+    }
     try {
       const { data } = await axios.post(`${API}/crypto/order`, { user_id: user.user_id, package_id: selPkg, coin });
       notify(`${data.order_id} — ${data.message}`);
@@ -2093,6 +2101,65 @@ function ServicesGuideModal({ onClose }) {
           <span className="flex aic gap"><Sparkles size={18} color="var(--accent)" /> {t("guide_foot")}</span>
           <button className="btn btn-primary btn-sm" data-testid="guide-close-cta" onClick={onClose}>{t("start_now")} <ChevronRight size={14} /></button>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function RemindersModal({ onClose, notify }) {
+  const { t } = useI18n();
+  const [items, setItems] = useState(null);
+  const [busy, setBusy] = useState(null);
+  const uid = localStorage.getItem("da_uid");
+
+  useEffect(() => {
+    let active = true;
+    axios.get(`${API}/reminders`, { params: { user_id: uid } })
+      .then(({ data }) => { if (active) setItems(data.reminders || []); })
+      .catch(() => { if (active) { setItems([]); notify("Impossibile caricare le scadenze."); } });
+    return () => { active = false; };
+  }, [uid]);
+
+  const remove = async (reminderId) => {
+    if (busy) return;
+    setBusy(reminderId);
+    try {
+      await axios.delete(`${API}/reminders/${encodeURIComponent(reminderId)}`, { params: { user_id: uid } });
+      setItems((current) => current.filter((item) => item.reminder_id !== reminderId));
+      notify("Promemoria eliminato.");
+    } catch (e) {
+      notify(e?.response?.data?.detail || "Impossibile eliminare il promemoria.");
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  return (
+    <div className="modal-bg" onClick={onClose}>
+      <div className="modal glass pad fade" onClick={(e) => e.stopPropagation()} data-testid="reminders-modal">
+        <div className="modal-head">
+          <h2 className="section-title flex aic gap"><Bell size={20} /> {t("nav_reminders")}</h2>
+          <button className="close-x" onClick={onClose} aria-label="Chiudi"><X size={18} /></button>
+        </div>
+        {items === null ? <p>Caricamento scadenze…</p> : items.length === 0 ? (
+          <p>Nessuna scadenza attiva.</p>
+        ) : (
+          <div className="flex col gap">
+            {items.map((item) => (
+              <div key={item.reminder_id} className="glass pad flex aic gap" style={{ justifyContent: "space-between" }}>
+                <div>
+                  <strong>{item.label || "Scadenza"}</strong>
+                  <p>{item.due_date}{item.doc_type ? ` · ${item.doc_type}` : ""}</p>
+                  {typeof item.days_left === "number" && <small>{item.days_left < 0 ? "Scaduta" : `Giorni rimanenti: ${item.days_left}`}</small>}
+                </div>
+                <button className="btn btn-sm btn-ghost" disabled={busy === item.reminder_id}
+                  onClick={() => remove(item.reminder_id)} aria-label="Elimina promemoria">
+                  <Trash2 size={16} />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
