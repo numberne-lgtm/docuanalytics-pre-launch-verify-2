@@ -2098,6 +2098,65 @@ function ServicesGuideModal({ onClose }) {
   );
 }
 
+function RemindersModal({ onClose, notify }) {
+  const { t } = useI18n();
+  const [items, setItems] = useState(null);
+  const [busy, setBusy] = useState(null);
+  const uid = localStorage.getItem("da_uid");
+
+  useEffect(() => {
+    let active = true;
+    axios.get(`${API}/reminders`, { params: { user_id: uid } })
+      .then(({ data }) => { if (active) setItems(data.reminders || []); })
+      .catch(() => { if (active) { setItems([]); notify("Impossibile caricare le scadenze."); } });
+    return () => { active = false; };
+  }, [uid]);
+
+  const remove = async (reminderId) => {
+    if (busy) return;
+    setBusy(reminderId);
+    try {
+      await axios.delete(`${API}/reminders/${encodeURIComponent(reminderId)}`, { params: { user_id: uid } });
+      setItems((current) => current.filter((item) => item.reminder_id !== reminderId));
+      notify("Promemoria eliminato.");
+    } catch (e) {
+      notify(e?.response?.data?.detail || "Impossibile eliminare il promemoria.");
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  return (
+    <div className="modal-bg" onClick={onClose}>
+      <div className="modal glass pad fade" onClick={(e) => e.stopPropagation()} data-testid="reminders-modal">
+        <div className="modal-head">
+          <h2 className="section-title flex aic gap"><Bell size={20} /> {t("nav_reminders")}</h2>
+          <button className="close-x" onClick={onClose} aria-label="Chiudi"><X size={18} /></button>
+        </div>
+        {items === null ? <p>Caricamento scadenze…</p> : items.length === 0 ? (
+          <p>Nessuna scadenza attiva.</p>
+        ) : (
+          <div className="flex col gap">
+            {items.map((item) => (
+              <div key={item.reminder_id} className="glass pad flex aic gap" style={{ justifyContent: "space-between" }}>
+                <div>
+                  <strong>{item.label || "Scadenza"}</strong>
+                  <p>{item.due_date}{item.doc_type ? ` · ${item.doc_type}` : ""}</p>
+                  {typeof item.days_left === "number" && <small>{item.days_left < 0 ? "Scaduta" : `Giorni rimanenti: ${item.days_left}`}</small>}
+                </div>
+                <button className="btn btn-sm btn-ghost" disabled={busy === item.reminder_id}
+                  onClick={() => remove(item.reminder_id)} aria-label="Elimina promemoria">
+                  <Trash2 size={16} />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function HistoryModal({ onClose, onReopen }) {
   const { t, lang } = useI18n();
   const [items, setItems] = useState(null);
