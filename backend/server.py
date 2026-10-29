@@ -978,8 +978,9 @@ async def paypal_order(req: PaypalOrderReq, request: Request):
 
 
 @api.post("/paypal/capture")
-async def paypal_capture(req: PaypalCaptureReq):
-    record = await db.payment_transactions.find_one({"session_id": req.order_id, "provider": "paypal"}, {"_id": 0})
+async def paypal_capture(req: PaypalCaptureReq, request: Request):
+    uid = (await get_current_user(request))["user_id"]
+    record = await db.payment_transactions.find_one({"session_id": req.order_id, "provider": "paypal", "user_id": uid}, {"_id": 0})
     if not record:
         raise HTTPException(404, "Ordine non trovato")
     if record.get("payment_status") == "paid":
@@ -1097,6 +1098,9 @@ async def paypal_sub_activate(req: PaypalSubActivateReq, request: Request):
         raise HTTPException(400, "Pacchetto abbonamento non valido")
     if status not in ("ACTIVE", "APPROVED"):
         return {"status": status or "pending", "credits_added": 0}
+    existing_owner = await db.subscriptions.find_one({"subscription_id": req.subscription_id}, {"_id": 0})
+    if existing_owner and (existing_owner.get("user_id") != req.user_id or existing_owner.get("provider") != "paypal"):
+        raise HTTPException(403, "Abbonamento già associato a un altro account")
     now = datetime.now(timezone.utc).isoformat()
     await db.subscriptions.update_one(
         {"subscription_id": req.subscription_id},
@@ -1104,15 +1108,35 @@ async def paypal_sub_activate(req: PaypalSubActivateReq, request: Request):
                   "package_id": package_id, "package_name": pkg["name"], "credits": pkg["credits"],
                   "amount": pkg["amount"], "status": "active", "cancel_at_period_end": False, "updated_at": now},
          "$setOnInsert": {"created_at": now}}, upsert=True)
+    # The activation grant must be committed with the balance in one transaction.
+    activation_sid = f"pp_sub_{req.subscription_id}"
     granted = 0
-    if not await db.payment_transactions.find_one({"session_id": f"pp_sub_{req.subscription_id}"}):
-        await db.payment_transactions.insert_one({
-            "session_id": f"pp_sub_{req.subscription_id}", "provider": "paypal", "subscription_id_ref": req.subscription_id,
-            "user_id": req.user_id, "package_id": package_id, "credits": pkg["credits"], "amount": pkg["amount"],
-            "is_subscription": True, "kind": "activation", "status": "completed", "payment_status": "paid",
-            "credited": True, "created_at": now, "updated_at": now})
-        await add_credits(req.user_id, int(pkg["credits"]))
-        granted = pkg["credits"]
+    async with await client.start_session() as mongo_session:
+        async with mongo_session.start_transaction():
+            prior = await db.payment_transactions.find_one(
+                {"session_id": activation_sid}, session=mongo_session
+            )
+            if prior:
+                if prior.get("user_id") != req.user_id:
+                    raise HTTPException(403, "Attivazione già associata a un altro account")
+            else:
+                await db.payment_transactions.insert_one({
+                    "session_id": activation_sid, "provider": "paypal",
+                    "subscription_id_ref": req.subscription_id,
+                    "user_id": req.user_id, "package_id": package_id,
+                    "credits": pkg["credits"], "amount": pkg["amount"],
+                    "is_subscription": True, "kind": "activation",
+                    "status": "completed", "payment_status": "paid",
+                    "credited": True, "created_at": now, "updated_at": now,
+                }, session=mongo_session)
+                result = await db.users.update_one(
+                    {"user_id": req.user_id},
+                    {"$inc": {"credits": int(pkg["credits"])}},
+                    session=mongo_session,
+                )
+                if result.matched_count != 1:
+                    raise RuntimeError("Activation owner missing; rolling back")
+                granted = int(pkg["credits"])
     u = await db.users.find_one({"user_id": req.user_id}, {"_id": 0})
     return {"status": "active", "credits_added": granted, "user_credits": u["credits"] if u else None}
 
