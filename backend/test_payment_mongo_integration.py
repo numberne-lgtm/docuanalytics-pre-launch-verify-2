@@ -2,7 +2,7 @@
 
 Only connects to loopback. Uses a new disposable database per test. PayPal
 signature verification is stubbed: these are database tests, not Sandbox E2E.
-Retries represent webhook redelivery after transient transaction conflicts.
+Concurrent operations must succeed through the production driver's own retries.
 """
 import ast
 import asyncio
@@ -16,7 +16,6 @@ import unittest
 from uuid import uuid4
 
 from motor.motor_asyncio import AsyncIOMotorClient
-from pymongo.errors import PyMongoError
 
 
 class HTTPException(Exception):
@@ -72,23 +71,11 @@ class PaymentMongoTests(unittest.IsolatedAsyncioTestCase):
         exec(compile(ast.Module(body=nodes, type_ignores=[]), "server.py", "exec"), self.ns)
 
     async def asyncTearDown(self):
+        await self.client.admin.command({"configureFailPoint": "failCommand", "mode": "off"})
         if hasattr(self, "db"):
             assert self.db.name.startswith("da_payment_test_")
             await self.client.drop_database(self.db.name)
         self.client.close()
-
-    async def redeliver(self, operation):
-        for attempt in range(40):
-            try:
-                return await operation()
-            except PyMongoError as exc:
-                if not (exc.has_error_label("TransientTransactionError") or
-                        exc.has_error_label("UnknownTransactionCommitResult") or
-                        getattr(exc, "code", None) in (11000, 112)):
-                    raise
-                if attempt == 39:
-                    raise
-                await asyncio.sleep(min(.01 * (attempt + 1), .1))
 
     async def balance(self):
         return (await self.db.users.find_one({"user_id": "owner"}))["credits"]
@@ -97,7 +84,7 @@ class PaymentMongoTests(unittest.IsolatedAsyncioTestCase):
         record = {"session_id": "checkout-test", "payment_status": "paid",
                   "credited": False, "user_id": "owner", "credits": 50}
         await self.db.payment_transactions.insert_one(dict(record))
-        await asyncio.gather(*(self.redeliver(lambda: self.ns["_credit_if_paid"](record))
+        await asyncio.gather(*(self.ns["_credit_if_paid"](record)
                                for _ in range(12)))
         self.assertEqual(await self.balance(), 50)
         self.assertTrue((await self.db.payment_transactions.find_one({"session_id": "checkout-test"}))["credited"])
@@ -114,7 +101,7 @@ class PaymentMongoTests(unittest.IsolatedAsyncioTestCase):
     async def test_duplicate_renewal_concurrent(self):
         async def grant():
             return await self.ns["_credit_renewal_once"]("invoice-test", "stripe-sub", "owner", 100)
-        await asyncio.gather(*(self.redeliver(grant) for _ in range(12)))
+        await asyncio.gather(*(grant() for _ in range(12)))
         self.assertEqual(await self.balance(), 100)
         self.assertEqual(await self.db.credit_grants.count_documents({}), 1)
 
@@ -124,13 +111,13 @@ class PaymentMongoTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(await self.db.credit_grants.count_documents({}), 0)
 
     async def test_duplicate_paypal_sale_concurrent(self):
-        await asyncio.gather(*(self.redeliver(lambda: self.ns["paypal_webhook"](Request("sale-one")))
+        await asyncio.gather(*(self.ns["paypal_webhook"](Request("sale-one"))
                                for _ in range(12)))
         self.assertEqual(await self.balance(), 100)
         self.assertEqual(await self.db.payment_transactions.count_documents({"kind": "sale"}), 1)
 
     async def test_distinct_new_paypal_sales_concurrent(self):
-        await asyncio.gather(*(self.redeliver(lambda i=i: self.ns["paypal_webhook"](Request(f"sale-{i}")))
+        await asyncio.gather(*(self.ns["paypal_webhook"](Request(f"sale-{i}"))
                                for i in range(12)))
         self.assertEqual(await self.balance(), 1200)
         self.assertEqual(await self.db.payment_transactions.count_documents({"kind": "sale"}), 12)
@@ -139,10 +126,32 @@ class PaymentMongoTests(unittest.IsolatedAsyncioTestCase):
         await self.db.payment_transactions.insert_one({
             "session_id": "pp_sub_subscription-test", "credited": True
         })
-        await asyncio.gather(*(self.redeliver(lambda i=i: self.ns["paypal_webhook"](Request(f"legacy-{i}")))
+        await asyncio.gather(*(self.ns["paypal_webhook"](Request(f"legacy-{i}"))
                                for i in range(12)))
         self.assertEqual(await self.balance(), 1100)
         self.assertEqual(await self.db.payment_transactions.count_documents({"kind": "sale", "credited": False}), 1)
+
+    async def test_transient_transaction_error_is_retried_by_application(self):
+        await self.client.admin.command({
+            "configureFailPoint": "failCommand", "mode": {"times": 1},
+            "data": {"failCommands": ["update"], "errorCode": 112,
+                     "errorLabels": ["TransientTransactionError"]}
+        })
+        await self.ns["paypal_webhook"](Request("transient-sale"))
+        self.assertEqual(await self.balance(), 100)
+        self.assertEqual(await self.db.payment_transactions.count_documents({"kind": "sale"}), 1)
+
+    async def test_unknown_commit_result_is_retried_without_double_credit(self):
+        await self.client.admin.command({
+            "configureFailPoint": "failCommand", "mode": {"times": 2},
+            "data": {"failCommands": ["commitTransaction"], "errorCode": 91,
+                     "errorLabels": ["UnknownTransactionCommitResult"]}
+        })
+        await self.ns["paypal_webhook"](Request("uncertain-commit-sale"))
+        self.assertEqual(await self.balance(), 100)
+        await self.ns["paypal_webhook"](Request("uncertain-commit-sale"))
+        self.assertEqual(await self.balance(), 100)
+        self.assertEqual(await self.db.payment_transactions.count_documents({"kind": "sale"}), 1)
 
 
 if __name__ == "__main__":

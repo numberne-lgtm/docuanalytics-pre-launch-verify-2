@@ -763,49 +763,53 @@ async def _credit_if_paid(record):
     """Atomically grant a paid transaction exactly once, or fail closed."""
     if record.get("payment_status") != "paid":
         return 0
+    async def grant(mongo_session):
+        updated = await db.payment_transactions.update_one(
+            {"session_id": record["session_id"], "payment_status": "paid", "credited": {"$ne": True}},
+            {"$set": {"credited": True, "updated_at": datetime.now(timezone.utc).isoformat()}},
+            session=mongo_session,
+        )
+        if not updated.modified_count:
+            return 0
+        granted = await db.users.update_one(
+            {"user_id": record["user_id"]},
+            {"$inc": {"credits": int(record["credits"])}},
+            session=mongo_session,
+        )
+        if granted.matched_count != 1:
+            raise RuntimeError("Credit owner not found; rolling back payment grant")
+        return int(record["credits"])
+
     async with await client.start_session() as mongo_session:
-        async with mongo_session.start_transaction():
-            updated = await db.payment_transactions.update_one(
-                {"session_id": record["session_id"], "payment_status": "paid", "credited": {"$ne": True}},
-                {"$set": {"credited": True, "updated_at": datetime.now(timezone.utc).isoformat()}},
-                session=mongo_session,
-            )
-            if not updated.modified_count:
-                return 0
-            granted = await db.users.update_one(
-                {"user_id": record["user_id"]},
-                {"$inc": {"credits": int(record["credits"])}},
-                session=mongo_session,
-            )
-            if granted.matched_count != 1:
-                raise RuntimeError("Credit owner not found; rolling back payment grant")
-            return int(record["credits"])
+        return await mongo_session.with_transaction(grant)
 
 
 async def _credit_renewal_once(invoice_id, sub_id, user_id, credits):
     """Invoice-idempotent renewal grant; requires MongoDB transactions."""
     if not invoice_id or not sub_id or not user_id or int(credits) <= 0:
         raise ValueError("Invalid renewal grant")
+    async def grant(mongo_session):
+        existing = await db.credit_grants.find_one(
+            {"_id": "stripe:renewal:" + invoice_id}, session=mongo_session
+        )
+        if existing:
+            return 0
+        await db.credit_grants.insert_one(
+            {"_id": "stripe:renewal:" + invoice_id, "subscription_id": sub_id,
+             "user_id": user_id, "credits": int(credits),
+             "created_at": datetime.now(timezone.utc).isoformat()},
+            session=mongo_session,
+        )
+        granted = await db.users.update_one(
+            {"user_id": user_id}, {"$inc": {"credits": int(credits)}},
+            session=mongo_session,
+        )
+        if granted.matched_count != 1:
+            raise RuntimeError("Renewal owner not found; rolling back")
+        return int(credits)
+
     async with await client.start_session() as mongo_session:
-        async with mongo_session.start_transaction():
-            existing = await db.credit_grants.find_one(
-                {"_id": "stripe:renewal:" + invoice_id}, session=mongo_session
-            )
-            if existing:
-                return 0
-            await db.credit_grants.insert_one(
-                {"_id": "stripe:renewal:" + invoice_id, "subscription_id": sub_id,
-                 "user_id": user_id, "credits": int(credits),
-                 "created_at": datetime.now(timezone.utc).isoformat()},
-                session=mongo_session,
-            )
-            granted = await db.users.update_one(
-                {"user_id": user_id}, {"$inc": {"credits": int(credits)}},
-                session=mongo_session,
-            )
-            if granted.matched_count != 1:
-                raise RuntimeError("Renewal owner not found; rolling back")
-            return int(credits)
+        return await mongo_session.with_transaction(grant)
 
 
 @api.get("/payments/status/{session_id}")
@@ -1309,48 +1313,50 @@ async def paypal_webhook(request: Request):
         # Credit each verified sale once. Preserve legacy subscriptions whose first
         # allocation was already granted on activation, without granting it again.
         now = datetime.now(timezone.utc).isoformat()
-        async with await client.start_session() as mongo_session:
-            async with mongo_session.start_transaction():
-                sid = f"pp_sale_{sale_id}"
-                existing = await db.payment_transactions.find_one(
-                    {"session_id": sid}, session=mongo_session
+        async def grant_sale(mongo_session):
+            sid = f"pp_sale_{sale_id}"
+            existing = await db.payment_transactions.find_one(
+                {"session_id": sid}, session=mongo_session
+            )
+            if not existing:
+                # Serialize distinct sales for this subscription before deciding
+                # which legacy sale was prepaid. Without a shared write, parallel
+                # snapshots can all see zero prior sales and suppress every grant.
+                locked = await db.subscriptions.update_one(
+                    {"subscription_id": sub_id, "provider": "paypal"},
+                    {"$inc": {"credit_event_version": 1}},
+                    session=mongo_session,
                 )
-                if not existing:
-                    # Serialize distinct sales for this subscription before deciding
-                    # which legacy sale was prepaid. Without a shared write, parallel
-                    # snapshots can all see zero prior sales and suppress every grant.
-                    locked = await db.subscriptions.update_one(
-                        {"subscription_id": sub_id, "provider": "paypal"},
-                        {"$inc": {"credit_event_version": 1}},
+                if locked.matched_count != 1:
+                    raise RuntimeError("PayPal subscription missing; rolling back")
+                prior = await db.payment_transactions.count_documents(
+                    {"subscription_id_ref": sub_id, "kind": "sale"},
+                    session=mongo_session,
+                )
+                activation = await db.payment_transactions.find_one(
+                    {"session_id": f"pp_sub_{sub_id}"}, session=mongo_session
+                )
+                credit = _paypal_sale_should_credit(prior, activation)
+                await db.payment_transactions.insert_one({
+                    "_id": f"paypal:sale:{sale_id}",
+                    "session_id": sid, "provider": "paypal",
+                    "subscription_id_ref": sub_id, "user_id": sdoc["user_id"],
+                    "package_id": sdoc.get("package_id"),
+                    "credits": sdoc.get("credits"), "is_subscription": True,
+                    "kind": "sale", "status": "completed", "payment_status": "paid",
+                    "credited": credit, "created_at": now, "updated_at": now,
+                }, session=mongo_session)
+                if credit:
+                    result = await db.users.update_one(
+                        {"user_id": sdoc["user_id"]},
+                        {"$inc": {"credits": int(sdoc.get("credits", 0) or 0)}},
                         session=mongo_session,
                     )
-                    if locked.matched_count != 1:
-                        raise RuntimeError("PayPal subscription missing; rolling back")
-                    prior = await db.payment_transactions.count_documents(
-                        {"subscription_id_ref": sub_id, "kind": "sale"},
-                        session=mongo_session,
-                    )
-                    activation = await db.payment_transactions.find_one(
-                        {"session_id": f"pp_sub_{sub_id}"}, session=mongo_session
-                    )
-                    credit = _paypal_sale_should_credit(prior, activation)
-                    await db.payment_transactions.insert_one({
-                        "_id": f"paypal:sale:{sale_id}",
-                        "session_id": sid, "provider": "paypal",
-                        "subscription_id_ref": sub_id, "user_id": sdoc["user_id"],
-                        "package_id": sdoc.get("package_id"),
-                        "credits": sdoc.get("credits"), "is_subscription": True,
-                        "kind": "sale", "status": "completed", "payment_status": "paid",
-                        "credited": credit, "created_at": now, "updated_at": now,
-                    }, session=mongo_session)
-                    if credit:
-                        result = await db.users.update_one(
-                            {"user_id": sdoc["user_id"]},
-                            {"$inc": {"credits": int(sdoc.get("credits", 0) or 0)}},
-                            session=mongo_session,
-                        )
-                        if result.matched_count != 1:
-                            raise RuntimeError("PayPal sale owner missing; rolling back")
+                    if result.matched_count != 1:
+                        raise RuntimeError("PayPal sale owner missing; rolling back")
+
+        async with await client.start_session() as mongo_session:
+            await mongo_session.with_transaction(grant_sale)
     elif event in ("BILLING.SUBSCRIPTION.CANCELLED", "BILLING.SUBSCRIPTION.EXPIRED", "BILLING.SUBSCRIPTION.SUSPENDED"):
         sub_id = resource.get("id")
         if sub_id:
