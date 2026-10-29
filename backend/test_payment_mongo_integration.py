@@ -9,6 +9,7 @@ import asyncio
 import json
 import logging
 import os
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
@@ -16,6 +17,7 @@ import unittest
 from uuid import uuid4
 
 from motor.motor_asyncio import AsyncIOMotorClient
+from pymongo.errors import PyMongoError
 
 
 class HTTPException(Exception):
@@ -57,10 +59,11 @@ class PaymentMongoTests(unittest.IsolatedAsyncioTestCase):
             return True
 
         self.ns = {"client": self.client, "db": self.db, "Optional": Optional,
+                   "_time": time, "asyncio": asyncio, "PyMongoError": PyMongoError,
                    "datetime": datetime, "timezone": timezone, "json": json,
                    "Request": Request, "HTTPException": HTTPException,
                    "logger": logging.getLogger(__name__), "_verify_paypal_webhook": verified}
-        wanted = {"_credit_if_paid", "_credit_renewal_once",
+        wanted = {"_run_credit_transaction", "_credit_if_paid", "_credit_renewal_once",
                   "_paypal_sale_should_credit", "paypal_webhook"}
         tree = ast.parse(Path(__file__).with_name("server.py").read_text())
         nodes = [n for n in tree.body if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))
@@ -142,12 +145,24 @@ class PaymentMongoTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(await self.db.payment_transactions.count_documents({"kind": "sale"}), 1)
 
     async def test_unknown_commit_result_is_retried_without_double_credit(self):
+        attempts = []
+        run_transaction = self.ns["_run_credit_transaction"]
+
+        async def count_callback(callback):
+            async def counted(session):
+                attempts.append(True)
+                return await callback(session)
+            return await run_transaction(counted)
+
+        self.ns["_run_credit_transaction"] = count_callback
         await self.client.admin.command({
             "configureFailPoint": "failCommand", "mode": {"times": 2},
-            "data": {"failCommands": ["commitTransaction"], "errorCode": 91,
+            "data": {"failCommands": ["commitTransaction"],
+                     "writeConcernError": {"code": 64, "errmsg": "Synthetic uncertain commit"},
                      "errorLabels": ["UnknownTransactionCommitResult"]}
         })
         await self.ns["paypal_webhook"](Request("uncertain-commit-sale"))
+        self.assertEqual(len(attempts), 1, "Unknown commit must not rerun the callback")
         self.assertEqual(await self.balance(), 100)
         await self.ns["paypal_webhook"](Request("uncertain-commit-sale"))
         self.assertEqual(await self.balance(), 100)

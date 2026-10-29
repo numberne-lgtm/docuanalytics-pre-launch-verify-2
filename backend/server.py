@@ -16,6 +16,7 @@ from fastapi.responses import StreamingResponse
 from dotenv import load_dotenv, dotenv_values
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
+from pymongo.errors import PyMongoError
 import httpx
 from pydantic import BaseModel, Field
 
@@ -759,6 +760,49 @@ async def _record_subscription(record, sub_id, customer_id):
     )
 
 
+async def _run_credit_transaction(callback):
+    """Retry transient transactions and ambiguous commits separately.
+
+    Motor 3.3.1's with_transaction commits in its context-manager exit before
+    reaching its commit retry loop, so use the core API with explicit retries.
+    Callbacks must contain only transactional MongoDB operations.
+    """
+    deadline = _time.monotonic() + 30
+    async with await client.start_session() as mongo_session:
+        while True:
+            mongo_session.start_transaction(max_commit_time_ms=10000)
+            try:
+                result = await callback(mongo_session)
+            except Exception as exc:
+                if mongo_session.in_transaction:
+                    try:
+                        await mongo_session.abort_transaction()
+                    except PyMongoError:
+                        pass  # Preserve the original error; aborted writes cannot commit.
+                if (isinstance(exc, PyMongoError) and
+                        exc.has_error_label("TransientTransactionError") and
+                        _time.monotonic() < deadline):
+                    await asyncio.sleep(.01)
+                    continue
+                raise
+            while True:
+                try:
+                    await mongo_session.commit_transaction()
+                    return result
+                except PyMongoError as exc:
+                    if _time.monotonic() >= deadline:
+                        raise
+                    if exc.has_error_label("UnknownTransactionCommitResult"):
+                        # Retry this commit, never rerun the callback on an
+                        # unknown result: the previous commit may have succeeded.
+                        await asyncio.sleep(.01)
+                        continue
+                    if exc.has_error_label("TransientTransactionError"):
+                        await asyncio.sleep(.01)
+                        break  # Known transaction failure: start a fresh attempt.
+                    raise
+
+
 async def _credit_if_paid(record):
     """Atomically grant a paid transaction exactly once, or fail closed."""
     if record.get("payment_status") != "paid":
@@ -780,8 +824,7 @@ async def _credit_if_paid(record):
             raise RuntimeError("Credit owner not found; rolling back payment grant")
         return int(record["credits"])
 
-    async with await client.start_session() as mongo_session:
-        return await mongo_session.with_transaction(grant)
+    return await _run_credit_transaction(grant)
 
 
 async def _credit_renewal_once(invoice_id, sub_id, user_id, credits):
@@ -808,8 +851,7 @@ async def _credit_renewal_once(invoice_id, sub_id, user_id, credits):
             raise RuntimeError("Renewal owner not found; rolling back")
         return int(credits)
 
-    async with await client.start_session() as mongo_session:
-        return await mongo_session.with_transaction(grant)
+    return await _run_credit_transaction(grant)
 
 
 @api.get("/payments/status/{session_id}")
@@ -1355,8 +1397,7 @@ async def paypal_webhook(request: Request):
                     if result.matched_count != 1:
                         raise RuntimeError("PayPal sale owner missing; rolling back")
 
-        async with await client.start_session() as mongo_session:
-            await mongo_session.with_transaction(grant_sale)
+        await _run_credit_transaction(grant_sale)
     elif event in ("BILLING.SUBSCRIPTION.CANCELLED", "BILLING.SUBSCRIPTION.EXPIRED", "BILLING.SUBSCRIPTION.SUSPENDED"):
         sub_id = resource.get("id")
         if sub_id:
