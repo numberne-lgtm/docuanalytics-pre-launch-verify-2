@@ -347,3 +347,6 @@ IMPLEMENTATO E TESTATO (19/19 backend + frontend E2E, 100%):
 - Sender change to @docuanalytics.online NOT done: user will verify domain on Resend first (then update SENDER_EMAIL via secrets card).
 - Tests: iteration_29.json, backend/tests/test_studio_signature_email_log.py.
 
+
+## 2026-06 SEO
+- Meta description homepage (public/index.html) accorciata a 158 caratteri (testo B). In preview; richiede nuovo deploy autorizzato.
