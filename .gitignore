@@ -111,6 +111,3 @@ frontend/node_modules/.cache/default-development/2.pack
 *.log
 .ruff_cache/
 .pytest_cache/
-export/iso/mongo-data/journal/WiredTigerLog.0000000001
-export/iso/mongo-data/journal/WiredTigerPreplog.0000000002
-export/iso/mongo-data/journal/WiredTigerPreplog.0000000001
