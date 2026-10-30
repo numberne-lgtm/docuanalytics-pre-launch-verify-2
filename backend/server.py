@@ -40,7 +40,12 @@ BTC_ADDRESS = os.environ.get('BTC_ADDRESS', '')
 USDT_TRC20_ADDRESS = os.environ.get('USDT_TRC20_ADDRESS', '')
 
 # PayPal (REST v2). Credentials live only in backend .env.
-PAYPAL_MODE = (_ENV_FILE.get('PAYPAL_MODE') or os.environ.get('PAYPAL_MODE') or 'live').strip().lower()
+_PAYPAL_MODE_RAW = (_ENV_FILE.get('PAYPAL_MODE') or os.environ.get('PAYPAL_MODE') or '').strip().lower()
+PAYPAL_MODE_VALID = _PAYPAL_MODE_RAW in ("live", "sandbox")
+PAYPAL_MODE = _PAYPAL_MODE_RAW if PAYPAL_MODE_VALID else "sandbox"
+del _PAYPAL_MODE_RAW
+if not PAYPAL_MODE_VALID:
+    logging.getLogger(__name__).warning("PAYPAL_MODE non valido: PayPal disabilitato")
 PAYPAL_CLIENT_ID = _ENV_FILE.get('PAYPAL_CLIENT_ID') or os.environ.get('PAYPAL_CLIENT_ID')
 PAYPAL_SECRET = _ENV_FILE.get('PAYPAL_SECRET') or os.environ.get('PAYPAL_SECRET')
 PAYPAL_WEBHOOK_ID = _ENV_FILE.get('PAYPAL_WEBHOOK_ID') or os.environ.get('PAYPAL_WEBHOOK_ID')
@@ -966,7 +971,7 @@ class PaypalCaptureReq(BaseModel):
 
 
 async def _paypal_token():
-    if not (PAYPAL_CLIENT_ID and PAYPAL_SECRET):
+    if not (PAYPAL_CLIENT_ID and PAYPAL_SECRET and PAYPAL_MODE_VALID):
         raise HTTPException(500, "PayPal non configurato")
     async with httpx.AsyncClient(timeout=30) as c:
         r = await c.post(f"{PAYPAL_BASE}/v1/oauth2/token",
@@ -981,8 +986,9 @@ async def _paypal_token():
 
 @api.get("/paypal/config")
 async def paypal_config():
-    return {"enabled": bool(PAYPAL_CLIENT_ID and PAYPAL_SECRET),
-            "client_id": PAYPAL_CLIENT_ID or "", "mode": PAYPAL_MODE, "currency": "EUR"}
+    enabled = bool(PAYPAL_CLIENT_ID and PAYPAL_SECRET and PAYPAL_MODE_VALID)
+    return {"enabled": enabled, "client_id": (PAYPAL_CLIENT_ID or "") if enabled else "",
+            "mode": PAYPAL_MODE if enabled else None, "currency": "EUR"}
 
 
 @api.post("/paypal/order")
