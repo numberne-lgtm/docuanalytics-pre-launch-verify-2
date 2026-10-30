@@ -47,6 +47,9 @@ del _PAYPAL_MODE_RAW
 if not PAYPAL_MODE_VALID:
     logging.getLogger(__name__).warning("PAYPAL_MODE non valido: PayPal disabilitato")
 PAYPAL_CLIENT_ID = _ENV_FILE.get('PAYPAL_CLIENT_ID') or os.environ.get('PAYPAL_CLIENT_ID')
+if PAYPAL_CLIENT_ID and not re.fullmatch(r"[A-Za-z0-9_-]{20,128}", PAYPAL_CLIENT_ID.strip()):
+    logging.getLogger(__name__).warning("PAYPAL_CLIENT_ID non valido: PayPal disabilitato")
+    PAYPAL_CLIENT_ID = None
 PAYPAL_SECRET = _ENV_FILE.get('PAYPAL_SECRET') or os.environ.get('PAYPAL_SECRET')
 PAYPAL_WEBHOOK_ID = _ENV_FILE.get('PAYPAL_WEBHOOK_ID') or os.environ.get('PAYPAL_WEBHOOK_ID')
 PAYPAL_BASE = "https://api-m.paypal.com" if PAYPAL_MODE == "live" else "https://api-m.sandbox.paypal.com"
