@@ -28,6 +28,11 @@ load_dotenv(ROOT_DIR / '.env')
 # ensure the user's own account key is used.
 _ENV_FILE = dotenv_values(ROOT_DIR / '.env')
 
+
+def _proc_first(key):
+    # Process env wins when present (even empty); file only when the variable is absent.
+    return os.environ[key] if key in os.environ else _ENV_FILE.get(key)
+
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger("docuanalytics")
 
@@ -41,22 +46,22 @@ BTC_ADDRESS = os.environ.get('BTC_ADDRESS', '')
 USDT_TRC20_ADDRESS = os.environ.get('USDT_TRC20_ADDRESS', '')
 
 # PayPal (REST v2). Credentials live only in backend .env.
-_PAYPAL_MODE_RAW = (_ENV_FILE.get('PAYPAL_MODE') or os.environ.get('PAYPAL_MODE') or '').strip().lower()
+_PAYPAL_MODE_RAW = (_proc_first('PAYPAL_MODE') or '').strip().lower()
 PAYPAL_MODE_VALID = _PAYPAL_MODE_RAW in ("live", "sandbox")
 PAYPAL_MODE = _PAYPAL_MODE_RAW if PAYPAL_MODE_VALID else "sandbox"
 del _PAYPAL_MODE_RAW
 if not PAYPAL_MODE_VALID:
     logger.warning("PAYPAL_MODE non valido: PayPal disabilitato")
-PAYPAL_CLIENT_ID = _ENV_FILE.get('PAYPAL_CLIENT_ID') or os.environ.get('PAYPAL_CLIENT_ID')
+PAYPAL_CLIENT_ID = _proc_first('PAYPAL_CLIENT_ID')
 if PAYPAL_CLIENT_ID and not re.fullmatch(r"A[A-Za-z0-9_-]{19,127}", PAYPAL_CLIENT_ID):
     logger.warning("PAYPAL_CLIENT_ID non valido: PayPal disabilitato")
     PAYPAL_CLIENT_ID = None
-PAYPAL_SECRET = _ENV_FILE.get('PAYPAL_SECRET') or os.environ.get('PAYPAL_SECRET')
-PAYPAL_WEBHOOK_ID = _ENV_FILE.get('PAYPAL_WEBHOOK_ID') or os.environ.get('PAYPAL_WEBHOOK_ID')
+PAYPAL_SECRET = _proc_first('PAYPAL_SECRET')
+PAYPAL_WEBHOOK_ID = _proc_first('PAYPAL_WEBHOOK_ID')
 PAYPAL_BASE = "https://api-m.paypal.com" if PAYPAL_MODE == "live" else "https://api-m.sandbox.paypal.com"
 
 # Admin token for manual credit grants (test/support). Set ADMIN_TOKEN in .env.
-ADMIN_TOKEN = _ENV_FILE.get('ADMIN_TOKEN') or os.environ.get('ADMIN_TOKEN')
+ADMIN_TOKEN = _proc_first('ADMIN_TOKEN')
 
 # Email verification (anti-abuse). OFF until Resend is configured + sending domain verified.
 EMAIL_VERIFICATION_ENABLED = (_ENV_FILE.get('EMAIL_VERIFICATION_ENABLED') or os.environ.get('EMAIL_VERIFICATION_ENABLED') or 'false').strip().lower() == 'true'
