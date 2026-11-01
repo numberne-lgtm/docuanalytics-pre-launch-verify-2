@@ -28,7 +28,7 @@ export const SLUGS = ["analisi-fatture-elettroniche-ai", "controllo-quadratura-f
 
 export const ARTICLES = {
   it: [
-    { slug: "analisi-fatture-elettroniche-ai", title: "Analisi delle fatture elettroniche con l'AI: come estrarre i dati in pochi secondi", desc: "Guida pratica per commercialisti: come usare l'Intelligenza Artificiale per leggere fatture elettroniche, estrarre imponibile, IVA, IBAN e totali ed evitare errori di quadratura.", read: "6 min", tag: "Fatture", excerpt: "Dall'upload del file all'estrazione automatica di imponibile, IVA e IBAN: come l'AI azzera la digitazione manuale e segnala le anomalie prima che diventino un problema.", body: [
+    { slug: "analisi-fatture-elettroniche-ai", title: "Fatture elettroniche: estrazione dati con AI", desc: "Guida per commercialisti: estrarre imponibile, IVA, IBAN e totali dalle fatture elettroniche con AI e individuare errori di quadratura.", read: "6 min", tag: "Fatture", excerpt: "Dall'upload del file all'estrazione automatica di imponibile, IVA e IBAN: come l'AI azzera la digitazione manuale e segnala le anomalie prima che diventino un problema.", body: [
       { h: null, p: ["L'inserimento manuale dei dati delle fatture è una delle attività più ripetitive e a rischio errore in uno studio. Un'AI di document intelligence come DocuAnalytics legge il documento (PDF o immagine), lo classifica come fattura ed estrae automaticamente tutti i campi chiave in pochi secondi."] },
       { h: "Quali dati estrae l'AI da una fattura", p: ["Il modello riconosce e struttura i dati indipendentemente dal layout del fornitore:"], li: ["Numero e data della fattura", "Cedente e cessionario con P.IVA e codice fiscale", "Imponibile, aliquota e importo IVA, totale documento", "IBAN e modalità di pagamento", "Scadenze e condizioni di pagamento"] },
       { h: "Quadratura automatica e controllo anti-errore", p: ["Oltre all'estrazione, l'AI verifica la coerenza aritmetica: imponibile + IVA = totale. Se il documento non quadra, ricevi un avviso immediato. Il sistema segnala anche IBAN esteri e importi anomali, utili per i controlli antiriciclaggio."] },
@@ -183,8 +183,9 @@ export const ARTICLES = {
 function readLang() {
   const q = new URLSearchParams(window.location.search).get("lang");
   if (q && VALID.includes(q)) return q;
-  const s = localStorage.getItem("da_lang");
-  return VALID.includes(s) ? s : "it";
+  // Le URL del blog senza ?lang= sono la versione canonica italiana.
+  // Non ereditare la lingua salvata: URL e contenuto devono corrispondere.
+  return "it";
 }
 function useBlogLang() {
   const [lang, setLang] = useState(readLang);
@@ -229,6 +230,9 @@ function useSeo({ title, description, path, lang, jsonLd }) {
     upsertMeta("property", "og:title", title);
     upsertMeta("property", "og:description", description);
     upsertMeta("property", "og:url", canonical);
+    upsertMeta("property", "og:locale", { it: "it_IT", en: "en_GB", es: "es_ES", de: "de_DE", fr: "fr_FR" }[lang] || "it_IT");
+    upsertMeta("name", "twitter:title", title);
+    upsertMeta("name", "twitter:description", description);
     upsertCanonical(canonical);
     setHreflang(path);
     if (jsonLd) injectJsonLd(jsonLd);
@@ -236,6 +240,12 @@ function useSeo({ title, description, path, lang, jsonLd }) {
     return () => {
       document.title = DEFAULT_TITLE;
       upsertMeta("name", "description", DEFAULT_DESC);
+      upsertMeta("property", "og:title", DEFAULT_TITLE);
+      upsertMeta("property", "og:description", DEFAULT_DESC);
+      upsertMeta("property", "og:url", SITE + "/");
+      upsertMeta("property", "og:locale", "it_IT");
+      upsertMeta("name", "twitter:title", DEFAULT_TITLE);
+      upsertMeta("name", "twitter:description", DEFAULT_DESC);
       upsertCanonical(SITE + "/");
       document.head.querySelectorAll('link[data-hl="1"]').forEach((e) => e.remove());
       const ld = document.getElementById("ld-blog");
@@ -350,7 +360,7 @@ export function BlogPost() {
       "inLanguage": lang,
       "author": { "@type": "Organization", "name": "DocuAnalytics AI" },
       "publisher": { "@type": "Organization", "name": "DocuAnalytics AI", "logo": { "@type": "ImageObject", "url": SITE + "/logo.png" } },
-      "mainEntityOfPage": { "@type": "WebPage", "@id": `${SITE}/blog/${slug}` },
+      "mainEntityOfPage": { "@type": "WebPage", "@id": lang === "it" ? `${SITE}/blog/${slug}` : `${SITE}/blog/${slug}?lang=${lang}` },
       "image": SITE + "/og-image.png",
     } : null,
   });
