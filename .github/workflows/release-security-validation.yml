@@ -76,6 +76,26 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
+      - name: Verify Google search metadata (no network)
+        run: |
+          node - <<'NODE'
+          const fs = require("fs");
+          const html = fs.readFileSync("public/index.html", "utf8");
+          const blog = fs.readFileSync("src/Blog.js", "utf8");
+          const sitemap = fs.readFileSync("public/sitemap.xml", "utf8");
+          const robots = fs.readFileSync("public/robots.txt", "utf8");
+          const check = (ok, label) => { if (!ok) throw new Error("SEO check failed: " + label); };
+          check((html.match(/<title>/g) || []).length === 1, "single homepage title");
+          check(html.includes("DocuAnalytics AI | Analisi documenti per studi professionali"), "homepage title");
+          check(html.includes("meta name=\"description\""), "homepage meta description");
+          check(html.includes('rel="canonical" href="https://docuanalytics.online/"'), "canonical URL");
+          check(sitemap.includes('hreflang="en"'), "English alternate in sitemap");
+          check(robots.includes("https://docuanalytics.online/sitemap.xml"), "robots sitemap");
+          check(blog.includes('return "it";'), "Italian default on blog URLs");
+          check(blog.includes('title: "Fatture elettroniche: estrazione dati con AI"'), "invoice article title");
+          check(![html, blog, sitemap, robots].some(s => s.includes("docuanalytics.it")), "no legacy .it domain");
+          console.log("SEO static checks passed: 9/9");
+          NODE
       - name: Install dependencies without altering repository
         run: npm install --legacy-peer-deps --no-audit --no-fund
         env:
