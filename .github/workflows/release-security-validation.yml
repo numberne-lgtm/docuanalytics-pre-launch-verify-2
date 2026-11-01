@@ -2,7 +2,7 @@ name: Release security validation (draft PR)
 
 on:
   pull_request:
-    branches: [main, release/emergent-current]
+    branches: [main, release/emergent-current, release/emergent-ready-20261030]
     paths:
       - "backend/server.py"
       - "backend/test_paypal_*.py"
