@@ -12,8 +12,8 @@ const LANGS = [
   { code: "fr", label: "Français", flag: "🇫🇷" },
 ];
 
-const DEFAULT_DESC = "Analisi documenti automatica con Intelligenza Artificiale: carica fatture, contratti, visure camerali ed F24 ed estrai i dati in pochi secondi.";
-const DEFAULT_TITLE = "DocuAnalytics AI — Analisi Documenti con Intelligenza Artificiale | Fatture, F24, Contratti";
+const DEFAULT_DESC = "Analizza fatture, contratti, visure e F24 con l\'AI: estrazione dati, anomalie e scadenze per studi professionali. Prova con 3 crediti gratis.";
+const DEFAULT_TITLE = "DocuAnalytics AI | Analisi documenti per studi professionali";
 
 const BLOG_UI = {
   it: { kicker: "GUIDE & RISORSE", t1: "Blog e Guide", t2: "Document Intelligence AI", sub: "Approfondimenti pratici per commercialisti, avvocati e notai: come usare l'Intelligenza Artificiale per analizzare fatture, F24, contratti e visure camerali.", home: "Home", tryFree: "Prova gratis", allGuides: "Tutte le guide", readSuffix: "di lettura", readMore: "Leggi la guida", footTitle: "DocuAnalytics AI — Guide per Studi Professionali", footDesc: "Approfondimenti su analisi documenti, fatture, F24, contratti e visure con Intelligenza Artificiale.", toApp: "Vai all'app", rights: "Tutti i diritti riservati", ctaText: "Prova DocuAnalytics AI: 3 crediti gratis, nessuna carta richiesta.", ctaBtn: "Analizza un documento", other: "Altre guide", nfTitle: "Guida non trovata", nfSub: "La risorsa che cerchi non esiste o è stata spostata.", idxTitle: "Blog e Guide AI per Commercialisti, Avvocati e Notai | DocuAnalytics AI", idxDesc: "Guide pratiche sull'analisi documenti con Intelligenza Artificiale: fatture elettroniche, controllo F24, clausole vessatorie nei contratti e antiriciclaggio da visure camerali." },
