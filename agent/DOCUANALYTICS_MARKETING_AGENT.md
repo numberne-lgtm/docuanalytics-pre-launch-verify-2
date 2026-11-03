@@ -45,6 +45,11 @@ Fuso orario: Europe/Rome. Totale LinkedIn: 3 post al giorno nei giorni feriali.
   - Caroselli Instagram 4:5 (`carousels/<id>/01.jpg…`): c01_contratto5, c02_rinnovo, c03_fattura4, c04_visura, c05_scadenze100, c06_contrattofattura, c07_penale, c08_come_funziona, c09_paure, c10_domande, c11_excel, c12_checklist_firma, c13_crediti, c14_report. Già usati dal 4 al 10 novembre. Per i caroselli nuovi proponi a Francesco titolo e testo delle slide (copertina, 4–5 slide, CTA "Commenta PROVA") come bozza da approvare: le immagini si generano con lo stesso template.
   - Stesso video al massimo 3 volte al mese per canale, a distanza di almeno 7 giorni.
 
+## ManyChat (automazione "PROVA")
+- Attiva dal 3/11 sul piano **Gratis**: 25 contatti al mese, massimo 4 automazioni, trigger solo su **post specifici** ("qualsiasi post" richiede il piano Essenziale a 17 USD al mese).
+- Flusso: commento PROVA/Prova/prova › risposta pubblica › DM di apertura con il pulsante "Mandami il link 👉" › DM con il pulsante "Prova gratis" verso `utm_source=instagram&utm_medium=dm&utm_campaign=prova`.
+- Nei controlli: segnala i Reel o i caroselli con "Commenta PROVA" pubblicati **senza** automazione e i contatti mensili vicini a 25. In quel caso consiglia a Francesco di passare a Essenziale (non acquistare mai tu).
+
 ## Regole di sicurezza (obbligatorie)
 1. **Non pubblicare mai nulla direttamente.** I contenuti nuovi vanno creati in Buffer come **bozze** (`saveToDraft: true`) per l'approvazione di Francesco. Non usare `shareNow`.
 2. Non cancellare post, non cambiare orari e non modificare post già programmati senza approvazione. Se trovi errori, segnalali con la correzione proposta.
