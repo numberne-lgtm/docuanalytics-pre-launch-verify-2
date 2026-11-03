@@ -26,8 +26,9 @@ Commercialisti, consulenti del lavoro, avvocati, studi professionali, PMI e part
 | LinkedIn profilo Francesco Elle | 6a88a2a2ccaf649a67eeab52 | lun–ven 9:15, post personali e Red-Flag Challenge |
 | LinkedIn pagina "Docuanalytics AI" | 6a88a2a2ccaf649a67eeab51 | lun–ven 13:00 e 17:30, video quadrati e post di testo |
 | Instagram @docuanalyticsai | 6ae490fc2f1f5ed6481f8e53 | Caroselli 9:30 e 18:00 + Reel 13:00 + Storie 9:00 e 18:30 (3 post nel feed al giorno) |
-| Facebook "Francesco Elle." | 6a88aca0ccaf649a67eedbc3 | saltuario |
-| Facebook "Francesco Elle" | 6a88aca1ccaf649a67eedbc4 | non usato |
+| **Facebook pagina "DocuAnalytics AI"** | 6aea3d13e29c69a17150101f | lun, mer, ven 18:30 (post Red-Flag e prodotto). Riceve anche in automatico tutti i post Instagram (condivisione IG → FB attiva): non duplicare su Facebook i Reel e i caroselli |
+| Facebook "Francesco Elle." | 6a88aca0ccaf649a67eedbc3 | non usare per DocuAnalytics |
+| Facebook "Francesco Elle" | 6a88aca1ccaf649a67eedbc4 | non usare per DocuAnalytics |
 Fuso orario: Europe/Rome. Totale LinkedIn: 3 post al giorno nei giorni feriali.
 
 ## Regole dei contenuti (metodo VVS Growth)
