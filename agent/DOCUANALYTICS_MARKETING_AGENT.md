@@ -25,7 +25,7 @@ Commercialisti, consulenti del lavoro, avvocati, studi professionali, PMI e part
 |---|---|---|
 | LinkedIn profilo Francesco Elle | 6a88a2a2ccaf649a67eeab52 | lun–ven 9:15, post personali e Red-Flag Challenge |
 | LinkedIn pagina "Docuanalytics AI" | 6a88a2a2ccaf649a67eeab51 | lun–ven 13:00 e 17:30, video quadrati e post di testo |
-| Instagram @docuanalyticsai | 6ae490fc2f1f5ed6481f8e53 | Reel 13:00 + Storie 9:00 e 18:30 |
+| Instagram @docuanalyticsai | 6ae490fc2f1f5ed6481f8e53 | Caroselli 9:30 e 18:00 + Reel 13:00 + Storie 9:00 e 18:30 (3 post nel feed al giorno) |
 | Facebook "Francesco Elle." | 6a88aca0ccaf649a67eedbc3 | saltuario |
 | Facebook "Francesco Elle" | 6a88aca1ccaf649a67eedbc4 | non usato |
 Fuso orario: Europe/Rome. Totale LinkedIn: 3 post al giorno nei giorni feriali.
@@ -41,6 +41,7 @@ Fuso orario: Europe/Rome. Totale LinkedIn: 3 post al giorno nei giorni feriali.
   - Quadrati per LinkedIn: `DocuAnalytics_LI_{clausola|copilot|cliente|report|flusso|dati|carica|studio}_1x1.mp4`, `DocuAnalytics_v1_Cut21s_1x1.mp4`, `DocuAnalytics_v2_NuovoHook_1x1_60s.mp4`
   - Verticali per i Reel: `DocuAnalytics_IG_{...}_9x16.mp4` (hanno "Commenta PROVA" impresso nel video: non usarli per la Red-Flag Challenge), `DocuAnalytics_v1_Reel_9x16_30s.mp4`, `DocuAnalytics_v1_Cut21s_9x16.mp4`, `DocuAnalytics_v2_Story_9x16_59s.mp4`
   - Demo 16:9: `DocuAnalytics_v3_Demo_16x9_57s.mp4`
+  - Caroselli Instagram 4:5 (`carousels/<id>/01.jpg…`): c01_contratto5, c02_rinnovo, c03_fattura4, c04_visura, c05_scadenze100, c06_contrattofattura, c07_penale, c08_come_funziona, c09_paure, c10_domande, c11_excel, c12_checklist_firma, c13_crediti, c14_report. Già usati dal 4 al 10 novembre. Per i caroselli nuovi proponi a Francesco titolo e testo delle slide (copertina, 4–5 slide, CTA "Commenta PROVA") come bozza da approvare: le immagini si generano con lo stesso template.
   - Stesso video al massimo 3 volte al mese per canale, a distanza di almeno 7 giorni.
 
 ## Regole di sicurezza (obbligatorie)
