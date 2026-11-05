@@ -55,5 +55,41 @@ class HistoricalDeadlineTests(unittest.TestCase):
             "label": "Scadenza pagamento", "due_date": "2026-12-15",
         }))
 
+    def test_historical_label_variants(self):
+        for label in ("Decadenza beneficio del termine",
+                      "Decadenza dal beneficio del termine",
+                      "Data Decadenza Beneficio Termine",
+                      "Data di decadenza del beneficio del termine:",
+                      "DATA DECADENZA BENEFICIO TERMINE"):
+            with self.subTest(label=label):
+                self.assertTrue(core.is_historical_event(label))
+
+    def test_mixed_label_not_silently_discarded(self):
+        label = "Scadenza pagamento / Decadenza beneficio del termine"
+        self.assertFalse(core.is_historical_event(label))
+        self.assertTrue(core.show_operational_deadline({
+            "source": "auto", "status": "detected", "label": label,
+            "due_date": "2026-12-15",
+        }))
+        result = {"category": "other", "fields": [{"label": label, "value": "15/12/2026"}]}
+        self.assertEqual(core.deadlines(result)[0]["due_date"], "2026-12-15")
+
+    def test_contract_structured_reminders_filter_historical_only(self):
+        result = {"category": "contract", "structured": {
+            "reminders": [
+                {"label": "Data Decadenza Beneficio Termine", "date": "05/06/2008"},
+                {"label": "Scadenza contrattuale", "date": "31/12/2026"},
+            ],
+        }}
+        deadlines = core.deadlines(result)
+        self.assertEqual(len(deadlines), 1)
+        self.assertEqual(deadlines[0]["due_date"], "2026-12-31")
+
+    def test_unrelated_old_date_not_deleted_without_context(self):
+        result = {"category": "other", "fields": [
+            {"label": "Scadenza pagamento", "value": "15/10/2015"}
+        ]}
+        self.assertEqual(core.deadlines(result)[0]["due_date"], "2015-10-15")
+
 if __name__ == "__main__":
     unittest.main()
