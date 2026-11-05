@@ -155,6 +155,22 @@ def match_client(subj: dict, clients: list):
     return None
 
 
+def is_historical_event(label: str) -> bool:
+    """Known historical legal event, not an actionable deadline."""
+    normalized = re.sub(r"\s+", " ", str(label or "").casefold()).strip(" :.-")
+    # Match an entire historical-event label, not a mixed label that may contain a real deadline.
+    return bool(re.fullmatch(r"(?:data (?:di |della )?)?decadenza (?:dal |del )?beneficio (?:del )?termine", normalized))
+
+
+def show_operational_deadline(reminder: dict) -> bool:
+    """Keep confirmed/manual reminders; hide known false-positive auto-detections."""
+    return not (
+        reminder.get("source") == "auto"
+        and reminder.get("status") in ("detected", "to_verify")
+        and is_historical_event(reminder.get("label", ""))
+    )
+
+
 def deadlines(result: dict) -> list:
     """Dates explicitly present in the analysis. Never invents."""
     s, cat, out = structured(result), category(result), []
@@ -174,11 +190,12 @@ def deadlines(result: dict) -> list:
             lbl = (r.get("label") or "Scadenza contrattuale")[:160]
             low = lbl.lower()
             kind = next((k for k, words in DEADLINE_WORDS.items() if any(w in low for w in words)), "other")
-            add(kind, r.get("date"), lbl)
+            if not is_historical_event(lbl):
+                add(kind, r.get("date"), lbl)
     for f in result.get("fields") or []:
         low = str(f.get("label", "")).lower()
         kind = next((k for k, words in DEADLINE_WORDS.items() if any(w in low for w in words)), None)
-        if kind and DATE_RE.search(str(f.get("value", ""))):
+        if kind and not is_historical_event(low) and DATE_RE.search(str(f.get("value", ""))):
             add(kind, f.get("value"), str(f.get("label"))[:160])
     seen, uniq = set(), []
     for d in out:
