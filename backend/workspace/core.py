@@ -161,6 +161,15 @@ def is_historical_event(label: str) -> bool:
     return bool(re.search(r"decadenza\s+(?:dal\s+)?beneficio\s+del\s+termine", normalized))
 
 
+def show_operational_deadline(reminder: dict) -> bool:
+    """Keep confirmed/manual reminders; hide known false-positive auto-detections."""
+    return not (
+        reminder.get("source") == "auto"
+        and reminder.get("status") in ("detected", "to_verify")
+        and is_historical_event(reminder.get("label", ""))
+    )
+
+
 def deadlines(result: dict) -> list:
     """Dates explicitly present in the analysis. Never invents."""
     s, cat, out = structured(result), category(result), []
