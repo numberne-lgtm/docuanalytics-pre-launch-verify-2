@@ -155,6 +155,12 @@ def match_client(subj: dict, clients: list):
     return None
 
 
+def is_historical_event(label: str) -> bool:
+    """Known historical legal event, not an actionable deadline."""
+    normalized = re.sub(r"\s+", " ", str(label or "").casefold()).strip()
+    return bool(re.search(r"decadenza\s+(?:dal\s+)?beneficio\s+del\s+termine", normalized))
+
+
 def deadlines(result: dict) -> list:
     """Dates explicitly present in the analysis. Never invents."""
     s, cat, out = structured(result), category(result), []
@@ -178,7 +184,7 @@ def deadlines(result: dict) -> list:
     for f in result.get("fields") or []:
         low = str(f.get("label", "")).lower()
         kind = next((k for k, words in DEADLINE_WORDS.items() if any(w in low for w in words)), None)
-        if kind and DATE_RE.search(str(f.get("value", ""))):
+        if kind and not is_historical_event(low) and DATE_RE.search(str(f.get("value", ""))):
             add(kind, f.get("value"), str(f.get("label"))[:160])
     seen, uniq = set(), []
     for d in out:
