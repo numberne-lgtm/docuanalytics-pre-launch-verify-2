@@ -157,8 +157,9 @@ def match_client(subj: dict, clients: list):
 
 def is_historical_event(label: str) -> bool:
     """Known historical legal event, not an actionable deadline."""
-    normalized = re.sub(r"\s+", " ", str(label or "").casefold()).strip()
-    return bool(re.search(r"decadenza\s+(?:dal\s+)?beneficio\s+del\s+termine", normalized))
+    normalized = re.sub(r"\s+", " ", str(label or "").casefold()).strip(" :.-")
+    # Match an entire historical-event label, not a mixed label that may contain a real deadline.
+    return bool(re.fullmatch(r"(?:data (?:di |della )?)?decadenza (?:dal |del )?beneficio (?:del )?termine", normalized))
 
 
 def show_operational_deadline(reminder: dict) -> bool:
@@ -189,7 +190,8 @@ def deadlines(result: dict) -> list:
             lbl = (r.get("label") or "Scadenza contrattuale")[:160]
             low = lbl.lower()
             kind = next((k for k, words in DEADLINE_WORDS.items() if any(w in low for w in words)), "other")
-            add(kind, r.get("date"), lbl)
+            if not is_historical_event(lbl):
+                add(kind, r.get("date"), lbl)
     for f in result.get("fields") or []:
         low = str(f.get("label", "")).lower()
         kind = next((k for k, words in DEADLINE_WORDS.items() if any(w in low for w in words)), None)
