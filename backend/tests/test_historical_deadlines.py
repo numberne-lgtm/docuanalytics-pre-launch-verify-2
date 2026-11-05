@@ -32,5 +32,28 @@ class HistoricalDeadlineTests(unittest.TestCase):
         self.assertFalse(core.is_historical_event("Termine di pagamento"))
 
 
+    def test_legacy_auto_detected_historical_deadline_hidden(self):
+        for status in ("detected", "to_verify"):
+            with self.subTest(status=status):
+                self.assertFalse(core.show_operational_deadline({
+                    "source": "auto", "status": status,
+                    "label": "Decadenza beneficio del termine", "due_date": "2008-06-05",
+                }))
+
+    def test_confirmed_and_manual_deadlines_preserved(self):
+        for source, status in (("auto", "confirmed"), ("manual", "detected"),
+                               ("manual", "confirmed"), ("auto", None)):
+            with self.subTest(source=source, status=status):
+                self.assertTrue(core.show_operational_deadline({
+                    "source": source, "status": status,
+                    "label": "Decadenza beneficio del termine", "due_date": "2008-06-05",
+                }))
+
+    def test_other_legacy_auto_deadlines_preserved(self):
+        self.assertTrue(core.show_operational_deadline({
+            "source": "auto", "status": "detected",
+            "label": "Scadenza pagamento", "due_date": "2026-12-15",
+        }))
+
 if __name__ == "__main__":
     unittest.main()
