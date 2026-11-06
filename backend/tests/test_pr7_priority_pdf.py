@@ -45,12 +45,10 @@ def test_priority_pdf_escapes_html_and_paginates():
     }
     pdf = core.priority_report_pdf(priority)
     document = pymupdf.open(stream=pdf, filetype="pdf")
-    text = "\n".join(page.get_text() for page in document)
+    text = normalized_pdf_text(document)
     assert document.page_count >= 2
     assert "alert(" in text
-    assert "Non fidarsi dei dati estratti" in text, (
-        "PDF tail: " + repr(text[-2000:]) + " | pages=" + str(document.page_count)
-    )
+    assert "Non fidarsi dei dati estratti" in text
     document.close()
 
 
