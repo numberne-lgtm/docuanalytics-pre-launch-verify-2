@@ -499,6 +499,17 @@ const DOC_TYPES = [
 
 const SECTOR_SLUGS = ["commercialisti", "avvocati", "notai", "cfo", "hr"];
 const PUBLIC_ORIGIN = "https://docuanalytics.online";
+// After login, return only to a protected priority path. Never redirect to arbitrary URLs.
+const PRIORITY_RETURN_RE = /^\/area\/priorita\/(?:document|deadline)\/[A-Za-z0-9-]{1,128}$/;
+const PRIORITY_RETURN_KEY = "da_priority_return";
+function returnToPriorityAfterLogin() {
+  const destination = sessionStorage.getItem(PRIORITY_RETURN_KEY);
+  sessionStorage.removeItem(PRIORITY_RETURN_KEY);
+  if (destination && PRIORITY_RETURN_RE.test(destination)) {
+    window.location.replace(destination);
+  }
+}
+
 const provLabel = (p) => ({ claude: "Claude Sonnet 5", openai: "ChatGPT", "openai-fast": "ChatGPT mini", gemini: "Gemini" }[p] || "Gemini");
 const provBadge = (p) => ({ claude: "mb-claude", openai: "mb-openai", "openai-fast": "mb-openai", gemini: "mb-gemini" }[p] || "mb-gemini");
 
@@ -536,6 +547,7 @@ function useUser() {
         localStorage.removeItem("da_ref");
         axios.defaults.headers.common["Authorization"] = `Bearer ${data.token}`;
         setUser(data.user); setAuthed(true);
+        returnToPriorityAfterLogin();
       }).catch(() => {
         window.history.replaceState(null, "", window.location.pathname + window.location.search);
         initAnon();
@@ -569,6 +581,7 @@ function useUser() {
     axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
     setUser(userObj); setAuthed(true);
     reportAssistantSignup(token);
+    returnToPriorityAfterLogin();
   }, []);
 
   const logout = useCallback(() => {
@@ -619,7 +632,12 @@ function Home() {
   useEffect(() => {
     const h = window.location.hash;
     if (h && h.length > 1) setTimeout(() => scrollToId(h.slice(1)), 450);
-    if (new URLSearchParams(window.location.search).get("auth") === "register") setAuthOpen(true);
+    const params = new URLSearchParams(window.location.search);
+    const destination = params.get("return_to");
+    if (destination && PRIORITY_RETURN_RE.test(destination)) {
+      sessionStorage.setItem(PRIORITY_RETURN_KEY, destination);
+    }
+    if (["register", "login"].includes(params.get("auth"))) setAuthOpen(true);
   }, []);
 
   useEffect(() => {
