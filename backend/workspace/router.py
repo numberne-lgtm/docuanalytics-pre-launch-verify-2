@@ -270,11 +270,11 @@ def build_workspace_router(db, get_current_user, llm_key, default_notify_days, s
                     aq["analysis_id"] = req.analysis_id
                 if req.client_id:
                     aq["client_id"] = req.client_id
-                async for a in db.analyses.find(
-                    aq, {"_id": 0, "analysis_id": 1, "client_id": 1, "filename": 1,
-                         "result.summary": 1, "result.audit": 1, "risk_level": 1, "created_at": 1,
-                         "result.fields": 1, "result.full_text": 1}
-                ).sort("created_at", -1).limit(41):
+                projection = {"_id": 0, "analysis_id": 1, "client_id": 1, "filename": 1,
+                              "result.summary": 1, "result.audit": 1, "risk_level": 1, "created_at": 1}
+                if req.include_document_details and req.analysis_id:
+                    projection.update({"result.fields": 1, "result.full_text": 1})
+                async for a in db.analyses.find(aq, projection).sort("created_at", -1).limit(41):
                     if sum(1 for x in sources if x["ref"].startswith("documento:")) >= 40:
                         reached_limit = True
                         break
@@ -290,7 +290,8 @@ def build_workspace_router(db, get_current_user, llm_key, default_notify_days, s
                                 # Detailed content is included only when that exact document is selected.
                                 "selected_fields": [{"label": str(x.get("label") or "")[:100],
                                                      "value": str(x.get("value") or "")[:280]}
-                                                    for x in (res.get("fields") or [])[:35]]
+                                                    for x in (res.get("fields") or [])[:35]
+                                                    if isinstance(x, dict)]
                                                    if req.include_document_details and req.analysis_id == a["analysis_id"] else [],
                                 "selected_text": str(res.get("full_text") or "")[:7000]
                                                  if req.include_document_details and req.analysis_id == a["analysis_id"] else ""})
