@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { ws, errMsg, fmtDate } from "./api";
 import { Level } from "./RiskDashboard";
+import PriorityQrPdf from "./PriorityQrPdf";
 
 function Candidates({ aid, onDone }) {
   const [data, setData] = useState(null);
@@ -49,6 +50,7 @@ export function DocCard({ d, selectable, selected, onToggle, onOpen, onChanged }
         <button className="ws-link" onClick={() => setOpen(!open)} data-testid={`doc-assign-${d.analysis_id}`}>{open ? "Chiudi" : "Associa cliente"}</button>
       </div>
       {open && <Candidates aid={d.analysis_id} onDone={() => { setOpen(false); onChanged(); }} />}
+      <PriorityQrPdf kind="document" itemId={d.analysis_id} testId={`document-qrpdf-${d.analysis_id}`} />
     </div>
   );
 }
