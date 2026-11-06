@@ -171,6 +171,13 @@ jobs:
       - name: Smoke real Docker Compose workspace APIs
         working-directory: .
         run: python backend/scripts/pr7_docker_smoke.py
+      - name: Run Chromium E2E through Docker Compose localhost proxy
+        env:
+          NODE_PATH: /tmp/pr7-playwright/node_modules
+        run: |
+          export PR7_CHROME_PATH="$(command -v google-chrome || command -v google-chrome-stable)"
+          test -n "$PR7_CHROME_PATH"
+          node scripts/pr7_local_e2e.cjs
       - name: Stop and remove Docker Compose test environment
         if: always()
         working-directory: .
