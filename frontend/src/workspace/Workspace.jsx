@@ -4,6 +4,7 @@ import axios from "axios";
 import { LayoutDashboard, Users, FileText, CalendarClock, X, Zap } from "lucide-react";
 import { ws, errMsg, hasToken } from "./api";
 import RiskDashboard, { Level } from "./RiskDashboard";
+import WorkspaceCopilot from "./WorkspaceCopilot";
 import Documents from "./Documents";
 import Deadlines, { DeadlineList } from "./Deadlines";
 import { ClientList, Client360 } from "./Clients";
@@ -88,6 +89,7 @@ export default function Workspace() {
         <p className="ws-disclaimer">DocuAnalytics evidenzia dati e possibili anomalie: non sostituisce il commercialista, l'avvocato o il notaio.</p>
       </main>
       {doc && <DocPanel aid={doc} onClose={() => setDoc(null)} onOpenClient={openClient} reloadKey={reloadKey} onChanged={reload} />}
+      <WorkspaceCopilot analysisId={doc} clientId={client} />
     </div>
   );
 }
