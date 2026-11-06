@@ -1,0 +1,25 @@
+# Local machine ONLY. Synthetic data, no paid external services, no public ports.
+services:
+  mongo:
+    image: mongo:7
+    restart: "no"
+    networks: [pr7_local]
+    volumes: [pr7_mongo_data:/data/db]
+  staging:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile.pr7
+    restart: "no"
+    environment:
+      APP_ENV: test
+      PR7_LOCAL_STAGING: "1"
+      STAGING_MONGO_URI: mongodb://mongo:27017
+    ports:
+      - "127.0.0.1:8765:8765"
+    depends_on: [mongo]
+    networks: [pr7_local]
+networks:
+  pr7_local:
+    internal: true
+volumes:
+  pr7_mongo_data:
