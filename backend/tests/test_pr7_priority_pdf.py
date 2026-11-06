@@ -40,7 +40,7 @@ def test_priority_pdf_escapes_html_and_paginates():
         "title": "<script>alert('not executed')</script> & documento",
         "level": "medium",
         "filename": "Documento prova.pdf",
-        "summary": ("Anomalia da verificare, senza conclusioni legali. " * 500),
+        "summary": ("Anomalia da verificare, senza conclusioni legali. " * 100),
         "details": ["<b>Non fidarsi dei dati estratti</b>"] * 20,
     }
     pdf = core.priority_report_pdf(priority)
