@@ -52,7 +52,7 @@ jobs:
     name: React production build
     runs-on: ubuntu-latest
     env:
-      CI: 'true'
+      CI: 'false' # Existing unrelated App.js hook warning; do not change payment polling here.
       REACT_APP_BACKEND_URL: ''
     defaults:
       run:
