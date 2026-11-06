@@ -71,6 +71,11 @@ class ConfirmReq(BaseModel):
     notify: bool = True
     notify_days: Optional[List[int]] = None
 
+class ExcludeOperationalReq(BaseModel):
+    excluded: bool
+    reason: Optional[str] = Field("", max_length=250)
+
+
 
 class PriorityReadReq(BaseModel):
     type: Literal["document", "deadline"]
@@ -646,6 +651,43 @@ def build_workspace_router(db, get_current_user, llm_key, default_notify_days, s
         await _sync(u)
         return {"buckets": _buckets(await _deadlines(u["user_id"]))}
 
+    @r.get("/deadlines/review")
+    async def historical_deadline_review(request: Request):
+        u = await _user(request)
+        uid = u["user_id"]
+        items = []
+        async for rm in db.reminders.find(
+            {"user_id": uid, "active": True,
+             "$or": [
+                 {"operational_excluded": True},
+                 {"source": "auto", "label": {"$regex": "decadenza|beneficio termine", "$options": "i"}}
+             ]}, {"_id": 0}
+        ).sort("due_date", 1).limit(250):
+            if rm.get("operational_excluded") or core.is_legacy_historical_auto(rm) or core.is_historical_event(rm.get("label", "")):
+                items.append({**_dl_out(rm),
+                              "operational_excluded": bool(rm.get("operational_excluded")),
+                              "legacy_historical": core.is_legacy_historical_auto(rm),
+                              "confirmed_by_user": bool(rm.get("confirmed_at"))})
+        return {"items": items, "limited": len(items) == 250}
+
+    @r.put("/deadlines/{rid}/operational")
+    async def set_deadline_operational(rid: str, req: ExcludeOperationalReq, request: Request):
+        u = await _user(request)
+        uid = u["user_id"]
+        rm = await _own_deadline(uid, rid)
+        if not req.excluded and core.is_legacy_historical_auto(rm):
+            raise HTTPException(409, "Per riattivare questa data storica rilevata automaticamente, confermala prima esplicitamente.")
+        await db.reminders.update_one(
+            {"reminder_id": rid, "user_id": uid, "active": True},
+            {"$set": {
+                "operational_excluded": req.excluded,
+                "operational_excluded_at": _now() if req.excluded else None,
+                "operational_exclusion_reason": (req.reason or "").strip() if req.excluded else "",
+                "operational_exclusion_by": uid if req.excluded else None,
+            }}
+        )
+        return {"ok": True, "excluded": req.excluded}
+
     @r.post("/deadlines")
     async def create_deadline(req: DeadlineReq, request: Request):
         u = await _user(request)
@@ -824,6 +866,8 @@ def build_workspace_router(db, get_current_user, llm_key, default_notify_days, s
             q["client_id"] = cid
         ev = []
         async for x in db.reminders.find(q, {"_id": 0}).sort("due_date", 1):
+            if not core.show_operational_deadline(x):
+                continue
             desc = " · ".join(v for v in (core.KIND_LABEL.get(x.get("kind") or "other", ""), x.get("doc_type"),
                                           f"Cliente: {clients[x['client_id']]}" if x.get("client_id") in clients else "") if v)
             ev.append({**x, "description": f"{desc}\nDocuAnalytics AI — da verificare con il professionista."})
