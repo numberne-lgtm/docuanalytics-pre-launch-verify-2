@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
-import { QrCode } from "lucide-react";
+import PriorityQrPdf from "./PriorityQrPdf";
 import { ws, errMsg, LEVEL, dueText } from "./api";
 
 const KPIS = [["documents", "Documenti analizzati"], ["no_issues", "Senza criticità"], ["to_verify", "Da verificare"],
@@ -60,7 +59,7 @@ export default function RiskDashboard({ onOpenDoc, onOpenClient, reloadKey }) {
               <Level level={p.level} />
               <span className="ws-row-main"><b>{p.client_name || "Cliente non associato"}</b><span>{p.title} — {p.type === "deadline" ? `${p.detail}, ${dueText(p.days_left)}` : p.detail}</span></span>
             </button>
-            <Link className="ws-priority-qr-link" to={`/area/priorita/${p.type}/${p.type === "document" ? p.analysis_id : p.reminder_id}`} data-testid={`priority-qr-${i}`} aria-label="Apri scheda protetta e QR Code"><QrCode size={16} /> QR / PDF</Link>
+            <PriorityQrPdf kind={p.type} itemId={p.type === "document" ? p.analysis_id : p.reminder_id} testId={`priority-qr-${i}`} />
             <button type="button" className="ws-priority-read" data-testid={`priority-read-${i}`}
               aria-label={p.is_read ? "Segna come non letta" : "Segna come già letta"}
               disabled={!!saving[`${p.type}:${p.type === "document" ? p.analysis_id : p.reminder_id}`]}
