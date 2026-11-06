@@ -9,6 +9,8 @@ import { ws, errMsg } from "./api";
 export default function WorkspaceCopilot({ analysisId = null, clientId = null }) {
   const [open, setOpen] = useState(false);
   const [scope, setScope] = useState("all");
+  const [consent, setConsent] = useState(false);
+  const [includeDetails, setIncludeDetails] = useState(false);
   const [question, setQuestion] = useState("");
   const [messages, setMessages] = useState([]);
   const [working, setWorking] = useState(false);
@@ -18,14 +20,15 @@ export default function WorkspaceCopilot({ analysisId = null, clientId = null })
   const ask = async (event) => {
     event.preventDefault();
     const q = question.trim();
-    if (!q || working) return;
+    if (!q || working || !consent) return;
     setQuestion("");
     setMessages((list) => [...list, { role: "user", text: q }]);
     setError("");
     setWorking(true);
     try {
       const response = await ws.post("/copilot/ask", {
-        question: q, scope,
+        question: q, scope, consent_to_ai: consent,
+        include_document_details: !!analysisId && includeDetails,
         history: messages.slice(-6).map((m) => ({ role: m.role, text: m.text.slice(0, 1200) })),
         ...(analysisId ? { analysis_id: analysisId } : {}),
         ...(clientId ? { client_id: clientId } : {}),
@@ -62,6 +65,16 @@ export default function WorkspaceCopilot({ analysisId = null, clientId = null })
             </select>
             <button type="button" className="ws-copilot-reset" onClick={() => { setMessages([]); setError(""); }} aria-label="Nuova conversazione"><RotateCcw size={15} /> Nuova</button>
           </div>
+          <div className="ws-copilot-consent">
+            <label>
+              <input type="checkbox" checked={consent} onChange={(event) => setConsent(event.target.checked)}/>
+              Autorizzo l'invio al modello AI dei dati selezionati (riepiloghi dei documenti, nomi dei clienti e scadenze) per rispondere alle mie domande.
+            </label>
+            {analysisId && <label>
+              <input type="checkbox" checked={includeDetails} onChange={(event) => setIncludeDetails(event.target.checked)} />
+              Includi anche campi estratti e testo del documento aperto, che possono contenere dati personali o riservati.
+            </label>}
+          </div>
           <div ref={bodyRef} className="ws-copilot-messages" role="log" aria-live="polite">
             {!messages.length && <p className="ws-muted">Chiedimi informazioni sui tuoi documenti, clienti o sulle scadenze. Le risposte indicano i riferimenti dei dati disponibili. Non modifico nulla.</p>}
             {messages.map((msg, i) => (
@@ -89,7 +102,7 @@ export default function WorkspaceCopilot({ analysisId = null, clientId = null })
           <form className="ws-copilot-composer" onSubmit={ask}>
             <input value={question} onChange={(event) => setQuestion(event.target.value)} maxLength={1200}
               placeholder="Es. Quali scadenze devo verificare?" aria-label="La tua domanda al Copilot"/>
-            <button type="submit" disabled={working || !question.trim()} aria-label="Invia domanda"><Send size={17}/></button>
+            <button type="submit" disabled={working || !question.trim() || !consent} aria-label="Invia domanda"><Send size={17}/></button>
           </form>
           <p className="ws-copilot-disclaimer">Solo dati del tuo account. Risposte AI da verificare: non sostituiscono un professionista.</p>
         </section>
