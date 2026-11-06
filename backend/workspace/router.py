@@ -500,39 +500,7 @@ def build_workspace_router(db, get_current_user, llm_key, default_notify_days, s
     async def priority_pdf(kind: Literal["document", "deadline"], item_id: str, request: Request):
         u = await _user(request)
         p = await _priority_record(u["user_id"], kind, item_id)
-        import fitz
-        pdf = fitz.open()
-        sections = [
-            "DOCUANALYTICS AI - SCHEDA PRIORITA",
-            "Titolo: " + str(p["title"]),
-            "Livello di attenzione: " + str(p["level"]).upper(),
-        ]
-        if p["filename"]:
-            sections.append("Documento: " + p["filename"])
-        if p["date"]:
-            sections.append("Data indicata: " + p["date"])
-        if p["status"]:
-            sections.append("Stato: " + p["status"])
-        if p["summary"]:
-            sections += ["", "Riepilogo:", p["summary"]]
-        if p["details"]:
-            sections += ["", "Controlli e dettagli:"]
-            sections.extend("- " + x for x in p["details"])
-        sections += ["", "Risultati generati automaticamente: verificare sempre dati e scadenze.",
-                     "La lettura e l'esportazione non costituiscono conferma legale o professionale."]
-        page, y = None, 0
-        for section in sections:
-            lines = textwrap.wrap(str(section), width=92, break_long_words=True,
-                                  break_on_hyphens=False) or [""]
-            for line in lines:
-                if page is None or y > 780:
-                    page = pdf.new_page(width=595, height=842)
-                    y = 50
-                page.insert_text((44, y), line, fontsize=10, fontname="helv")
-                y += 16
-            y += 6
-        payload = pdf.tobytes()
-        pdf.close()
+        payload = core.priority_report_pdf(p)
         return Response(payload, media_type="application/pdf", headers={
             "Content-Disposition": 'attachment; filename="docuanalytics-priorita.pdf"',
             "Cache-Control": "private, no-store",
