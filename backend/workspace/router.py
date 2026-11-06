@@ -8,7 +8,7 @@ import hashlib
 import secrets
 import logging
 from datetime import datetime, timezone, timedelta
-from typing import Optional, List
+from typing import Optional, List, Literal
 
 from fastapi import APIRouter, HTTPException, Request, UploadFile, File
 from fastapi.responses import Response
@@ -68,6 +68,12 @@ class DeadlinePatch(BaseModel):
 class ConfirmReq(BaseModel):
     notify: bool = True
     notify_days: Optional[List[int]] = None
+
+
+class PriorityReadReq(BaseModel):
+    type: Literal["document", "deadline"]
+    item_id: str = Field(..., min_length=1, max_length=128)
+    is_read: bool
 
 
 NOTIFY_CHOICES = (30, 15, 7, 3, 1, 0)
@@ -236,6 +242,14 @@ def build_workspace_router(db, get_current_user, llm_key, default_notify_days, s
                          "detail": x["kind_label"] + (" — da verificare" if x["status"] == "to_verify" else ""),
                          "days_left": x["days_left"], "reminder_id": x["reminder_id"]})
         prio.sort(key=lambda p: (RISK_ORDER[p["level"]], p["days_left"] if p["days_left"] is not None else 9999))
+        # Read tracking belongs to the logged-in user, not to the risk assessment.
+        keys = [f"document:{p['analysis_id']}" if p["type"] == "document" else f"deadline:{p['reminder_id']}" for p in prio]
+        read_keys = {entry["priority_key"] async for entry in db.workspace_priority_reads.find(
+            {"user_id": uid, "priority_key": {"$in": keys}},
+            {"_id": 0, "priority_key": 1}
+        )} if keys else set()
+        for p, key in zip(prio, keys):
+            p["is_read"] = key in read_keys
         return {"counts": {"documents": len(docs), "no_issues": sum(d["risk_level"] == "low" for d in docs),
                            "to_verify": sum(d["risk_level"] == "medium" for d in docs),
                            "high": sum(d["risk_level"] == "high" for d in docs),
@@ -243,6 +257,26 @@ def build_workspace_router(db, get_current_user, llm_key, default_notify_days, s
                            "deadlines_to_verify": len(b["to_verify"]), "clients": len(clients),
                            "unassigned": sum(not d["client_id"] for d in docs)},
                 "priorities": prio}
+
+    @r.put("/priorities/read-state")
+    async def set_priority_read_state(req: PriorityReadReq, request: Request):
+        u = await _user(request)
+        uid = u["user_id"]
+        if req.type == "document":
+            exists = await db.analyses.find_one({"user_id": uid, "analysis_id": req.item_id}, {"_id": 1})
+        else:
+            exists = await db.reminders.find_one(
+                {"user_id": uid, "reminder_id": req.item_id, "active": True}, {"_id": 1})
+        if not exists:
+            raise HTTPException(404, "Priorità non trovata")
+        key = f"{req.type}:{req.item_id}"
+        selector = {"user_id": uid, "priority_key": key}
+        if req.is_read:
+            await db.workspace_priority_reads.update_one(
+                selector, {"$set": {"read_at": _now()}}, upsert=True)
+        else:
+            await db.workspace_priority_reads.delete_many(selector)
+        return {"ok": True, "is_read": req.is_read}
 
     @r.get("/documents")
     async def documents(request: Request):
