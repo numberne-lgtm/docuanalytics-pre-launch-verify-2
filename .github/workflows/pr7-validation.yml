@@ -3,13 +3,6 @@ on:
   push:
     branches:
       - feature/risk-priority-numbering
-  pull_request:
-    paths:
-      - 'backend/workspace/**'
-      - 'backend/tests/test_pr7_*.py'
-      - 'frontend/**'
-      - '.github/workflows/pr7-validation.yml'
-
 permissions:
   contents: read
 
@@ -42,7 +35,7 @@ jobs:
           python -m pip install --disable-pip-version-check \
             'fastapi==0.110.1' 'starlette==0.37.2' 'httpx==0.28.1' \
             'motor==3.3.1' 'pymongo==4.6.3' 'pymupdf==1.28.2' \
-            'pytest==9.1.1' 'pytest-xdist==3.8.0' 'segno==1.6.6' 'requests==2.34.2'
+            'pytest==9.1.1' 'pytest-xdist==3.8.0' 'segno==1.6.6' 'requests==2.34.2' 'python-multipart==0.0.32'
       - name: Compile workspace modules and tests
         run: python -m py_compile backend/workspace/router.py backend/workspace/core.py backend/tests/test_pr7_priority_pdf.py backend/tests/test_pr7_workspace_http.py
       - name: Run isolated regression tests
