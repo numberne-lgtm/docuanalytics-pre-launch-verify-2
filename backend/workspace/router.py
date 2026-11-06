@@ -235,10 +235,13 @@ def build_workspace_router(db, get_current_user, llm_key, default_notify_days, s
         uid = u["user_id"]
         if uid in _copilot_busy:
             raise HTTPException(429, "Una risposta Copilot è già in elaborazione.")
+        selected_analysis = None
         if req.analysis_id:
-            await _analysis(uid, req.analysis_id)
+            selected_analysis = await _analysis(uid, req.analysis_id)
         if req.client_id:
             await _client(uid, req.client_id)
+        if selected_analysis and req.client_id and selected_analysis.get("client_id") != req.client_id:
+            raise HTTPException(400, "Il documento non appartiene al cliente selezionato.")
         if not req.consent_to_ai:
             raise HTTPException(400, "Autorizza esplicitamente l’invio dei dati selezionati al modello AI.")
         if req.include_document_details and not req.analysis_id:
