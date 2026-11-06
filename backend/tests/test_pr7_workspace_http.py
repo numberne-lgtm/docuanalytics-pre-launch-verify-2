@@ -23,7 +23,7 @@ def app_client(request):
     sync.admin.command("ping")
     db = sync[name]
     db.analyses.insert_many([
-        {"user_id": "alice", "analysis_id": "doc-alice", "filename": "alice.pdf",
+        {"user_id": "alice", "analysis_id": "doc-alice", "client_id": "client-alice", "filename": "alice.pdf",
          "created_at": "2026-11-06T00:00:00Z",
          "result": {"doc_type": "Contratto", "summary": "Documento sintetico",
                     "full_text": "PRIVATE_TEXT_NEVER_SEND_BY_DEFAULT",
@@ -38,6 +38,7 @@ def app_client(request):
     ])
     db.clients.insert_many([
         {"user_id": "alice", "client_id": "client-alice", "name": "Cliente A", "email": ""},
+        {"user_id": "alice", "client_id": "client-other", "name": "Cliente Altro", "email": ""},
         {"user_id": "bob", "client_id": "client-bob", "name": "Cliente B", "email": ""},
     ])
     db.reminders.insert_many([
@@ -145,6 +146,12 @@ def test_copilot_consent_and_account_isolation_without_model_calls(app_client):
                                       "client_id": "client-bob"}, headers=auth("alice")).status_code == 404
     assert app_client.post(url, json={**base, "consent_to_ai": True,
                                       "analysis_id": "doc-bob"}, headers=auth("alice")).status_code == 404
+    assert app_client.post(url, json={**base, "consent_to_ai": True,
+                                      "analysis_id": "doc-alice", "client_id": "client-bob"},
+                           headers=auth("alice")).status_code == 404
+    assert app_client.post(url, json={**base, "consent_to_ai": True,
+                                      "analysis_id": "doc-alice", "client_id": "client-other"},
+                           headers=auth("alice")).status_code == 400
     assert app_client.post(url, json={**base, "consent_to_ai": True,
                                       "include_document_details": True}, headers=auth("alice")).status_code == 400
     # llm_key is absent, so even a valid request must fail closed without model/network calls.
