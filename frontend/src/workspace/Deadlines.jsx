@@ -110,10 +110,16 @@ function HistoricalReview({ reloadKey, onChanged }) {
         <div key={d.reminder_id} className="ws-dl" data-testid={`review-${d.reminder_id}`}>
           <div className="ws-dl-main">
             <span><b>{d.label}</b> · {d.due_date ? fmtDate(d.due_date) : (d.raw_date || "Data incerta")}</span>
-            <span className="ws-tag">{d.operational_excluded ? "Esclusa dalle scadenze" : d.legacy_historical ? "Evento storico non confermato" : "Da valutare"}</span>
+            <span className="ws-tag">{d.operational_excluded ? "Esclusa dalle scadenze" : d.legacy_historical ? "Evento storico non confermato" : d.legal_date_review ? "Data legale da verificare" : "Da valutare"}</span>
           </div>
           <div className="ws-dl-actions">
             {d.operational_excluded && <button type="button" className="as-btn" disabled={busy === d.reminder_id} onClick={() => restore(d)}>Ripristina</button>}
+            {d.legal_date_review && !d.operational_excluded && <button type="button" className="as-btn" disabled={busy === d.reminder_id} onClick={() => {
+              if (!window.confirm("Escludere questa data legale dalle scadenze operative, calendari e notifiche?")) return;
+              setBusy(d.reminder_id); setErr("");
+              ws.put(`/deadlines/${d.reminder_id}/operational`, {excluded: true, reason: "Data legale non operativa dopo revisione"})
+                .then(onChanged).catch((e) => setErr(errMsg(e))).finally(() => setBusy(null));
+            }}>Escludi dopo verifica</button>}
             {d.legacy_historical && !d.operational_excluded && <button type="button" className="as-btn" onClick={() => window.confirm("Vuoi confermare esplicitamente questo evento storico come scadenza operativa?") && ws.post(`/deadlines/${d.reminder_id}/confirm`, { notify: false }).then(onChanged).catch((e) => setErr(errMsg(e)))}>Conferma senza notifiche</button>}
           </div>
         </div>
