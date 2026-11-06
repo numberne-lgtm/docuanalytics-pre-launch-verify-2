@@ -96,7 +96,7 @@ def test_authenticated_pdf_and_qr(app_client):
     qr = app_client.get(path + "/qr", headers=auth("alice"))
     assert qr.status_code == 200
     assert qr.headers["content-type"].startswith("image/png")
-    assert qr.content.startswith(b"\\x89PNG\\r\\n\\x1a\\n")
+    assert qr.content.startswith(bytes((137, 80, 78, 71, 13, 10, 26, 10)))
 
 
 def test_read_state_separated_by_account_and_reversible(app_client):
