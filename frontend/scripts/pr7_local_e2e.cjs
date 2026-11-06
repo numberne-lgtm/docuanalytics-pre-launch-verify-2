@@ -68,8 +68,15 @@ async function loginFromPriority(page, path, email) {
     await page.getByTestId("workspace-page").waitFor();
     await page.getByTestId("risk-dashboard").waitFor();
     assert(await page.getByTestId("priorities-list").getByTestId("priority-0").count() > 0);
-    await page.getByTestId("priority-read-0").click();
-    await page.getByTestId("priority-read-0").getByText("Già letta").waitFor();
+    const priorityReadButton = page.getByTestId("priority-read-0");
+    // The test may run after an API smoke with shared synthetic fixtures.
+    // Guarantee a known state before testing the UI transition.
+    if (await priorityReadButton.getByText("Già letta").count()) {
+      await priorityReadButton.click();
+      await priorityReadButton.getByText("Non letta").waitFor();
+    }
+    await priorityReadButton.click();
+    await priorityReadButton.getByText("Già letta").waitFor();
     await page.reload();
     await page.getByTestId("priority-read-0").getByText("Già letta").waitFor();
 
