@@ -60,6 +60,8 @@ Questo staging utilizza **l'autenticazione fittizia** e le API reali dell'Area d
 
 La CI GitHub esegue automaticamente test d'integrazione tramite `backend/tests/test_pr7_staging_local.py`, oltre ai test unitari e al browser smoke.
 
+**Il browser end-to-end locale con il backend reale è ora verificato in GitHub Actions:** `frontend/scripts/pr7_local_e2e.cjs` viene eseguito con Chrome contro `http://127.0.0.1:8765`, dove il server `staging_local.py` e MongoDB sono avviati come processi isolati nel runner. Testa login, lettura persistente, QR/PDF, due utenti e blocco del Copilot. Quest'ultimo test non utilizza Docker Compose: la build e l'avvio Docker sul computer dell'utente restano da verificare.
+
 ## Prossimo gate
 
 La PR può restare in bozza fino alla verifica delle condizioni DPA/subprocessori/retention con Emergent e alla disponibilità di un ambiente staging vero con credenziali di prova. Nessun merge né deploy è necessario per utilizzare lo staging locale.
