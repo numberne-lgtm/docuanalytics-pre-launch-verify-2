@@ -13,6 +13,22 @@ export default function RiskDashboard({ onOpenDoc, onOpenClient, reloadKey }) {
   const [data, setData] = useState(null);
   const [err, setErr] = useState("");
   useEffect(() => { ws.get("/overview").then(setData).catch((e) => setErr(errMsg(e))); }, [reloadKey]);
+  const [saving, setSaving] = useState({});
+  const [readErr, setReadErr] = useState("");
+  const markRead = async (p) => {
+    const itemId = p.type === "document" ? p.analysis_id : p.reminder_id;
+    const key = `${p.type}:${itemId}`;
+    if (!itemId || saving[key]) return;
+    setSaving((prev) => ({ ...prev, [key]: true }));
+    setReadErr("");
+    try {
+      await ws.put("/priorities/read-state", { type: p.type, item_id: itemId, is_read: !p.is_read });
+      setData((prev) => prev ? ({ ...prev, priorities: prev.priorities.map((item) =>
+        (item.type === p.type && (item.type === "document" ? item.analysis_id : item.reminder_id) === itemId)
+          ? { ...item, is_read: !p.is_read } : item) }) : prev);
+    } catch (e) { setReadErr(errMsg(e)); }
+    finally { setSaving((prev) => ({ ...prev, [key]: false })); }
+  };
   if (err) return <div className="ws-error" data-testid="risk-error">{err}</div>;
   if (!data) return <div className="ws-muted">Caricamento…</div>;
   const c = data.counts;
@@ -31,15 +47,24 @@ export default function RiskDashboard({ onOpenDoc, onOpenClient, reloadKey }) {
         <p className="ws-note" data-testid="risk-notes">{c.unassigned > 0 && `${c.unassigned} ${c.unassigned === 1 ? "documento" : "documenti"} senza cliente associato. `}{c.deadlines_to_verify > 0 && `${c.deadlines_to_verify} date da verificare.`}</p>
       )}
       <h3 className="ws-h3">Priorità ({data.priorities.length})</h3>
+      {readErr && <p className="ws-error" role="alert">{readErr}</p>}
       {data.priorities.length === 0 && <p className="ws-muted" data-testid="priorities-empty">Nessuna priorità: nessuna criticità o scadenza rilevata.</p>}
       <div className="ws-list" data-testid="priorities-list">
         {data.priorities.map((p, i) => (
-          <button key={i} className="ws-row" data-testid={`priority-${i}`}
-            onClick={() => (p.analysis_id ? onOpenDoc(p.analysis_id) : p.client_id && onOpenClient(p.client_id))}>
-            <span className="ws-priority-number" aria-label={`Posizione ${i + 1}`} style={{ minWidth: "2.5rem", textAlign: "center", fontWeight: 800, fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>#{i + 1}</span>
-            <Level level={p.level} />
-            <span className="ws-row-main"><b>{p.client_name || "Cliente non associato"}</b><span>{p.title} — {p.type === "deadline" ? `${p.detail}, ${dueText(p.days_left)}` : p.detail}</span></span>
-          </button>
+          <div key={`${p.type}:${p.type === "document" ? p.analysis_id : p.reminder_id}`} className="ws-priority-item">
+            <button className="ws-row ws-priority-open" data-testid={`priority-${i}`}
+              onClick={() => (p.analysis_id ? onOpenDoc(p.analysis_id) : p.client_id && onOpenClient(p.client_id))}>
+              <span className="ws-priority-number" aria-label={`Posizione ${i + 1}`} style={{ minWidth: "2.5rem", textAlign: "center", fontWeight: 800, fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>#{i + 1}</span>
+              <Level level={p.level} />
+              <span className="ws-row-main"><b>{p.client_name || "Cliente non associato"}</b><span>{p.title} — {p.type === "deadline" ? `${p.detail}, ${dueText(p.days_left)}` : p.detail}</span></span>
+            </button>
+            <button type="button" className="ws-priority-read" data-testid={`priority-read-${i}`}
+              aria-label={p.is_read ? "Segna come non letta" : "Segna come già letta"}
+              disabled={!!saving[`${p.type}:${p.type === "document" ? p.analysis_id : p.reminder_id}`]}
+              onClick={() => markRead(p)}>
+              {p.is_read ? "✓ Già letta" : "● Non letta"}
+            </button>
+          </div>
         ))}
       </div>
     </div>
