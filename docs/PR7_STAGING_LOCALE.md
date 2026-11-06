@@ -34,8 +34,9 @@ I documenti e i clienti creati in questo ambiente sono tutti inventati e salvati
 
 ### Regole di sicurezza
 
-- Docker espone l'applicazione soltanto su `127.0.0.1:8765`; MongoDB non espone porte verso l'host.
-- La rete Docker è `internal`, senza accesso alla rete esterna.
+- Docker espone **soltanto il proxy HTTP nginx** su `127.0.0.1:8765`. MongoDB e FastAPI non pubblicano porte e condividono una rete interna privata. Il proxy collega il browser locale all'app e non contiene credenziali.
+- L'applicazione e MongoDB sono collegati soltanto alla rete Docker `internal`, senza accesso diretto alla rete esterna. Il proxy si collega a due reti, ma non ha credenziali né altri upstream configurati.
+- Lo staging applica `Content-Security-Policy` che vieta richieste browser verso servizi esterni (inclusi tracker e script di terze parti).
 - La modalità è `APP_ENV=test`, `PR7_LOCAL_STAGING=1`; il server blocca la presenza di chiavi AI, Stripe, PayPal e Resend.
 - Gli endpoint AI, pagamenti, invii email, upload, audit a pagamento e amministrazione rispondono con HTTP 503.
 - Le schede delle priorità, le scadenze, i clienti, i QR e i PDF usano **il router reale `backend/workspace/router.py`** e il database MongoDB fittizio.
