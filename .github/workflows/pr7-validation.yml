@@ -61,3 +61,11 @@ jobs:
         run: yarn install --non-interactive --ignore-scripts --network-timeout 120000
       - name: React build
         run: yarn build
+      - name: Install isolated Chromium smoke-test dependencies
+        run: npm install --prefix /tmp/pr7-playwright --no-audit --no-fund --no-save playwright@1.58.2
+      - name: Install Chromium test browser
+        run: /tmp/pr7-playwright/node_modules/.bin/playwright install --with-deps chromium
+      - name: Run mobile browser smoke
+        env:
+          NODE_PATH: /tmp/pr7-playwright/node_modules
+        run: node scripts/pr7_browser_smoke.cjs
