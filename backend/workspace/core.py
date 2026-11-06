@@ -184,7 +184,7 @@ def needs_legal_date_review(reminder: dict) -> bool:
     return (
         reminder.get("source") == "auto"
         and not reminder.get("confirmed_at")
-        and bool(re.search(r"\\b(?:sollecito|diffida)\\b",
+        and bool(re.search(r"\b(?:sollecito|diffida)\b",
                            str(reminder.get("label") or "").casefold()))
     )
 
