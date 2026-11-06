@@ -581,8 +581,11 @@ async def list_reminders(user_id: Optional[str] = None, request: Request = None)
     uid = await _auth_user_id(request, user_id)
     today = datetime.now(timezone.utc).date()
     out = []
+    from workspace.core import show_operational_deadline
     async for r in db.reminders.find({"user_id": uid, "active": True,
                                       "$or": [{"source": {"$ne": "auto"}}, {"status": "confirmed"}]}, {"_id": 0}).sort("due_date", 1):
+        if not show_operational_deadline(r):
+            continue
         try:
             dl = (datetime.strptime(r["due_date"], "%Y-%m-%d").date() - today).days
         except Exception:
@@ -613,8 +616,11 @@ def _client_reminder_html(label, due_str, days_left, sender, message="", signatu
 
 
 async def _check_reminders():
+    from workspace.core import show_operational_deadline
     today = datetime.now(timezone.utc).date()
     async for r in db.reminders.find({"active": True}):
+        if not show_operational_deadline(r):
+            continue
         try:
             due = datetime.strptime(r["due_date"], "%Y-%m-%d").date()
         except Exception:
