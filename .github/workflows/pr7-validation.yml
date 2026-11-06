@@ -1,0 +1,70 @@
+name: PR7 isolated validation
+on:
+  push:
+    branches:
+      - feature/risk-priority-numbering
+  pull_request:
+    paths:
+      - 'backend/workspace/**'
+      - 'backend/tests/test_pr7_*.py'
+      - 'frontend/**'
+      - '.github/workflows/pr7-validation.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    name: Isolated backend security and PDF tests
+    runs-on: ubuntu-latest
+    services:
+      mongo:
+        image: mongo:7
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --quiet --eval 'db.runCommand({ ping: 1 })'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 8
+    env:
+      PR7_TEST_MONGO_URL: mongodb://127.0.0.1:27017
+      PYTHONPATH: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+      - name: Install isolated test dependencies
+        run: |
+          python -m pip install --disable-pip-version-check \
+            'fastapi==0.110.1' 'starlette==0.37.2' 'httpx==0.28.1' \
+            'motor==3.3.1' 'pymongo==4.6.3' 'pymupdf==1.28.2' \
+            'pytest==9.1.1' 'segno==1.6.6'
+      - name: Compile workspace modules and tests
+        run: python -m py_compile backend/workspace/router.py backend/workspace/core.py backend/tests/test_pr7_priority_pdf.py backend/tests/test_pr7_workspace_http.py
+      - name: Run isolated regression tests
+        run: python -m pytest -q backend/tests/test_pr7_priority_pdf.py backend/tests/test_pr7_workspace_http.py
+
+  frontend:
+    name: React production build
+    runs-on: ubuntu-latest
+    env:
+      CI: 'true'
+      REACT_APP_BACKEND_URL: ''
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install yarn classic
+        run: npm install -g yarn@1.22.22
+      - name: Install frontend dependencies (no scripts)
+        run: yarn install --non-interactive --ignore-scripts --network-timeout 120000
+      - name: React build
+        run: yarn build
