@@ -223,6 +223,11 @@ def test_historical_legacy_auto_review_and_explicit_confirmation(app_client):
     headers = auth("alice")
     overview = app_client.get("/api/workspace/overview", headers=headers).json()
     assert not any(p.get("reminder_id") == "deadline-historic" for p in overview["priorities"])
+    detail = app_client.get("/api/workspace/priorities/deadline/deadline-historic", headers=headers)
+    assert detail.status_code == 200
+    assert detail.json()["historical_unverified"] is True
+    assert detail.json()["status"] == "to_verify"
+    assert detail.json()["operational"] is False
     review = app_client.get("/api/workspace/deadlines/review", headers=headers)
     assert review.status_code == 200, review.text
     rec = next(d for d in review.json()["items"] if d["reminder_id"] == "deadline-historic")
