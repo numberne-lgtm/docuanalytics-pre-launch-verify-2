@@ -484,6 +484,7 @@ def build_workspace_router(db, get_current_user, llm_key, default_notify_days, s
                 raise HTTPException(404, "Priorità non trovata")
             dl = core.days_left(rm.get("due_date"))
             historical_unverified = core.is_legacy_historical_auto(rm)
+            legal_review = core.needs_legal_date_review(rm)
             status = "to_verify" if historical_unverified else (rm.get("status") or "confirmed")
             excluded = bool(rm.get("operational_excluded"))
             return {
@@ -495,6 +496,7 @@ def build_workspace_router(db, get_current_user, llm_key, default_notify_days, s
                 "date": rm.get("due_date") or "", "status": status,
                 "operational": core.show_operational_deadline(rm),
                 "historical_unverified": historical_unverified,
+                "legal_date_review": legal_review,
                 "operational_excluded": excluded,
             }
         raise HTTPException(404, "Priorità non trovata")
@@ -665,13 +667,15 @@ def build_workspace_router(db, get_current_user, llm_key, default_notify_days, s
             {"user_id": uid, "active": True,
              "$or": [
                  {"operational_excluded": True},
-                 {"source": "auto", "label": {"$regex": "decadenza|beneficio termine", "$options": "i"}}
+                 {"source": "auto", "label": {"$regex": "decadenza|beneficio termine|sollecito|diffida", "$options": "i"}}
              ]}, {"_id": 0}
         ).sort("due_date", 1).limit(250):
-            if rm.get("operational_excluded") or core.is_legacy_historical_auto(rm) or core.is_historical_event(rm.get("label", "")):
+            if (rm.get("operational_excluded") or core.is_legacy_historical_auto(rm)
+                    or core.needs_legal_date_review(rm) or core.is_historical_event(rm.get("label", ""))):
                 items.append({**_dl_out(rm),
                               "operational_excluded": bool(rm.get("operational_excluded")),
                               "legacy_historical": core.is_legacy_historical_auto(rm),
+                              "legal_date_review": core.needs_legal_date_review(rm),
                               "confirmed_by_user": bool(rm.get("confirmed_at"))})
         return {"items": items, "limited": len(items) == 250}
 
