@@ -5,6 +5,11 @@ services:
     restart: "no"
     networks: [pr7_local]
     volumes: [pr7_mongo_data:/data/db]
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.runCommand({ ping: 1 })"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
   staging:
     build:
       context: .
@@ -16,7 +21,9 @@ services:
       STAGING_MONGO_URI: mongodb://mongo:27017
     ports:
       - "127.0.0.1:8765:8765"
-    depends_on: [mongo]
+    depends_on:
+      mongo:
+        condition: service_healthy
     networks: [pr7_local]
 networks:
   pr7_local:
