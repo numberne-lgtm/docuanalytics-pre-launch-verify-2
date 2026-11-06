@@ -8,16 +8,31 @@ Questa configurazione consente una verifica **sul proprio computer**, senza acco
 - Node.js 22 e Yarn 1.x (per compilare il frontend)
 - Codice del ramo `feature/risk-priority-numbering`
 
-## Avvio locale (nessuna pubblicazione)
+## Avvio su Mac, controllato e senza pubblicazione
+
+Da una copia pulita del repository, sul ramo `feature/risk-priority-numbering`:
 
 ```bash
-git checkout feature/risk-priority-numbering
-cd frontend
-yarn install --non-interactive
-REACT_APP_BACKEND_URL='' CI=false yarn build
-cd ..
-docker compose -f compose.pr7.yml up --build
+bash scripts/pr7_local.sh check
+bash scripts/pr7_local.sh start
 ```
+
+Il comando `check` verifica senza avviare container: Mac, Node 22, Yarn classic 1.x, Docker Desktop acceso, ramo di lavoro, porta 8765 disponibile, assenza di file `.env` frontend e rete privata della configurazione Compose. Il comando `start` compila il frontend e avvia lo staging soltanto se i controlli passano. Non modifica il ramo né importa alcun database remoto.
+
+Per controllare o fermare:
+
+```bash
+bash scripts/pr7_local.sh status
+bash scripts/pr7_local.sh stop
+```
+
+Solo per cancellare anche il volume MongoDB *sintetico* (conferma richiesta):
+
+```bash
+bash scripts/pr7_local.sh clean
+```
+
+**Se devi ancora clonare il repository**, utilizza GitHub con il tuo account autorizzato e seleziona il ramo `feature/risk-priority-numbering`, poi esegui i comandi dalla radice del repository. Non inserire mai chiavi Stripe, PayPal, Resend o Emergent nella copia di staging.
 
 Il server sarà raggiungibile **soltanto dalla macchina locale** su
 http://127.0.0.1:8765/area
@@ -61,7 +76,7 @@ Questo staging utilizza **l'autenticazione fittizia** e le API reali dell'Area d
 
 La CI GitHub esegue automaticamente test d'integrazione tramite `backend/tests/test_pr7_staging_local.py`, oltre ai test unitari e al browser smoke.
 
-**Il browser end-to-end locale con il backend reale è ora verificato in GitHub Actions:** `frontend/scripts/pr7_local_e2e.cjs` viene eseguito con Chrome contro `http://127.0.0.1:8765`, dove il server `staging_local.py` e MongoDB sono avviati come processi isolati nel runner. Testa login, lettura persistente, QR/PDF, due utenti e blocco del Copilot. Quest'ultimo test non utilizza Docker Compose: la build e l'avvio Docker sul computer dell'utente restano da verificare.
+**Verifica CI eseguita:** il browser Chromium ha superato sia l'E2E con server FastAPI e MongoDB avviati nel runner, sia l'E2E sulla stessa applicazione lanciata come container Docker Compose con proxy nginx; vedi l'esecuzione Actions 42302261025. Anche la build e lo smoke test Docker Compose sono stati superati su Linux CI. **L'avvio su un Mac fisico (Intel o Apple Silicon) non è ancora stato verificato**: le immagini sono multi-architettura, ma il runtime arm64 richiede collaudo prima di un'affermazione di compatibilità completa.
 
 ## Prossimo gate
 
