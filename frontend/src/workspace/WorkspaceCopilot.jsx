@@ -68,6 +68,18 @@ export default function WorkspaceCopilot({ analysisId = null, clientId = null })
               <div key={i} className={`ws-copilot-msg ws-copilot-${msg.role}`}>
                 <strong>{msg.role === "user" ? "Tu" : "Copilot"}</strong>
                 <p>{msg.text}</p>
+                {msg.sources?.length > 0 && (
+                  <div className="ws-copilot-sources">
+                    <strong>Fonti citate</strong>
+                    {msg.sources.map((source) => {
+                      const [kind, id] = source.ref.split(":");
+                      const href = kind === "documento" ? `/area/priorita/document/${id}`
+                        : kind === "scadenza" ? `/area/priorita/deadline/${id}` : null;
+                      return href ? <a key={source.ref} href={href}>{source.label}</a>
+                        : <span key={source.ref}>{source.label}</span>;
+                    })}
+                  </div>
+                )}
                 {msg.partial && <p className="ws-muted">Archivio consultato parzialmente. Per maggiore precisione seleziona un contesto specifico.</p>}
               </div>
             ))}
