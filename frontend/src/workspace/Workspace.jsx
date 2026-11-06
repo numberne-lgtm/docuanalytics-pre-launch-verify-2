@@ -5,6 +5,7 @@ import { LayoutDashboard, Users, FileText, CalendarClock, X, Zap } from "lucide-
 import { ws, errMsg, hasToken } from "./api";
 import RiskDashboard, { Level } from "./RiskDashboard";
 import WorkspaceCopilot from "./WorkspaceCopilot";
+import PriorityQrPdf from "./PriorityQrPdf";
 import Documents from "./Documents";
 import Deadlines, { DeadlineList } from "./Deadlines";
 import { ClientList, Client360 } from "./Clients";
@@ -36,6 +37,7 @@ function DocPanel({ aid, onClose, onOpenClient, reloadKey, onChanged }) {
             <div className="ws-fields">{d.fields.map((f, i) => <div key={i}><span className="ws-muted">{f.label}</span><b>{String(f.value)}</b></div>)}</div>
             <h3 className="ws-h3">Scadenze del documento</h3>
             <DeadlineList items={d.deadlines} onChanged={onChanged} />
+            <PriorityQrPdf kind="document" itemId={aid} expandedInitially testId="doc-panel-qrpdf" />
           </>
         )}
       </div>
