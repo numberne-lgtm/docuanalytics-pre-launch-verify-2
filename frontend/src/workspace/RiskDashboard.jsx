@@ -30,12 +30,13 @@ export default function RiskDashboard({ onOpenDoc, onOpenClient, reloadKey }) {
       {(c.unassigned > 0 || c.deadlines_to_verify > 0) && (
         <p className="ws-note" data-testid="risk-notes">{c.unassigned > 0 && `${c.unassigned} ${c.unassigned === 1 ? "documento" : "documenti"} senza cliente associato. `}{c.deadlines_to_verify > 0 && `${c.deadlines_to_verify} date da verificare.`}</p>
       )}
-      <h3 className="ws-h3">Priorità</h3>
+      <h3 className="ws-h3">Priorità ({data.priorities.length})</h3>
       {data.priorities.length === 0 && <p className="ws-muted" data-testid="priorities-empty">Nessuna priorità: nessuna criticità o scadenza rilevata.</p>}
       <div className="ws-list" data-testid="priorities-list">
         {data.priorities.map((p, i) => (
           <button key={i} className="ws-row" data-testid={`priority-${i}`}
             onClick={() => (p.analysis_id ? onOpenDoc(p.analysis_id) : p.client_id && onOpenClient(p.client_id))}>
+            <span className="ws-priority-number" aria-label={`Posizione ${i + 1}`} style={{ minWidth: "2.5rem", textAlign: "center", fontWeight: 800, fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>#{i + 1}</span>
             <Level level={p.level} />
             <span className="ws-row-main"><b>{p.client_name || "Cliente non associato"}</b><span>{p.title} — {p.type === "deadline" ? `${p.detail}, ${dueText(p.days_left)}` : p.detail}</span></span>
           </button>
