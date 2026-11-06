@@ -78,7 +78,7 @@ export default function PriorityShare() {
           <div className="ws-doc" role="status" data-testid="priority-login-required">
             <h2 className="ws-h2">Accesso richiesto</h2>
             <p>Per consultare o esportare questa priorità devi accedere con l'account autorizzato.</p>
-            <a className="btn btn-primary" href="/?auth=login">Accedi a DocuAnalytics</a>
+            <a className="btn btn-primary" href={`/?auth=login&return_to=${encodeURIComponent(`/area/priorita/${kind}/${itemId}`)}`}>Accedi a DocuAnalytics</a>
             <p className="ws-muted">Dopo l'accesso, riapri questo link o scansiona di nuovo il QR.</p>
           </div>
         ) : !allowed ? <p className="ws-error">Collegamento non valido.</p> : (
