@@ -25,7 +25,9 @@ export default function WorkspaceCopilot({ analysisId = null, clientId = null })
     setWorking(true);
     try {
       const response = await ws.post("/copilot/ask", {
-        question: q, scope, ...(analysisId ? { analysis_id: analysisId } : {}),
+        question: q, scope,
+        history: messages.slice(-6).map((m) => ({ role: m.role, text: m.text.slice(0, 1200) })),
+        ...(analysisId ? { analysis_id: analysisId } : {}),
         ...(clientId ? { client_id: clientId } : {}),
       });
       setMessages((list) => [...list, {
