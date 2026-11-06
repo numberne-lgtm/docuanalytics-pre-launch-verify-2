@@ -31,7 +31,21 @@ const server = http.createServer((req, res) => {
     await page.getByTestId("priority-login-required").waitFor();
     assert.match(await page.locator("body").innerText(), /Accesso richiesto/);
 
-    await page.addInitScript(() => localStorage.setItem("da_token", "test-token"));
+    const loginLink = page.getByTestId("priority-login-required").locator("a");
+    const loginHref = await loginLink.getAttribute("href");
+    assert.ok(loginHref.includes("auth=login"));
+    assert.ok(loginHref.includes("return_to="));
+    await page.route("**/api/auth/login", async route =>
+      route.fulfill({status:200, contentType:"application/json",
+        body:JSON.stringify({token:"test-token",user:{
+          user_id:"alice", email:"alice@example.invalid", name:"Test", credits:4
+        }})}));
+    await page.route("**/api/auth/me", async route =>
+      route.fulfill({status:200,contentType:"application/json",
+        body:JSON.stringify({user:{user_id:"alice", email:"alice@example.invalid",credits:4}})}));
+    await page.route("**/api/session", async route =>
+      route.fulfill({status:200,contentType:"application/json",
+        body:JSON.stringify({user_id:"anon-pr7",credits:0})}));
     await page.route("**/api/workspace/priorities/document/doc-alice", async route =>
       route.fulfill({status:200, contentType:"application/json",
         body:JSON.stringify({item_id:"doc-alice", type:"document",title:"Contratto di prova",
@@ -44,7 +58,12 @@ const server = http.createServer((req, res) => {
       route.fulfill({status:200, contentType:"application/pdf",
         headers:{"Content-Disposition":'attachment; filename="docuanalytics-priorita.pdf"'},
         body:Buffer.from("%PDF-1.4\n1 0 obj<</Type/Catalog>>endobj\n%%EOF\n")}));
-    await page.reload();
+    await loginLink.click();
+    await page.getByTestId("auth-modal").waitFor({timeout:15000});
+    await page.getByTestId("auth-email").fill("alice@example.invalid");
+    await page.getByTestId("auth-password").fill("test-password");
+    await page.getByTestId("auth-submit").click();
+    await page.waitForURL(url, {timeout:20000});
     await page.getByText("Contratto di prova").waitFor();
     await page.getByTestId("priority-pdf-download").waitFor();
     const width = await page.evaluate(() => ({
@@ -57,7 +76,7 @@ const server = http.createServer((req, res) => {
       page.getByTestId("priority-pdf-download").click(),
     ]);
     assert.equal(download.suggestedFilename(), "docuanalytics-priorita.pdf");
-    console.log("PR7 mobile browser smoke PASS: login gate, protected detail, viewport, PDF download");
+    console.log("PR7 mobile browser smoke PASS: login and return flow, protected detail, viewport, PDF download");
   } finally {
     await browser.close();
     await new Promise(resolve => server.close(resolve));
