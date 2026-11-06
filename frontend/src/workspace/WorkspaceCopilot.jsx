@@ -16,6 +16,17 @@ export default function WorkspaceCopilot({ analysisId = null, clientId = null })
   const [working, setWorking] = useState(false);
   const [error, setError] = useState("");
   const bodyRef = useRef(null);
+  const requestVersion = useRef(0);
+  // Do not carry a previous client's conversation or sensitive detail opt-in
+  // into a newly selected client/document or scope.
+  useEffect(() => {
+    requestVersion.current += 1;
+    setMessages([]);
+    setError("");
+    setQuestion("");
+    setIncludeDetails(false);
+    setWorking(false);
+  }, [analysisId, clientId, scope]);
   useEffect(() => { if (bodyRef.current) bodyRef.current.scrollTop = bodyRef.current.scrollHeight; }, [messages, working]);
   const ask = async (event) => {
     event.preventDefault();
@@ -25,6 +36,7 @@ export default function WorkspaceCopilot({ analysisId = null, clientId = null })
     setMessages((list) => [...list, { role: "user", text: q }]);
     setError("");
     setWorking(true);
+    const version = ++requestVersion.current;
     try {
       const response = await ws.post("/copilot/ask", {
         question: q, scope, consent_to_ai: consent,
@@ -33,14 +45,15 @@ export default function WorkspaceCopilot({ analysisId = null, clientId = null })
         ...(analysisId ? { analysis_id: analysisId } : {}),
         ...(clientId ? { client_id: clientId } : {}),
       });
+      if (version !== requestVersion.current) return;
       setMessages((list) => [...list, {
         role: "assistant", text: response.answer || "Nessuna risposta.",
         sources: response.sources || [], partial: !!response.partial,
       }]);
     } catch (e) {
-      setError(errMsg(e));
+      if (version === requestVersion.current) setError(errMsg(e));
     } finally {
-      setWorking(false);
+      if (version === requestVersion.current) setWorking(false);
     }
   };
   return (
@@ -63,7 +76,7 @@ export default function WorkspaceCopilot({ analysisId = null, clientId = null })
               <option value="clients">Clienti</option>
               <option value="deadlines">Scadenze</option>
             </select>
-            <button type="button" className="ws-copilot-reset" onClick={() => { setMessages([]); setError(""); }} aria-label="Nuova conversazione"><RotateCcw size={15} /> Nuova</button>
+            <button type="button" className="ws-copilot-reset" onClick={() => { requestVersion.current += 1; setMessages([]); setError(""); setWorking(false); }} aria-label="Nuova conversazione"><RotateCcw size={15} /> Nuova</button>
           </div>
           <div className="ws-copilot-consent">
             <label>
