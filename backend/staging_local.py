@@ -73,7 +73,7 @@ async def deny_external_or_unreviewed_calls(request, call_next):
                    for pattern in SAFE_WORKSPACE.get(request.method, [])):
             return JSONResponse({"detail": "Non disponibile nello staging locale sintetico."}, status_code=503)
     elif request.url.path.startswith("/api/") and request.url.path not in (
-        "/api/auth/login", "/api/auth/me", "/api/session"
+        "/api/auth/login", "/api/auth/me", "/api/session", "/api/pr7-staging/status"
     ) and not re.fullmatch(r"/api/session/[A-Za-z0-9-]{1,128}", request.url.path):
         return JSONResponse({"detail": "Servizio esterno disattivato in staging."}, status_code=503)
     return await call_next(request)
