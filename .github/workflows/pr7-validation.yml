@@ -36,6 +36,15 @@ jobs:
             'fastapi==0.110.1' 'starlette==0.37.2' 'httpx==0.28.1' \
             'motor==3.3.1' 'pymongo==4.6.3' 'pymupdf==1.28.2' \
             'pytest==9.1.1' 'pytest-xdist==3.8.0' 'segno==1.6.6' 'requests==2.34.2' 'python-dotenv==1.2.1' 'python-multipart==0.0.32' 'uvicorn==0.25.0' 'pillow==12.0.0' 'zxing-cpp==2.3.0'
+      - name: Verify Mac staging helper syntax and fail-closed commands
+        run: |
+          bash -n scripts/pr7_local.sh
+          set +e
+          bash scripts/pr7_local.sh unknown >/tmp/pr7-helper-reject.log 2>&1
+          result=$?
+          set -e
+          test "$result" -eq 2
+          grep -q "check|start|status|stop|clean" /tmp/pr7-helper-reject.log
       - name: Compile workspace modules and tests
         run: python -m py_compile backend/server.py backend/runtime_config.py backend/workspace/router.py backend/workspace/core.py backend/tests/test_pr7_priority_pdf.py backend/tests/test_pr7_workspace_http.py backend/tests/test_pr7_runtime_config.py backend/staging_local.py backend/tests/test_pr7_staging_local.py backend/scripts/pr7_provider_probe.py
       - name: Run isolated regression tests
@@ -139,6 +148,7 @@ jobs:
           import json
           with open("/tmp/pr7-compose-config.json") as f:
               c = json.load(f)
+          assert c["name"] == "docuanalytics-pr7-local", "Unexpected Compose project or volume namespace"
           staging = c["services"]["staging"]
           gateway = c["services"]["gateway"]
           ports = gateway["ports"]
