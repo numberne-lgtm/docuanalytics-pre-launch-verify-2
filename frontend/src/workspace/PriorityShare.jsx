@@ -92,6 +92,8 @@ export default function PriorityShare() {
                 {priority.filename && <p>Documento: {priority.filename}</p>}
                 {priority.date && <p>Data indicata: {fmtDate(priority.date)}</p>}
                 {priority.status && <p>Stato scadenza: {priority.status === "confirmed" ? "Confermata" : "Da verificare"}</p>}
+                {priority.historical_unverified && <p className="ws-note" role="status">Evento storico rilevato automaticamente: non risulta una conferma esplicita. La data non è considerata una scadenza operativa.</p>}
+                {priority.operational_excluded && <p className="ws-note" role="status">Questa data è stata esclusa dalle scadenze operative, dai promemoria e dai calendari.</p>}
                 {priority.summary && <p>{priority.summary}</p>}
                 {(priority.details || []).length > 0 && <><h3 className="ws-h3">Controlli e dettagli</h3><ul>{priority.details.map((d, i) => <li key={i}>{d}</li>)}</ul></>}
                 <p className="ws-muted">Verificare sempre date e dati prima di assumere decisioni operative o legali.</p>
