@@ -162,13 +162,29 @@ def is_historical_event(label: str) -> bool:
     return bool(re.fullmatch(r"(?:data (?:di |della )?)?decadenza (?:dal |del )?beneficio (?:del )?termine", normalized))
 
 
-def show_operational_deadline(reminder: dict) -> bool:
-    """Keep confirmed/manual reminders; hide known false-positive auto-detections."""
-    return not (
+def is_legacy_historical_auto(reminder: dict) -> bool:
+    """Historic legal-event auto reminder without proof of explicit user confirmation.
+
+    Legacy records missing status may render as 'confirmed' in the UI. Do not
+    mistake this fallback for an actual confirmation action.
+    """
+    return (
         reminder.get("source") == "auto"
-        and reminder.get("status") in ("detected", "to_verify")
         and is_historical_event(reminder.get("label", ""))
+        and not reminder.get("confirmed_at")
     )
+
+
+def show_operational_deadline(reminder: dict) -> bool:
+    """Operational feeds skip exclusions and auto-detected historic events.
+
+    A historical event explicitly confirmed with confirmed_at is preserved,
+    unless the owner deliberately excludes it from operational reminders.
+    Manual reminders remain under the owner's control.
+    """
+    if reminder.get("operational_excluded"):
+        return False
+    return not is_legacy_historical_auto(reminder)
 
 
 def deadlines(result: dict) -> list:
