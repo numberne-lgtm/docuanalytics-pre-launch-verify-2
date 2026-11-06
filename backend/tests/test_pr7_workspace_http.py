@@ -4,6 +4,8 @@ Run with local MongoDB at PR7_TEST_MONGO_URL=mongodb://127.0.0.1:27017
 """
 import os
 import uuid
+import sys
+import types
 import pytest
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.testclient import TestClient
@@ -15,7 +17,7 @@ MONGO = os.getenv("PR7_TEST_MONGO_URL", "mongodb://127.0.0.1:27017")
 
 
 @pytest.fixture()
-def app_client():
+def app_client(request):
     name = "pr7_test_" + uuid.uuid4().hex
     sync = MongoClient(MONGO, serverSelectionTimeoutMS=2000)
     sync.admin.command("ping")
@@ -24,7 +26,9 @@ def app_client():
         {"user_id": "alice", "analysis_id": "doc-alice", "filename": "alice.pdf",
          "created_at": "2026-11-06T00:00:00Z",
          "result": {"doc_type": "Contratto", "summary": "Documento sintetico",
-                    "fields": [], "audit": [{"level": "warning", "message": "Dato da verificare"}]},
+                    "full_text": "PRIVATE_TEXT_NEVER_SEND_BY_DEFAULT",
+                    "fields": [{"label": "Test", "value": "PRIVATE_FIELD_ONLY_WITH_OPTIN"}],
+                    "audit": [{"level": "warning", "message": "Dato da verificare"}]},
          "ws_synced": True, "risk_level": "medium"},
         {"user_id": "bob", "analysis_id": "doc-bob", "filename": "bob.pdf",
          "created_at": "2026-11-06T00:00:00Z",
@@ -56,7 +60,7 @@ def app_client():
 
     app = FastAPI()
     app.include_router(build_workspace_router(
-        AsyncIOMotorClient(MONGO)[name], current_user, None, [30, 7, 1],
+        AsyncIOMotorClient(MONGO)[name], current_user, getattr(request, "param", None), [30, 7, 1],
         email_sender, "not-production-test-secret", "https://docuanalytics.online"))
     try:
         with TestClient(app) as test:
@@ -129,3 +133,59 @@ def test_copilot_consent_and_account_isolation_without_model_calls(app_client):
     # llm_key is absent, so even a valid request must fail closed without model/network calls.
     assert app_client.post(url, json={**base, "consent_to_ai": True},
                            headers=auth("alice")).status_code == 503
+
+
+@pytest.mark.parametrize("app_client", ["pr7-fake-llm-key"], indirect=True)
+def test_copilot_mocked_llm_isolation_optin_and_citations(app_client, monkeypatch):
+    """No paid/external model is used: fake LlmChat captures the prompt and returns a response."""
+    calls = []
+
+    class UserMessage:
+        def __init__(self, text):
+            self.text = text
+
+    class LlmChat:
+        def __init__(self, api_key, session_id, system_message):
+            assert api_key == "pr7-fake-llm-key"
+            self.system_message = system_message
+
+        def with_model(self, provider, model):
+            assert provider == "openai"
+            assert model == "gpt-5.4-mini"
+            return self
+
+        async def send_message(self, message):
+            calls.append({"system": self.system_message, "question": message.text})
+            return "Fonte [documento:doc-alice]. Falsa [documento:doc-bob]."
+
+    package = types.ModuleType("emergentintegrations")
+    package.__path__ = []
+    sub = types.ModuleType("emergentintegrations.llm")
+    sub.__path__ = []
+    chatmod = types.ModuleType("emergentintegrations.llm.chat")
+    chatmod.LlmChat = LlmChat
+    chatmod.UserMessage = UserMessage
+    monkeypatch.setitem(sys.modules, "emergentintegrations", package)
+    monkeypatch.setitem(sys.modules, "emergentintegrations.llm", sub)
+    monkeypatch.setitem(sys.modules, "emergentintegrations.llm.chat", chatmod)
+
+    endpoint = "/api/workspace/copilot/ask"
+    payload = {"question": "Riassumi il contratto del cliente.", "scope": "documents",
+               "analysis_id": "doc-alice", "consent_to_ai": True}
+    normal = app_client.post(endpoint, json=payload, headers=auth("alice"))
+    assert normal.status_code == 200, normal.text
+    data = normal.json()
+    assert data["sources"] == [{"ref": "documento:doc-alice", "label": "alice.pdf"}]
+    assert "[riferimento non verificato]" in data["answer"]
+    assert "[documento:doc-bob]" not in data["answer"]
+    assert "Documento sintetico" in calls[-1]["system"]
+    assert "Dati di Bob" not in calls[-1]["system"]
+    assert "PRIVATE_TEXT_NEVER_SEND_BY_DEFAULT" not in calls[-1]["system"]
+    assert "PRIVATE_FIELD_ONLY_WITH_OPTIN" not in calls[-1]["system"]
+
+    full = app_client.post(endpoint, json={**payload, "include_document_details": True},
+                           headers=auth("alice"))
+    assert full.status_code == 200, full.text
+    assert "PRIVATE_TEXT_NEVER_SEND_BY_DEFAULT" in calls[-1]["system"]
+    assert "PRIVATE_FIELD_ONLY_WITH_OPTIN" in calls[-1]["system"]
+    assert len(calls) == 2
