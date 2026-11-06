@@ -362,8 +362,11 @@ def build_workspace_router(db, get_current_user, llm_key, default_notify_days, s
             except asyncio.TimeoutError:
                 raise HTTPException(408, "Il Copilot ha impiegato troppo tempo. Riprova.")
             answer_text = str(answer)[:8000]
-            cited = set(re.findall(r"\\[((?:documento|cliente|scadenza):[^\\]\\s]{1,128})\\]", answer_text))
-            cited &= allowed_sources
+            ref_pattern = r"\\[((?:documento|cliente|scadenza):[^\\]\\s]{1,128})\\]"
+            cited = set(re.findall(ref_pattern, answer_text)) & allowed_sources
+            # Remove unsupported citation IDs rather than presenting fabricated references.
+            answer_text = re.sub(ref_pattern, lambda m: m.group(0) if m.group(1) in allowed_sources
+                                 else "[riferimento non verificato]", answer_text)
             return {"answer": answer_text,
                     "sources": [entry for entry in sources if entry["ref"] in cited],
                     "partial": truncated}
