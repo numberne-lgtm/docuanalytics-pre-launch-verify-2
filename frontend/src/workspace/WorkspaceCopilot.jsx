@@ -60,13 +60,13 @@ export default function WorkspaceCopilot({ analysisId = null, clientId = null })
     <div className="ws-copilot" data-testid="workspace-copilot">
       {!open ? (
         <button type="button" className="ws-copilot-launch" data-testid="workspace-copilot-open" onClick={() => setOpen(true)}>
-          <Bot size={19} /> Copilot Area di lavoro
+          <Bot size={19} /> Assistente Area di lavoro
         </button>
       ) : (
-        <section className="ws-copilot-box" aria-label="Copilot Area di lavoro">
+        <section className="ws-copilot-box" aria-label="Assistente Area di lavoro">
           <header className="ws-copilot-head">
-            <span><Bot size={18} /> Copilot Area di lavoro</span>
-            <button type="button" onClick={() => setOpen(false)} aria-label="Chiudi Copilot"><X size={18}/></button>
+            <span><Bot size={18} /> Assistente Area di lavoro</span>
+            <button type="button" onClick={() => setOpen(false)} aria-label="Chiudi assistente"><X size={18}/></button>
           </header>
           <div className="ws-copilot-options">
             <label htmlFor="workspace-copilot-scope">Consulta</label>
@@ -109,12 +109,12 @@ export default function WorkspaceCopilot({ analysisId = null, clientId = null })
                 {msg.partial && <p className="ws-muted">Archivio consultato parzialmente. Per maggiore precisione seleziona un contesto specifico.</p>}
               </div>
             ))}
-            {working && <p className="ws-muted">Copilot sta esaminando i dati disponibili…</p>}
+            {working && <p className="ws-muted">L’assistente sta esaminando i dati disponibili…</p>}
           </div>
           {error && <p className="ws-error" role="alert">{error}</p>}
           <form className="ws-copilot-composer" onSubmit={ask}>
             <input value={question} onChange={(event) => setQuestion(event.target.value)} maxLength={1200}
-              placeholder="Es. Quali scadenze devo verificare?" aria-label="La tua domanda al Copilot"/>
+              placeholder="Es. Quali scadenze devo verificare?" aria-label="La tua domanda all’assistente"/>
             <button type="submit" disabled={working || !question.trim() || !consent} aria-label="Invia domanda"><Send size={17}/></button>
           </form>
           <p className="ws-copilot-disclaimer">Solo dati del tuo account. Risposte AI da verificare: non sostituiscono un professionista.</p>
