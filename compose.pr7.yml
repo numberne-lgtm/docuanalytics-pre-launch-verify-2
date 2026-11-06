@@ -1,4 +1,6 @@
 # Local machine ONLY. Synthetic data, no paid external services, no public ports.
+# Fixed project name isolates volumes and containers from any production Compose stack.
+name: docuanalytics-pr7-local
 services:
   mongo:
     image: mongo:7
