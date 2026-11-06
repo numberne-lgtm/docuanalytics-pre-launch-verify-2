@@ -63,9 +63,10 @@ jobs:
         run: yarn build
       - name: Install isolated Chromium smoke-test dependencies
         run: npm install --prefix /tmp/pr7-playwright --no-audit --no-fund --no-save playwright@1.58.2
-      - name: Install Chromium test browser
-        run: /tmp/pr7-playwright/node_modules/.bin/playwright install --with-deps chromium
-      - name: Run mobile browser smoke
+      - name: Run mobile browser smoke with system Chrome
         env:
           NODE_PATH: /tmp/pr7-playwright/node_modules
-        run: node scripts/pr7_browser_smoke.cjs
+        run: |
+          export PR7_CHROME_PATH="$(command -v google-chrome || command -v google-chrome-stable)"
+          test -n "$PR7_CHROME_PATH"
+          node scripts/pr7_browser_smoke.cjs
