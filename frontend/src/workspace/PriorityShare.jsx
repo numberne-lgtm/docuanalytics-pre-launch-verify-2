@@ -15,6 +15,8 @@ export default function PriorityShare() {
 
   useEffect(() => {
     document.title = "Priorità protetta · DocuAnalytics AI";
+    setPriority(null);
+    setError("");
     if (!loggedIn || !allowed) return;
     let active = true;
     ws.get(`/priorities/${kind}/${itemId}`)
@@ -27,6 +29,7 @@ export default function PriorityShare() {
     if (!loggedIn || !allowed || !priority) return;
     let active = true;
     let src = "";
+    setQrSrc("");
     // The endpoint is private and requires the same bearer authentication as the detail.
     const base = `${process.env.REACT_APP_BACKEND_URL}/api/workspace`;
     fetch(`${base}/priorities/${kind}/${itemId}/qr`, {
