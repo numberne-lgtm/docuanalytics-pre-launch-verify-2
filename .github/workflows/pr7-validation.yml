@@ -42,8 +42,8 @@ jobs:
         run: python -m pytest -q backend/tests/test_pr7_priority_pdf.py backend/tests/test_pr7_workspace_http.py
 
   frontend:
-    name: React production build
-    runs-on: ubuntu-latest
+    name: React production build and mobile browser smoke
+    runs-on: ubuntu-24.04
     env:
       CI: 'false' # Existing unrelated App.js hook warning; do not change payment polling here.
       REACT_APP_BACKEND_URL: ''
