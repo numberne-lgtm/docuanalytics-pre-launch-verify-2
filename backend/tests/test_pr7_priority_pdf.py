@@ -9,7 +9,7 @@ import re
 
 
 def normalized_pdf_text(document):
-    text = normalized_pdf_text(document)
+    text = "\n".join(page.get_text() for page in document)
     return re.sub(r"\s+", " ", unicodedata.normalize("NFKC", text)).strip()
 from workspace import core
 
