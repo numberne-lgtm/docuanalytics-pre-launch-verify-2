@@ -147,3 +147,16 @@
 .ws-copilot-consent{padding:.55rem .75rem;border-bottom:1px solid var(--border-color);display:flex;flex-direction:column;gap:.45rem;font-size:.7rem;line-height:1.35;max-height:142px;overflow:auto}
 .ws-copilot-consent label{display:flex;align-items:flex-start;gap:.5rem;cursor:pointer}
 .ws-copilot-consent input[type=checkbox]{margin-top:.1rem;flex-shrink:0}
+
+/* Distinct, protected per-document and per-priority QR/PDF control */
+.ws-qrpdf{min-width:0;max-width:100%}
+.ws-qrpdf-full{margin-top:1.5rem;padding-top:1rem;border-top:1px solid var(--border-color)}
+.ws-qrpdf-compact{align-self:center;flex-shrink:0}
+.ws-qrpdf-trigger,.ws-qrpdf-download{font-family:inherit;cursor:pointer}
+.ws-qrpdf-content{display:flex;flex-direction:column;align-items:flex-start;gap:.55rem;padding:.7rem 0}
+.ws-qrpdf-image{display:block;background:white;border:6px solid white;border-radius:9px;max-width:100%;height:auto}
+.ws-qrpdf-actions{display:flex;align-items:center;gap:.75rem;flex-wrap:wrap}
+.ws-doc .ws-qrpdf{margin-top:.6rem}
+.ws-priority-item:has(.ws-qrpdf-content){flex-wrap:wrap}
+.ws-priority-item .ws-qrpdf-content{max-width:100%;min-width:210px}
+@media(max-width:680px){.ws-priority-item .ws-qrpdf-compact{align-self:flex-start}}
