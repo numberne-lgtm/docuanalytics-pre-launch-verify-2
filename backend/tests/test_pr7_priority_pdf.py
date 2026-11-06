@@ -48,7 +48,9 @@ def test_priority_pdf_escapes_html_and_paginates():
     text = "\n".join(page.get_text() for page in document)
     assert document.page_count >= 2
     assert "alert(" in text
-    assert "Non fidarsi dei dati estratti" in text
+    assert "Non fidarsi dei dati estratti" in text, (
+        "PDF tail: " + repr(text[-2000:]) + " | pages=" + str(document.page_count)
+    )
     document.close()
 
 
