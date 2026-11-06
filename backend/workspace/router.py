@@ -1,6 +1,8 @@
 """Workspace API: Cliente 360, Risk Dashboard, automatic deadlines (on existing reminders), Multi-Document Audit."""
 import json
 import re
+import io
+import textwrap
 import uuid
 import hmac
 import asyncio
@@ -277,6 +279,103 @@ def build_workspace_router(db, get_current_user, llm_key, default_notify_days, s
         else:
             await db.workspace_priority_reads.delete_many(selector)
         return {"ok": True, "is_read": req.is_read}
+
+    async def _priority_record(uid, kind, item_id):
+        """Resolve only resources owned by this authenticated user."""
+        if kind == "document":
+            doc = await db.analyses.find_one(
+                {"user_id": uid, "analysis_id": item_id}, {"_id": 0})
+            if not doc:
+                raise HTTPException(404, "Priorità non trovata")
+            result = doc.get("result") or {}
+            level = doc.get("risk_level") or core.doc_risk(result)
+            return {
+                "type": kind, "item_id": item_id,
+                "title": result.get("doc_type") or doc.get("doc_type") or doc.get("filename") or "Documento",
+                "filename": doc.get("filename") or "",
+                "summary": str(result.get("summary") or "")[:2400],
+                "level": level,
+                "details": [str(a.get("message") or "")[:400] for a in result.get("audit") or []
+                            if a.get("level") in ("warning", "error")][:20],
+                "date": "", "status": "",
+            }
+        if kind == "deadline":
+            rm = await db.reminders.find_one(
+                {"user_id": uid, "reminder_id": item_id, "active": True},
+                {"_id": 0})
+            if not rm:
+                raise HTTPException(404, "Priorità non trovata")
+            dl = core.days_left(rm.get("due_date"))
+            status = rm.get("status") or "confirmed"
+            return {
+                "type": kind, "item_id": item_id, "title": rm.get("label") or "Scadenza",
+                "filename": "", "summary": "",
+                "level": core.deadline_priority(dl, status),
+                "details": ["Origine: " + ("Inserimento manuale" if rm.get("source") == "manual" else "Rilevamento automatico"),
+                            "Tipo: " + core.KIND_LABEL.get(rm.get("kind") or "other", "Data operativa")],
+                "date": rm.get("due_date") or "", "status": status,
+            }
+        raise HTTPException(404, "Priorità non trovata")
+
+    @r.get("/priorities/{kind}/{item_id}")
+    async def priority_detail(kind: Literal["document", "deadline"], item_id: str, request: Request):
+        u = await _user(request)
+        return await _priority_record(u["user_id"], kind, item_id)
+
+    @r.get("/priorities/{kind}/{item_id}/qr")
+    async def priority_qr(kind: Literal["document", "deadline"], item_id: str, request: Request):
+        u = await _user(request)
+        await _priority_record(u["user_id"], kind, item_id)
+        import segno
+        # The QR contains only a link, never document details or a bearer token.
+        url = f"{app_url.rstrip('/')}/area/priorita/{kind}/{item_id}"
+        output = io.BytesIO()
+        segno.make(url, error="m").save(output, kind="png", scale=5, border=3)
+        return Response(output.getvalue(), media_type="image/png",
+                        headers={"Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff"})
+
+    @r.get("/priorities/{kind}/{item_id}/pdf")
+    async def priority_pdf(kind: Literal["document", "deadline"], item_id: str, request: Request):
+        u = await _user(request)
+        p = await _priority_record(u["user_id"], kind, item_id)
+        import fitz
+        pdf = fitz.open()
+        sections = [
+            "DOCUANALYTICS AI - SCHEDA PRIORITA",
+            "Titolo: " + str(p["title"]),
+            "Livello di attenzione: " + str(p["level"]).upper(),
+        ]
+        if p["filename"]:
+            sections.append("Documento: " + p["filename"])
+        if p["date"]:
+            sections.append("Data indicata: " + p["date"])
+        if p["status"]:
+            sections.append("Stato: " + p["status"])
+        if p["summary"]:
+            sections += ["", "Riepilogo:", p["summary"]]
+        if p["details"]:
+            sections += ["", "Controlli e dettagli:"]
+            sections.extend("- " + x for x in p["details"])
+        sections += ["", "Risultati generati automaticamente: verificare sempre dati e scadenze.",
+                     "La lettura e l'esportazione non costituiscono conferma legale o professionale."]
+        page, y = None, 0
+        for section in sections:
+            lines = textwrap.wrap(str(section), width=92, break_long_words=True,
+                                  break_on_hyphens=False) or [""]
+            for line in lines:
+                if page is None or y > 780:
+                    page = pdf.new_page(width=595, height=842)
+                    y = 50
+                page.insert_text((44, y), line, fontsize=10, fontname="helv")
+                y += 16
+            y += 6
+        payload = pdf.tobytes()
+        pdf.close()
+        return Response(payload, media_type="application/pdf", headers={
+            "Content-Disposition": 'attachment; filename="docuanalytics-priorita.pdf"',
+            "Cache-Control": "private, no-store",
+            "X-Content-Type-Options": "nosniff",
+        })
 
     @r.get("/documents")
     async def documents(request: Request):
