@@ -45,6 +45,10 @@ def app_client(request):
         {"user_id": "alice", "reminder_id": "deadline-alice", "analysis_id": "doc-alice",
          "client_id": "client-alice", "status": "confirmed", "source": "manual",
          "due_date": "2027-04-30", "label": "Scadenza test A", "kind": "other", "active": True},
+        {"user_id": "alice", "reminder_id": "deadline-historic", "analysis_id": "doc-alice",
+         "client_id": "client-alice", "status": "confirmed", "source": "auto",
+         "due_date": "2008-06-05", "label": "Data Decadenza Beneficio Termine",
+         "kind": "other", "active": True, "notify_days": [7, 1], "sent": []},
         {"user_id": "bob", "reminder_id": "deadline-bob", "analysis_id": "doc-bob",
          "client_id": "client-bob", "status": "confirmed", "source": "manual",
          "due_date": "2027-04-30", "label": "Scadenza test B", "kind": "other", "active": True},
@@ -213,3 +217,47 @@ def test_copilot_mocked_llm_isolation_optin_and_citations(app_client, monkeypatc
     assert "PRIVATE_TEXT_NEVER_SEND_BY_DEFAULT" in calls[-1]["system"]
     assert "PRIVATE_FIELD_ONLY_WITH_OPTIN" in calls[-1]["system"]
     assert len(calls) == 2
+
+
+def test_historical_legacy_auto_review_and_explicit_confirmation(app_client):
+    headers = auth("alice")
+    overview = app_client.get("/api/workspace/overview", headers=headers).json()
+    assert not any(p.get("reminder_id") == "deadline-historic" for p in overview["priorities"])
+    review = app_client.get("/api/workspace/deadlines/review", headers=headers)
+    assert review.status_code == 200, review.text
+    rec = next(d for d in review.json()["items"] if d["reminder_id"] == "deadline-historic")
+    assert rec["legacy_historical"] is True
+    assert rec["confirmed_by_user"] is False
+    ics = app_client.get("/api/workspace/calendar.ics", headers=headers)
+    assert ics.status_code == 200
+    assert "Data Decadenza Beneficio Termine" not in ics.text
+    # It cannot be restored without explicit owner confirmation.
+    blocked = app_client.put("/api/workspace/deadlines/deadline-historic/operational",
+                             headers=headers, json={"excluded": False})
+    assert blocked.status_code == 409
+    confirmed = app_client.post("/api/workspace/deadlines/deadline-historic/confirm",
+                                headers=headers, json={"notify": False})
+    assert confirmed.status_code == 200, confirmed.text
+    assert confirmed.json()["status"] == "confirmed"
+    after = app_client.get("/api/workspace/deadlines/review", headers=headers)
+    assert next(d for d in after.json()["items"] if d["reminder_id"] == "deadline-historic")["confirmed_by_user"] is True
+
+
+def test_operational_exclusion_removes_ics_and_dashboard_but_can_restore(app_client):
+    headers = auth("alice")
+    url = "/api/workspace/deadlines/deadline-alice/operational"
+    before = app_client.get("/api/workspace/calendar.ics", headers=headers)
+    assert "Scadenza test A" in before.text
+    assert app_client.put(url, headers=auth("bob"), json={"excluded": True}).status_code == 404
+    excluded = app_client.put(url, headers=headers, json={
+        "excluded": True, "reason": "Notifica non più necessaria"})
+    assert excluded.status_code == 200
+    assert excluded.json()["excluded"] is True
+    review = app_client.get("/api/workspace/deadlines/review", headers=headers).json()
+    assert any(x["reminder_id"] == "deadline-alice" and x["operational_excluded"] for x in review["items"])
+    assert "Scadenza test A" not in app_client.get("/api/workspace/calendar.ics", headers=headers).text
+    overview = app_client.get("/api/workspace/overview", headers=headers).json()
+    assert not any(p.get("reminder_id") == "deadline-alice" for p in overview["priorities"])
+    restored = app_client.put(url, headers=headers, json={"excluded": False})
+    assert restored.status_code == 200, restored.text
+    assert "Scadenza test A" in app_client.get("/api/workspace/calendar.ics", headers=headers).text
