@@ -54,11 +54,25 @@ jobs:
           test "$status" -eq 2
 
   frontend:
-    name: React production build and mobile browser smoke
+    name: React build, mobile smoke and real local E2E
     runs-on: ubuntu-24.04
+    services:
+      mongo:
+        image: mongo:7
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --quiet --eval 'db.runCommand({ ping: 1 })'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 8
     env:
       CI: 'false' # Existing unrelated App.js hook warning; do not change payment polling here.
       REACT_APP_BACKEND_URL: ''
+      APP_ENV: test
+      PR7_LOCAL_STAGING: '1'
+      STAGING_MONGO_URI: mongodb://127.0.0.1:27017
+      PYTHONPATH: ../backend
     defaults:
       run:
         working-directory: frontend
@@ -82,3 +96,38 @@ jobs:
           export PR7_CHROME_PATH="$(command -v google-chrome || command -v google-chrome-stable)"
           test -n "$PR7_CHROME_PATH"
           node scripts/pr7_browser_smoke.cjs
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install isolated staging server dependencies
+        run: |
+          python -m pip install --disable-pip-version-check \
+            'fastapi==0.110.1' 'starlette==0.37.2' 'motor==3.3.1' \
+            'pymongo==4.6.3' 'pydantic==2.13.4' 'uvicorn==0.25.0' \
+            'pymupdf==1.28.2' 'segno==1.6.6' 'python-multipart==0.0.32' \
+            'requests==2.34.2'
+      - name: Start local synthetic staging (frontend + real workspace API)
+        run: |
+          cp -R build ../backend/build
+          python -m uvicorn staging_local:app --app-dir ../backend \
+            --host 127.0.0.1 --port 8765 --no-access-log > /tmp/pr7-staging.log 2>&1 &
+          echo $! > /tmp/pr7-staging.pid
+          for i in $(seq 1 45); do
+            if curl --fail --silent http://127.0.0.1:8765/api/pr7-staging/status >/dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/pr7-staging.log
+          exit 1
+      - name: Run real browser E2E against synthetic local Mongo
+        env:
+          NODE_PATH: /tmp/pr7-playwright/node_modules
+        run: |
+          export PR7_CHROME_PATH="$(command -v google-chrome || command -v google-chrome-stable)"
+          node scripts/pr7_local_e2e.cjs
+      - name: Stop local staging
+        if: always()
+        run: |
+          test ! -f /tmp/pr7-staging.pid || kill "$(cat /tmp/pr7-staging.pid)" || true
+          if test -f /tmp/pr7-staging.log; then tail -n 20 /tmp/pr7-staging.log; fi
