@@ -57,6 +57,13 @@ def test_historical_events_remain_non_operational():
                   "label": "Data Decadenza Beneficio Termine", "due_date": "2008-06-05"}
     assert core.is_historical_event(historical["label"])
     assert not core.show_operational_deadline(historical)
-    # Existing confirmed reminders are preserved: they must be reviewed separately.
-    assert core.show_operational_deadline({**historical, "status": "confirmed"})
+    # Legacy auto rows may appear "confirmed" because the old UI defaulted missing status.
+    # Without confirmed_at this is NOT evidence of a human confirmation.
+    assert not core.show_operational_deadline({**historical, "status": "confirmed"})
+    assert core.is_legacy_historical_auto({**historical, "status": "confirmed"})
+    # Explicit confirmation is preserved unless the owner excludes it.
+    confirmed = {**historical, "status": "confirmed", "confirmed_at": "2026-11-01T00:00:00Z"}
+    assert core.show_operational_deadline(confirmed)
+    assert not core.show_operational_deadline({**confirmed, "operational_excluded": True})
     assert core.show_operational_deadline({**historical, "source": "manual"})
+    assert not core.show_operational_deadline({**historical, "source": "manual", "operational_excluded": True})
