@@ -21,6 +21,7 @@ import { reportAssistantSignup } from "./assistant/signupTracking";
 import AdminPrivacy from "./AdminPrivacy";
 import PrivacyPage from "./PrivacyPage";
 import Workspace from "./workspace/Workspace";
+import PriorityShare from "./workspace/PriorityShare";
 import ReminderFromAnalysis from "./workspace/ReminderFromAnalysis";
 import { MT, MARK, SECTORS, DEMO, validatePiva, validateCF } from "./content";
 import { jsPDF } from "jspdf";
@@ -2340,6 +2341,7 @@ function App() {
           <Route path="/assistant" element={<AssistantPage />} />
           <Route path="/admin/assistant" element={<AdminAssistant />} />
           <Route path="/privacy" element={<PrivacyPage />} />
+          <Route path="/area/priorita/:kind/:itemId" element={<PriorityShare />} />
           <Route path="/area" element={<Workspace />} />
           <Route path="/admin/privacy" element={<AdminPrivacy />} />
           <Route path="*" element={<Home />} />
