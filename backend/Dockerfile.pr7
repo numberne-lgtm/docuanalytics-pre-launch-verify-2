@@ -1,0 +1,11 @@
+FROM python:3.11-slim
+WORKDIR /app
+ENV PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=/app/backend
+COPY backend/workspace /app/backend/workspace
+COPY backend/staging_local.py /app/backend/staging_local.py
+RUN pip install --no-cache-dir fastapi==0.110.1 starlette==0.37.2 motor==3.3.1 pymongo==4.6.3 \
+  pydantic==2.13.4 uvicorn==0.25.0 pymupdf==1.28.2 segno==1.6.6 \
+  python-multipart==0.0.32 requests==2.34.2
+COPY frontend/build /app/backend/build
+WORKDIR /app/backend
+CMD ["uvicorn", "staging_local:app", "--host", "0.0.0.0", "--port", "8765", "--workers", "1", "--no-access-log"]
