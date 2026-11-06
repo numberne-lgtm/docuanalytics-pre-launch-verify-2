@@ -37,9 +37,21 @@ jobs:
             'motor==3.3.1' 'pymongo==4.6.3' 'pymupdf==1.28.2' \
             'pytest==9.1.1' 'pytest-xdist==3.8.0' 'segno==1.6.6' 'requests==2.34.2' 'python-multipart==0.0.32' 'pillow==12.0.0' 'zxing-cpp==2.3.0'
       - name: Compile workspace modules and tests
-        run: python -m py_compile backend/workspace/router.py backend/workspace/core.py backend/tests/test_pr7_priority_pdf.py backend/tests/test_pr7_workspace_http.py
+        run: python -m py_compile backend/workspace/router.py backend/workspace/core.py backend/tests/test_pr7_priority_pdf.py backend/tests/test_pr7_workspace_http.py backend/scripts/pr7_provider_probe.py
       - name: Run isolated regression tests
         run: python -m pytest -q backend/tests/test_pr7_priority_pdf.py backend/tests/test_pr7_workspace_http.py
+      - name: Verify provider smoke probe refuses unauthorized execution
+        run: |
+          set +e
+          APP_ENV=production python backend/scripts/pr7_provider_probe.py
+          status=$?
+          set -e
+          test "$status" -eq 2
+          set +e
+          APP_ENV=test PR7_PROVIDER_TEST_APPROVED=NO python backend/scripts/pr7_provider_probe.py
+          status=$?
+          set -e
+          test "$status" -eq 2
 
   frontend:
     name: React production build and mobile browser smoke
