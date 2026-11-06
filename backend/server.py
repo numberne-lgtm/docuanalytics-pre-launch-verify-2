@@ -16,6 +16,7 @@ from fastapi.responses import StreamingResponse
 from dotenv import load_dotenv, dotenv_values
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
+from pymongo.errors import PyMongoError
 import httpx
 from pydantic import BaseModel, Field
 
@@ -40,8 +41,16 @@ BTC_ADDRESS = os.environ.get('BTC_ADDRESS', '')
 USDT_TRC20_ADDRESS = os.environ.get('USDT_TRC20_ADDRESS', '')
 
 # PayPal (REST v2). Credentials live only in backend .env.
-PAYPAL_MODE = (_ENV_FILE.get('PAYPAL_MODE') or os.environ.get('PAYPAL_MODE') or 'live').strip().lower()
+_PAYPAL_MODE_RAW = (_ENV_FILE.get('PAYPAL_MODE') or os.environ.get('PAYPAL_MODE') or '').strip().lower()
+PAYPAL_MODE_VALID = _PAYPAL_MODE_RAW in ("live", "sandbox")
+PAYPAL_MODE = _PAYPAL_MODE_RAW if PAYPAL_MODE_VALID else "sandbox"
+del _PAYPAL_MODE_RAW
+if not PAYPAL_MODE_VALID:
+    logger.warning("PAYPAL_MODE non valido: PayPal disabilitato")
 PAYPAL_CLIENT_ID = _ENV_FILE.get('PAYPAL_CLIENT_ID') or os.environ.get('PAYPAL_CLIENT_ID')
+if PAYPAL_CLIENT_ID and not re.fullmatch(r"A[A-Za-z0-9_-]{19,127}", PAYPAL_CLIENT_ID):
+    logger.warning("PAYPAL_CLIENT_ID non valido: PayPal disabilitato")
+    PAYPAL_CLIENT_ID = None
 PAYPAL_SECRET = _ENV_FILE.get('PAYPAL_SECRET') or os.environ.get('PAYPAL_SECRET')
 PAYPAL_WEBHOOK_ID = _ENV_FILE.get('PAYPAL_WEBHOOK_ID') or os.environ.get('PAYPAL_WEBHOOK_ID')
 PAYPAL_BASE = "https://api-m.paypal.com" if PAYPAL_MODE == "live" else "https://api-m.sandbox.paypal.com"
@@ -717,7 +726,7 @@ def _create_stripe_session(pkg, req):
 
 @api.post("/payments/checkout")
 async def checkout(req: CheckoutReq, request: Request):
-    req.user_id = await _auth_user_id(request, req.user_id)
+    req.user_id = (await get_current_user(request))["user_id"]
     pkg = PACKAGES.get(req.package_id)
     if not pkg:
         raise HTTPException(400, "Pacchetto non valido")
@@ -759,15 +768,98 @@ async def _record_subscription(record, sub_id, customer_id):
     )
 
 
+async def _run_credit_transaction(callback):
+    """Retry transient transactions and ambiguous commits separately.
+
+    Motor 3.3.1's with_transaction commits in its context-manager exit before
+    reaching its commit retry loop, so use the core API with explicit retries.
+    Callbacks must contain only transactional MongoDB operations.
+    """
+    deadline = _time.monotonic() + 30
+    async with await client.start_session() as mongo_session:
+        while True:
+            mongo_session.start_transaction(max_commit_time_ms=10000)
+            try:
+                result = await callback(mongo_session)
+            except Exception as exc:
+                if mongo_session.in_transaction:
+                    try:
+                        await mongo_session.abort_transaction()
+                    except PyMongoError:
+                        pass  # Preserve the original error; aborted writes cannot commit.
+                if (isinstance(exc, PyMongoError) and
+                        exc.has_error_label("TransientTransactionError") and
+                        _time.monotonic() < deadline):
+                    await asyncio.sleep(.01)
+                    continue
+                raise
+            while True:
+                try:
+                    await mongo_session.commit_transaction()
+                    return result
+                except PyMongoError as exc:
+                    if _time.monotonic() >= deadline:
+                        raise
+                    if exc.has_error_label("UnknownTransactionCommitResult"):
+                        # Retry this commit, never rerun the callback on an
+                        # unknown result: the previous commit may have succeeded.
+                        await asyncio.sleep(.01)
+                        continue
+                    if exc.has_error_label("TransientTransactionError"):
+                        await asyncio.sleep(.01)
+                        break  # Known transaction failure: start a fresh attempt.
+                    raise
+
+
 async def _credit_if_paid(record):
-    """Idempotently grant credits when a transaction is paid."""
-    if record.get("payment_status") == "paid" and not record.get("credited"):
-        res = await db.payment_transactions.update_one(
-            {"session_id": record["session_id"], "credited": {"$ne": True}},
+    """Atomically grant a paid transaction exactly once, or fail closed."""
+    if record.get("payment_status") != "paid":
+        return 0
+    async def grant(mongo_session):
+        updated = await db.payment_transactions.update_one(
+            {"session_id": record["session_id"], "payment_status": "paid", "credited": {"$ne": True}},
             {"$set": {"credited": True, "updated_at": datetime.now(timezone.utc).isoformat()}},
+            session=mongo_session,
         )
-        if res.modified_count == 1:
-            await add_credits(record["user_id"], int(record["credits"]))
+        if not updated.modified_count:
+            return 0
+        granted = await db.users.update_one(
+            {"user_id": record["user_id"]},
+            {"$inc": {"credits": int(record["credits"])}},
+            session=mongo_session,
+        )
+        if granted.matched_count != 1:
+            raise RuntimeError("Credit owner not found; rolling back payment grant")
+        return int(record["credits"])
+
+    return await _run_credit_transaction(grant)
+
+
+async def _credit_renewal_once(invoice_id, sub_id, user_id, credits):
+    """Invoice-idempotent renewal grant; requires MongoDB transactions."""
+    if not invoice_id or not sub_id or not user_id or int(credits) <= 0:
+        raise ValueError("Invalid renewal grant")
+    async def grant(mongo_session):
+        existing = await db.credit_grants.find_one(
+            {"_id": "stripe:renewal:" + invoice_id}, session=mongo_session
+        )
+        if existing:
+            return 0
+        await db.credit_grants.insert_one(
+            {"_id": "stripe:renewal:" + invoice_id, "subscription_id": sub_id,
+             "user_id": user_id, "credits": int(credits),
+             "created_at": datetime.now(timezone.utc).isoformat()},
+            session=mongo_session,
+        )
+        granted = await db.users.update_one(
+            {"user_id": user_id}, {"$inc": {"credits": int(credits)}},
+            session=mongo_session,
+        )
+        if granted.matched_count != 1:
+            raise RuntimeError("Renewal owner not found; rolling back")
+        return int(credits)
+
+    return await _run_credit_transaction(grant)
 
 
 @api.get("/payments/status/{session_id}")
@@ -778,7 +870,7 @@ async def payment_status(session_id: str):
     if record.get("payment_status") != "paid":
         try:
             s = stripe.checkout.Session.retrieve(session_id)
-            if s.payment_status == "paid" or s.status == "complete":
+            if s.payment_status == "paid":
                 await db.payment_transactions.update_one(
                     {"session_id": session_id, "payment_status": {"$ne": "paid"}},
                     {"$set": {"status": "completed", "payment_status": "paid",
@@ -821,7 +913,7 @@ async def stripe_webhook(request: Request):
         # Authoritative re-check against Stripe before crediting (protects against spoofed/unsigned events).
         try:
             s = stripe.checkout.Session.retrieve(sid)
-            if not (s.payment_status == "paid" or s.status == "complete"):
+            if not (s.payment_status == "paid"):
                 return {"status": "ignored"}
         except Exception:
             return {"status": "ignored"}
@@ -839,21 +931,32 @@ async def stripe_webhook(request: Request):
                 await _record_subscription(record, s.get("subscription"), s.get("customer"))
 
     elif etype == "invoice.payment_succeeded":
-        # Recurring renewal -> top up monthly credits (skip the first invoice which is handled above).
         if obj.get("billing_reason") == "subscription_cycle":
+            invoice_id = obj.get("id")
             sub_id = obj.get("subscription")
             try:
+                if not invoice_id or not sub_id:
+                    raise ValueError("Missing renewal invoice or subscription")
+                invoice = stripe.Invoice.retrieve(invoice_id)
+                if invoice.get("paid") is not True or invoice.get("subscription") != sub_id:
+                    raise ValueError("Invoice not paid or subscription mismatch")
+                owner = await db.subscriptions.find_one({"subscription_id": sub_id}, {"_id": 0})
+                if not owner or owner.get("provider", "stripe") != "stripe":
+                    raise ValueError("Unknown Stripe subscription")
                 sub = stripe.Subscription.retrieve(sub_id)
                 meta = sub.get("metadata", {}) or {}
-                uid, credits = meta.get("user_id"), int(meta.get("credits", 0) or 0)
-                if uid and credits:
-                    await add_credits(uid, credits)
-                    await db.subscriptions.update_one(
-                        {"subscription_id": sub_id},
-                        {"$set": {"status": "active", "last_renewal": datetime.now(timezone.utc).isoformat()}},
-                    )
+                uid = owner["user_id"]
+                credits = int(owner["credits"])
+                if meta.get("user_id") != uid or int(meta.get("credits", 0) or 0) != credits:
+                    raise ValueError("Subscription metadata mismatch")
+                await _credit_renewal_once(invoice_id, sub_id, uid, credits)
+                await db.subscriptions.update_one(
+                    {"subscription_id": sub_id},
+                    {"$set": {"status": "active", "last_renewal": datetime.now(timezone.utc).isoformat()}},
+                )
             except Exception as e:
-                logger.warning(f"renewal credit error: {e}")
+                logger.exception("renewal credit failed: %s", e)
+                raise HTTPException(503, "Rinnovo non elaborato; riprovare")
 
     elif etype in ("customer.subscription.deleted", "customer.subscription.canceled"):
         await db.subscriptions.update_one(
@@ -942,7 +1045,7 @@ async def crypto_info():
 
 @api.post("/crypto/order")
 async def crypto_order(req: CryptoOrderReq, request: Request):
-    req.user_id = await _auth_user_id(request, req.user_id)
+    req.user_id = (await get_current_user(request))["user_id"]
     pkg = PACKAGES.get(req.package_id)
     if not pkg:
         raise HTTPException(400, "Pacchetto non valido")
@@ -966,7 +1069,7 @@ class PaypalCaptureReq(BaseModel):
 
 
 async def _paypal_token():
-    if not (PAYPAL_CLIENT_ID and PAYPAL_SECRET):
+    if not (PAYPAL_CLIENT_ID and PAYPAL_SECRET and PAYPAL_MODE_VALID):
         raise HTTPException(500, "PayPal non configurato")
     async with httpx.AsyncClient(timeout=30) as c:
         r = await c.post(f"{PAYPAL_BASE}/v1/oauth2/token",
@@ -981,13 +1084,14 @@ async def _paypal_token():
 
 @api.get("/paypal/config")
 async def paypal_config():
-    return {"enabled": bool(PAYPAL_CLIENT_ID and PAYPAL_SECRET),
-            "client_id": PAYPAL_CLIENT_ID or "", "mode": PAYPAL_MODE, "currency": "EUR"}
+    enabled = bool(PAYPAL_CLIENT_ID and PAYPAL_SECRET and PAYPAL_MODE_VALID)
+    return {"enabled": enabled, "client_id": (PAYPAL_CLIENT_ID or "") if enabled else "",
+            "mode": PAYPAL_MODE if enabled else None, "currency": "EUR"}
 
 
 @api.post("/paypal/order")
 async def paypal_order(req: PaypalOrderReq, request: Request):
-    req.user_id = await _auth_user_id(request, req.user_id)
+    req.user_id = (await get_current_user(request))["user_id"]
     pkg = PACKAGES.get(req.package_id)
     if not pkg:
         raise HTTPException(400, "Pacchetto non valido")
@@ -1006,7 +1110,7 @@ async def paypal_order(req: PaypalOrderReq, request: Request):
     order_id = r.json()["id"]
     now = datetime.now(timezone.utc).isoformat()
     await db.payment_transactions.insert_one({
-        "session_id": order_id, "provider": "paypal", "user_id": req.user_id,
+        "_id": f"paypal:order:{order_id}", "session_id": order_id, "provider": "paypal", "user_id": req.user_id,
         "package_id": req.package_id, "credits": pkg["credits"], "amount": pkg["amount"],
         "currency": "eur", "is_subscription": False, "status": "initiated",
         "payment_status": "pending", "credited": False, "created_at": now, "updated_at": now})
@@ -1014,8 +1118,9 @@ async def paypal_order(req: PaypalOrderReq, request: Request):
 
 
 @api.post("/paypal/capture")
-async def paypal_capture(req: PaypalCaptureReq):
-    record = await db.payment_transactions.find_one({"session_id": req.order_id, "provider": "paypal"}, {"_id": 0})
+async def paypal_capture(req: PaypalCaptureReq, request: Request):
+    uid = (await get_current_user(request))["user_id"]
+    record = await db.payment_transactions.find_one({"session_id": req.order_id, "provider": "paypal", "user_id": uid}, {"_id": 0})
     if not record:
         raise HTTPException(404, "Ordine non trovato")
     if record.get("payment_status") == "paid":
@@ -1031,10 +1136,12 @@ async def paypal_capture(req: PaypalCaptureReq):
         data = {}
     status = data.get("status")
     if r.status_code in (200, 201) and status == "COMPLETED":
+        captures = ((data.get("purchase_units") or [{}])[0].get("payments") or {}).get("captures") or [{}]
         await db.payment_transactions.update_one(
             {"session_id": req.order_id, "payment_status": {"$ne": "paid"}},
             {"$set": {"status": "completed", "payment_status": "paid",
-                      "paypal_capture": data.get("id"),
+                      "paypal_order_id": data.get("id"),
+                      "paypal_capture": captures[0].get("id"),
                       "updated_at": datetime.now(timezone.utc).isoformat()}})
         record = await db.payment_transactions.find_one({"session_id": req.order_id}, {"_id": 0})
         await _credit_if_paid(record)
@@ -1103,16 +1210,51 @@ async def _paypal_ensure_plan(package_id):
 
 
 @api.post("/paypal/subscription/plan")
-async def paypal_sub_plan(req: PaypalSubReq):
+async def paypal_sub_plan(req: PaypalSubReq, request: Request):
+    user_id = (await get_current_user(request))["user_id"]
     if not (PAYPAL_CLIENT_ID and PAYPAL_SECRET):
         raise HTTPException(500, "PayPal non configurato")
     plan_id = await _paypal_ensure_plan(req.package_id)
-    return {"plan_id": plan_id, "package_id": req.package_id}
+    # PayPal echoes custom_id on the subscription fetched by the backend.
+    # A random server-issued binding prevents an unrelated account from claiming it.
+    custom_id = "da-" + uuid.uuid4().hex
+    await db.paypal_subscription_intents.insert_one({
+        "_id": custom_id, "user_id": user_id,
+        "package_id": req.package_id, "plan_id": plan_id,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    })
+    return {"plan_id": plan_id, "package_id": req.package_id,
+            "custom_id": custom_id}
+
+
+def _paypal_subscription_claim_valid(user_id: str, package_id: str, plan_id: str,
+                                     subscription: dict, intent: Optional[dict],
+                                     existing_owner: Optional[dict]) -> bool:
+    """A fresh claim must match a server-issued PayPal custom_id bound to its user.
+    Legacy subscriptions without custom_id remain accessible only to their recorded owner.
+    """
+    if existing_owner and (
+        existing_owner.get("provider") != "paypal" or
+        existing_owner.get("user_id") != user_id or
+        existing_owner.get("package_id") != package_id
+    ):
+        return False
+    custom_id = subscription.get("custom_id")
+    if isinstance(custom_id, str) and custom_id:
+        return bool(
+            intent and intent.get("_id") == custom_id and
+            intent.get("user_id") == user_id and
+            intent.get("package_id") == package_id and
+            intent.get("plan_id") == plan_id
+        )
+    return bool(existing_owner and existing_owner.get("user_id") == user_id and
+                existing_owner.get("provider") == "paypal" and
+                existing_owner.get("package_id") == package_id)
 
 
 @api.post("/paypal/subscription/activate")
 async def paypal_sub_activate(req: PaypalSubActivateReq, request: Request):
-    req.user_id = await _auth_user_id(request, req.user_id)
+    req.user_id = (await get_current_user(request))["user_id"]
     token = await _paypal_token()
     async with httpx.AsyncClient(timeout=30) as c:
         r = await c.get(f"{PAYPAL_BASE}/v1/billing/subscriptions/{req.subscription_id}", headers=_pp_headers(token))
@@ -1131,6 +1273,17 @@ async def paypal_sub_activate(req: PaypalSubActivateReq, request: Request):
     pkg = PACKAGES.get(package_id)
     if not pkg or pkg["type"] != "sub":
         raise HTTPException(400, "Pacchetto abbonamento non valido")
+    existing_owner = await db.subscriptions.find_one(
+        {"subscription_id": req.subscription_id}, {"_id": 0}
+    )
+    custom_id = sub.get("custom_id")
+    intent = await db.paypal_subscription_intents.find_one(
+        {"_id": custom_id}
+    ) if isinstance(custom_id, str) and custom_id else None
+    if not _paypal_subscription_claim_valid(
+        req.user_id, package_id, plan_id, sub, intent, existing_owner
+    ):
+        raise HTTPException(403, "Abbonamento PayPal non associato a questo account")
     if status not in ("ACTIVE", "APPROVED"):
         return {"status": status or "pending", "credits_added": 0}
     now = datetime.now(timezone.utc).isoformat()
@@ -1140,17 +1293,29 @@ async def paypal_sub_activate(req: PaypalSubActivateReq, request: Request):
                   "package_id": package_id, "package_name": pkg["name"], "credits": pkg["credits"],
                   "amount": pkg["amount"], "status": "active", "cancel_at_period_end": False, "updated_at": now},
          "$setOnInsert": {"created_at": now}}, upsert=True)
+    # Activation does not prove a completed payment. Grant only on a verified sale.
+    activation_sid = f"pp_sub_{req.subscription_id}"
     granted = 0
-    if not await db.payment_transactions.find_one({"session_id": f"pp_sub_{req.subscription_id}"}):
-        await db.payment_transactions.insert_one({
-            "session_id": f"pp_sub_{req.subscription_id}", "provider": "paypal", "subscription_id_ref": req.subscription_id,
-            "user_id": req.user_id, "package_id": package_id, "credits": pkg["credits"], "amount": pkg["amount"],
-            "is_subscription": True, "kind": "activation", "status": "completed", "payment_status": "paid",
-            "credited": True, "created_at": now, "updated_at": now})
-        await add_credits(req.user_id, int(pkg["credits"]))
-        granted = pkg["credits"]
+    await db.payment_transactions.update_one(
+        {"session_id": activation_sid},
+        {"$setOnInsert": {
+            "_id": f"paypal:activation:{req.subscription_id}",
+            "session_id": activation_sid, "provider": "paypal",
+            "subscription_id_ref": req.subscription_id, "user_id": req.user_id,
+            "package_id": package_id, "credits": pkg["credits"], "amount": pkg["amount"],
+            "is_subscription": True, "kind": "activation", "status": "pending",
+            "payment_status": "pending", "credited": False,
+            "created_at": now, "updated_at": now,
+        }},
+        upsert=True,
+    )
     u = await db.users.find_one({"user_id": req.user_id}, {"_id": 0})
     return {"status": "active", "credits_added": granted, "user_credits": u["credits"] if u else None}
+
+
+def _paypal_sale_should_credit(prior_sales: int, activation: Optional[dict]) -> bool:
+    """First legacy sale was prepaid on activation; every new sale must be paid."""
+    return not (prior_sales == 0 and bool(activation and activation.get("credited")))
 
 
 async def _verify_paypal_webhook(headers, raw_body, event):
@@ -1191,19 +1356,59 @@ async def paypal_webhook(request: Request):
     if event == "PAYMENT.SALE.COMPLETED":
         sub_id = resource.get("billing_agreement_id")
         sale_id = resource.get("id")
-        if sub_id and sale_id:
-            sdoc = await db.subscriptions.find_one({"subscription_id": sub_id, "provider": "paypal"}, {"_id": 0})
-            if sdoc and not await db.payment_transactions.find_one({"session_id": f"pp_sale_{sale_id}"}):
-                prior = await db.payment_transactions.count_documents({"subscription_id_ref": sub_id, "kind": "sale"})
-                now = datetime.now(timezone.utc).isoformat()
-                credit = prior >= 1  # first sale already covered by activation
+        if not sub_id or not sale_id:
+            raise HTTPException(400, "Identificativo vendita o abbonamento mancante")
+        sdoc = await db.subscriptions.find_one(
+            {"subscription_id": sub_id, "provider": "paypal"}, {"_id": 0}
+        )
+        if not sdoc:
+            raise HTTPException(503, "Abbonamento PayPal non ancora registrato")
+        # Credit each verified sale once. Preserve legacy subscriptions whose first
+        # allocation was already granted on activation, without granting it again.
+        now = datetime.now(timezone.utc).isoformat()
+        async def grant_sale(mongo_session):
+            sid = f"pp_sale_{sale_id}"
+            existing = await db.payment_transactions.find_one(
+                {"session_id": sid}, session=mongo_session
+            )
+            if not existing:
+                # Serialize distinct sales for this subscription before deciding
+                # which legacy sale was prepaid. Without a shared write, parallel
+                # snapshots can all see zero prior sales and suppress every grant.
+                locked = await db.subscriptions.update_one(
+                    {"subscription_id": sub_id, "provider": "paypal"},
+                    {"$inc": {"credit_event_version": 1}},
+                    session=mongo_session,
+                )
+                if locked.matched_count != 1:
+                    raise RuntimeError("PayPal subscription missing; rolling back")
+                prior = await db.payment_transactions.count_documents(
+                    {"subscription_id_ref": sub_id, "kind": "sale"},
+                    session=mongo_session,
+                )
+                activation = await db.payment_transactions.find_one(
+                    {"session_id": f"pp_sub_{sub_id}"}, session=mongo_session
+                )
+                credit = _paypal_sale_should_credit(prior, activation)
                 await db.payment_transactions.insert_one({
-                    "session_id": f"pp_sale_{sale_id}", "provider": "paypal", "subscription_id_ref": sub_id,
-                    "user_id": sdoc["user_id"], "package_id": sdoc.get("package_id"), "credits": sdoc.get("credits"),
-                    "is_subscription": True, "kind": "sale", "status": "completed", "payment_status": "paid",
-                    "credited": credit, "created_at": now, "updated_at": now})
+                    "_id": f"paypal:sale:{sale_id}",
+                    "session_id": sid, "provider": "paypal",
+                    "subscription_id_ref": sub_id, "user_id": sdoc["user_id"],
+                    "package_id": sdoc.get("package_id"),
+                    "credits": sdoc.get("credits"), "is_subscription": True,
+                    "kind": "sale", "status": "completed", "payment_status": "paid",
+                    "credited": credit, "created_at": now, "updated_at": now,
+                }, session=mongo_session)
                 if credit:
-                    await add_credits(sdoc["user_id"], int(sdoc.get("credits", 0) or 0))
+                    result = await db.users.update_one(
+                        {"user_id": sdoc["user_id"]},
+                        {"$inc": {"credits": int(sdoc.get("credits", 0) or 0)}},
+                        session=mongo_session,
+                    )
+                    if result.matched_count != 1:
+                        raise RuntimeError("PayPal sale owner missing; rolling back")
+
+        await _run_credit_transaction(grant_sale)
     elif event in ("BILLING.SUBSCRIPTION.CANCELLED", "BILLING.SUBSCRIPTION.EXPIRED", "BILLING.SUBSCRIPTION.SUSPENDED"):
         sub_id = resource.get("id")
         if sub_id:
