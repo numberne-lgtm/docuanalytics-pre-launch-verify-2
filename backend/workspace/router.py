@@ -81,6 +81,8 @@ class WorkspaceCopilotReq(BaseModel):
     question: str = Field(..., min_length=3, max_length=1200)
     history: List[dict] = Field(default_factory=list, max_length=6)
     scope: Literal["all", "documents", "clients", "deadlines"] = "all"
+    consent_to_ai: bool = False
+    include_document_details: bool = False
     analysis_id: Optional[str] = Field(None, max_length=128)
     client_id: Optional[str] = Field(None, max_length=128)
 
@@ -237,6 +239,10 @@ def build_workspace_router(db, get_current_user, llm_key, default_notify_days, s
             await _analysis(uid, req.analysis_id)
         if req.client_id:
             await _client(uid, req.client_id)
+        if not req.consent_to_ai:
+            raise HTTPException(400, "Autorizza esplicitamente l’invio dei dati selezionati al modello AI.")
+        if req.include_document_details and not req.analysis_id:
+            raise HTTPException(400, "Per usare il testo dettagliato seleziona prima un documento.")
         if not llm_key:
             raise HTTPException(503, "Copilot momentaneamente non disponibile.")
         _copilot_busy.add(uid)
@@ -244,20 +250,20 @@ def build_workspace_router(db, get_current_user, llm_key, default_notify_days, s
             scope = req.scope
             ctx, sources = [], []
             reached_limit = False
-            # Only send relevant, bounded, account-owned information; never raw scans,
-            # credentials, addresses, emails, IBANs or entire document texts.
+            # Only send bounded, account-owned information. Full text and extracted
+            # fields require separate consent and an explicitly selected document.
+            # Original scans, authentication tokens and user email are never sent.
             if scope in ("all", "clients"):
                 cq = {"user_id": uid}
                 if req.client_id:
                     cq["client_id"] = req.client_id
-                async for c in db.clients.find(cq, {"_id": 0, "client_id": 1, "name": 1, "notes": 1}).sort("name", 1).limit(61):
+                async for c in db.clients.find(cq, {"_id": 0, "client_id": 1, "name": 1}).sort("name", 1).limit(61):
                     if sum(1 for x in sources if x["ref"].startswith("cliente:")) >= 60:
                         reached_limit = True
                         break
                     source = "cliente:" + c["client_id"]
                     sources.append({"ref": source, "label": str(c.get("name") or "Cliente")[:120]})
-                    ctx.append({"ref": source, "name": str(c.get("name") or "")[:120],
-                                "notes": str(c.get("notes") or "")[:250]})
+                    ctx.append({"ref": source, "name": str(c.get("name") or "")[:120]})
             if scope in ("all", "documents"):
                 aq = {"user_id": uid}
                 if req.analysis_id:
@@ -285,9 +291,9 @@ def build_workspace_router(db, get_current_user, llm_key, default_notify_days, s
                                 "selected_fields": [{"label": str(x.get("label") or "")[:100],
                                                      "value": str(x.get("value") or "")[:280]}
                                                     for x in (res.get("fields") or [])[:35]]
-                                                   if req.analysis_id == a["analysis_id"] else [],
+                                                   if req.include_document_details and req.analysis_id == a["analysis_id"] else [],
                                 "selected_text": str(res.get("full_text") or "")[:7000]
-                                                 if req.analysis_id == a["analysis_id"] else ""})
+                                                 if req.include_document_details and req.analysis_id == a["analysis_id"] else ""})
             if scope in ("all", "deadlines"):
                 dq = {"user_id": uid, "active": True}
                 if req.analysis_id:
