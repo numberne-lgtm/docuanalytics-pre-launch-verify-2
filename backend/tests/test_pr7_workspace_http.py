@@ -49,6 +49,10 @@ def app_client(request):
          "client_id": "client-alice", "status": "confirmed", "source": "auto",
          "due_date": "2008-06-05", "label": "Data Decadenza Beneficio Termine",
          "kind": "other", "active": True, "notify_days": [7, 1], "sent": []},
+        {"user_id": "alice", "reminder_id": "deadline-legal", "analysis_id": "doc-alice",
+         "client_id": "client-alice", "status": "confirmed", "source": "auto",
+         "due_date": "2026-10-06", "label": "Scadenza Sollecito di Pagamento / Diffida Legale",
+         "kind": "other", "active": True, "notify_days": [], "sent": []},
         {"user_id": "bob", "reminder_id": "deadline-bob", "analysis_id": "doc-bob",
          "client_id": "client-bob", "status": "confirmed", "source": "manual",
          "due_date": "2027-04-30", "label": "Scadenza test B", "kind": "other", "active": True},
@@ -266,3 +270,21 @@ def test_operational_exclusion_removes_ics_and_dashboard_but_can_restore(app_cli
     restored = app_client.put(url, headers=headers, json={"excluded": False})
     assert restored.status_code == 200, restored.text
     assert "Scadenza test A" in app_client.get("/api/workspace/calendar.ics", headers=headers).text
+
+
+def test_legal_demand_date_is_reviewable_but_not_silently_suppressed(app_client):
+    headers = auth("alice")
+    review = app_client.get("/api/workspace/deadlines/review", headers=headers)
+    assert review.status_code == 200
+    candidate = next(x for x in review.json()["items"] if x["reminder_id"] == "deadline-legal")
+    assert candidate["legal_date_review"] is True
+    assert candidate["legacy_historical"] is False
+    page = app_client.get("/api/workspace/priorities/deadline/deadline-legal", headers=headers)
+    assert page.status_code == 200
+    assert page.json()["legal_date_review"] is True
+    assert page.json()["operational"] is True
+    response = app_client.put("/api/workspace/deadlines/deadline-legal/operational",
+                              headers=headers, json={"excluded": True, "reason": "Test"})
+    assert response.status_code == 200
+    after = app_client.get("/api/workspace/priorities/deadline/deadline-legal", headers=headers)
+    assert after.json()["operational"] is False
