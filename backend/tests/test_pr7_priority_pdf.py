@@ -4,6 +4,13 @@ Run only on an isolated development/test environment:
     pytest -q backend/tests/test_pr7_priority_pdf.py
 """
 import pymupdf
+import unicodedata
+import re
+
+
+def normalized_pdf_text(document):
+    text = normalized_pdf_text(document)
+    return re.sub(r"\s+", " ", unicodedata.normalize("NFKC", text)).strip()
 from workspace import core
 
 
@@ -20,7 +27,7 @@ def test_priority_pdf_unicode_and_validity():
     assert pdf_bytes.startswith(b"%PDF-")
     document = pymupdf.open(stream=pdf_bytes, filetype="pdf")
     assert document.page_count >= 1
-    rendered_text = "\n".join(page.get_text() for page in document)
+    rendered_text = normalized_pdf_text(document)
     assert "Diffida" in rendered_text
     assert "verificare" in rendered_text
     assert "15/10/2015" in rendered_text
