@@ -87,6 +87,23 @@ def test_anonymous_and_other_account_denied(app_client, path):
     assert app_client.get(path, headers=auth("bob")).status_code == 404
 
 
+
+def test_qr_decodes_to_protected_url_without_credentials(app_client):
+    """Decode the *actual* PNG response, not just its file signature."""
+    from io import BytesIO
+    from PIL import Image
+    import zxingcpp
+
+    qr = app_client.get("/api/workspace/priorities/document/doc-alice/qr",
+                        headers=auth("alice"))
+    assert qr.status_code == 200
+    code = zxingcpp.read_barcode(Image.open(BytesIO(qr.content)))
+    assert code is not None, "QR image was generated but cannot be decoded"
+    assert code.text == "https://docuanalytics.online/area/priorita/document/doc-alice"
+    assert "token=" not in code.text.lower()
+    assert "bearer" not in code.text.lower()
+
+
 def test_authenticated_pdf_and_qr(app_client):
     path = "/api/workspace/priorities/document/doc-alice"
     detail = app_client.get(path, headers=auth("alice"))
