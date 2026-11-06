@@ -901,9 +901,9 @@ function Header({ credits, authed, user, onTopup, onAuth, onReferral, onLogout, 
         <nav className="nav">
           <button className="btn btn-sm btn-ghost nav-anchor" data-testid="nav-how" onClick={() => scrollToId("come-funziona")}>{t("nav_how")}</button>
           <button className="btn btn-sm btn-ghost nav-anchor" data-testid="nav-price" onClick={() => scrollToId("prezzi")}>{t("nav_price")}</button>
+          <Link to="/area" className="btn btn-sm btn-ghost" data-testid="nav-workspace"><Briefcase size={15} /> {t("nav_workspace")}</Link>
           <Link to="/blog" className="btn btn-sm btn-ghost" data-testid="nav-blog"><BookOpen size={15} /> {t("blog_link")}</Link>
           <button className="btn btn-sm btn-ghost nav-anchor" data-testid="nav-history" onClick={onHistory}><History size={15} /> {t("nav_history")}</button>
-          {authed && <Link to="/area" className="btn btn-sm btn-ghost" data-testid="nav-workspace"><Briefcase size={15} /> {t("nav_workspace")}</Link>}
           <LanguageSwitcher />
           <span className="credits-badge" data-testid="credits-badge"><Zap size={15} /> {credits} {t("credits")}</span>
           <button className="btn btn-primary btn-sm" data-testid="topup-btn" onClick={onTopup}><CreditCard size={15} /> {t("topup")}</button>
