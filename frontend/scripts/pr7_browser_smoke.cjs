@@ -23,7 +23,7 @@ const server = http.createServer((req, res) => {
 
 (async () => {
   await new Promise((resolve) => server.listen(port, "127.0.0.1", resolve));
-  const browser = await chromium.launch({headless:true});
+  const browser = await chromium.launch({headless:true, executablePath:process.env.PR7_CHROME_PATH || "/usr/bin/google-chrome"});
   const page = await browser.newPage({viewport: {width:390,height:844}, acceptDownloads:true});
   const url = `http://127.0.0.1:${port}/area/priorita/document/doc-alice`;
   try {
