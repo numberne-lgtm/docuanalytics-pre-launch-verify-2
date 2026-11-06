@@ -483,14 +483,19 @@ def build_workspace_router(db, get_current_user, llm_key, default_notify_days, s
             if not rm:
                 raise HTTPException(404, "Priorità non trovata")
             dl = core.days_left(rm.get("due_date"))
-            status = rm.get("status") or "confirmed"
+            historical_unverified = core.is_legacy_historical_auto(rm)
+            status = "to_verify" if historical_unverified else (rm.get("status") or "confirmed")
+            excluded = bool(rm.get("operational_excluded"))
             return {
                 "type": kind, "item_id": item_id, "title": rm.get("label") or "Scadenza",
                 "filename": "", "summary": "",
-                "level": core.deadline_priority(dl, status),
+                "level": core.deadline_priority(dl, status) if not excluded else "medium",
                 "details": ["Origine: " + ("Inserimento manuale" if rm.get("source") == "manual" else "Rilevamento automatico"),
                             "Tipo: " + core.KIND_LABEL.get(rm.get("kind") or "other", "Data operativa")],
                 "date": rm.get("due_date") or "", "status": status,
+                "operational": core.show_operational_deadline(rm),
+                "historical_unverified": historical_unverified,
+                "operational_excluded": excluded,
             }
         raise HTTPException(404, "Priorità non trovata")
 
