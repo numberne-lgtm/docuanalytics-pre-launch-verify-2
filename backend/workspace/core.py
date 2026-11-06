@@ -175,6 +175,20 @@ def is_legacy_historical_auto(reminder: dict) -> bool:
     )
 
 
+def needs_legal_date_review(reminder: dict) -> bool:
+    """Flag potentially ambiguous legacy auto legal deadlines for human review.
+
+    Unlike recognized historical events, these remain operational until
+    an authorized user explicitly excludes them.
+    """
+    return (
+        reminder.get("source") == "auto"
+        and not reminder.get("confirmed_at")
+        and bool(re.search(r"\\b(?:sollecito|diffida)\\b",
+                           str(reminder.get("label") or "").casefold()))
+    )
+
+
 def show_operational_deadline(reminder: dict) -> bool:
     """Operational feeds skip exclusions and auto-detected historic events.
 
