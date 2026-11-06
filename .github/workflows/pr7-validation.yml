@@ -140,11 +140,17 @@ jobs:
           with open("/tmp/pr7-compose-config.json") as f:
               c = json.load(f)
           staging = c["services"]["staging"]
-          ports = staging["ports"]
+          gateway = c["services"]["gateway"]
+          ports = gateway["ports"]
           assert len(ports) == 1 and ports[0]["host_ip"] == "127.0.0.1", ports
           assert int(ports[0]["published"]) == 8765, ports
-          assert not c["services"]["mongo"].get("ports"), "MongoDB port must not be published"
-          assert any(network.get("internal") for network in c["networks"].values())
+          assert not staging.get("ports"), "Application must not publish ports directly"
+          assert not c["services"]["mongo"].get("ports"), "MongoDB must not publish ports"
+          assert len(staging["networks"]) == 1, "App must be isolated from the host-facing bridge"
+          private_network = next(iter(staging["networks"]))
+          assert c["networks"][private_network]["internal"] is True
+          assert private_network in gateway["networks"], "Proxy must reach the app network"
+          assert not gateway.get("environment"), "Gateway must not contain secrets"
           assert staging["environment"]["APP_ENV"] == "test"
           assert staging["environment"]["PR7_LOCAL_STAGING"] == "1"
           print("PR7 COMPOSE SECURITY PASS: loopback-only, isolated Mongo, no production keys")
