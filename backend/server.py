@@ -13,19 +13,16 @@ from typing import Optional
 
 from fastapi import FastAPI, APIRouter, HTTPException, Request, Header
 from fastapi.responses import StreamingResponse
-from dotenv import load_dotenv, dotenv_values
+from runtime_config import load_app_env
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 import httpx
 from pydantic import BaseModel, Field
 
 ROOT_DIR = Path(__file__).parent
-load_dotenv(ROOT_DIR / '.env')
-# The .env file is the source of truth for this app's own secrets. The platform
-# injects a shared default STRIPE_API_KEY (sk_test_emergent) at the OS level which
-# load_dotenv does NOT override, so read Stripe key from the file explicitly to
-# ensure the user's own account key is used.
-_ENV_FILE = dotenv_values(ROOT_DIR / '.env')
+# Production uses ONLY process Secrets. Never open packaged preview backend/.env.
+# Preview/test retains existing file-first configuration for compatibility.
+_ENV_FILE = load_app_env(ROOT_DIR)
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger("docuanalytics")
