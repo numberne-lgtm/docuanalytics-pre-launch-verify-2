@@ -60,6 +60,10 @@ def main():
     matches = [p for p in json.loads(overview)["priorities"]
                if p.get("analysis_id") == "pr7-analysis-a"]
     assert matches and matches[0]["is_read"] is True
+    # Leave a deterministic unread fixture for the subsequent real browser E2E.
+    assert_status(200, "PUT", "/api/workspace/priorities/read-state", {
+        "type": "document", "item_id": "pr7-analysis-a", "is_read": False
+    }, token=tokens["a"])
     for method, path in (
         ("POST", "/api/workspace/copilot/ask"),
         ("POST", "/api/analyze"),
