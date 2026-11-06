@@ -31,7 +31,8 @@ def assert_status(expected, method, path, payload=None, token=None):
 
 def main():
     response, headers = assert_status(200, "GET", "/api/pr7-staging/status")
-    assert "connect-src 'self'" in headers.get("Content-Security-Policy", ""), headers
+    csp = next((v for k, v in headers.items() if k.lower() == "content-security-policy"), "")
+    assert "connect-src 'self'" in csp, headers
     status = json.loads(response)
     assert status["environment"] == "synthetic-local"
     assert status["billable_integrations"] is False
