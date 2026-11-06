@@ -242,7 +242,7 @@ def build_workspace_router(db, get_current_user, llm_key, default_notify_days, s
                            "upcoming": len(b["today"]) + len(b["next7"]) + len(b["next30"]), "overdue": len(b["overdue"]),
                            "deadlines_to_verify": len(b["to_verify"]), "clients": len(clients),
                            "unassigned": sum(not d["client_id"] for d in docs)},
-                "priorities": prio[:30]}
+                "priorities": prio}
 
     @r.get("/documents")
     async def documents(request: Request):
