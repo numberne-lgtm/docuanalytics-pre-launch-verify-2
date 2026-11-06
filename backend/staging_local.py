@@ -76,7 +76,22 @@ async def deny_external_or_unreviewed_calls(request, call_next):
         "/api/auth/login", "/api/auth/me", "/api/session", "/api/pr7-staging/status"
     ) and not re.fullmatch(r"/api/session/[A-Za-z0-9-]{1,128}", request.url.path):
         return JSONResponse({"detail": "Servizio esterno disattivato in staging."}, status_code=503)
-    return await call_next(request)
+    response = await call_next(request)
+    # The React bundle is the real product UI. Prevent its optional marketing,
+    # analytics, social or third-party scripts from reaching outside this
+    # isolated localhost staging instance.
+    response.headers["Content-Security-Policy"] = (
+        "default-src 'self' data: blob:; "
+        "script-src 'self' 'unsafe-inline'; "
+        "style-src 'self' 'unsafe-inline'; "
+        "img-src 'self' data: blob:; "
+        "font-src 'self' data:; "
+        "connect-src 'self'; "
+        "form-action 'self'; frame-src 'none'; "
+        "object-src 'none'; base-uri 'self'"
+    )
+    response.headers["Cache-Control"] = "no-store"
+    return response
 
 
 async def authenticated_user(request: Request):
