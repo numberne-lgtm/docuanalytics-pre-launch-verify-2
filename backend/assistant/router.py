@@ -11,7 +11,7 @@ from datetime import datetime, timezone, timedelta
 from typing import Optional, List
 
 from fastapi import APIRouter, HTTPException, Request, Header
-from .workspace_guide import WORKSPACE_GUIDE, PUBLIC_RELEASE_NOTE
+from .workspace_guide import WORKSPACE_GUIDE, current_release_note
 from pydantic import BaseModel, Field
 
 logger = logging.getLogger("docuanalytics.assistant")
@@ -104,7 +104,7 @@ REGOLE INVIOLABILI:
 {WORKSPACE_GUIDE}
 
 === STATO REALE DELLE FUNZIONI ===
-{PUBLIC_RELEASE_NOTE}"""
+{current_release_note()}"""
 
 
 def build_assistant_router(db, packages: dict, free_credits: int, referral_bonus: int,
