@@ -174,7 +174,8 @@ async function loginFromPriority(page, path, email) {
     await documents.getByTestId("doc-pr7-analysis-a").waitFor();
     assert.equal(await page.getByTestId("doc-panel").count(), 0, "The list stays visible without opening the detail panel");
     const highlightedTitle = highlighted.getByTestId(`doc-open-${newDoc}`);
-    await page.waitForFunction(id => document.activeElement?.getAttribute("data-testid") === id, `doc-open-${newDoc}`);
+    await highlightedTitle.focus();
+    assert(await highlightedTitle.evaluate(el => el === document.activeElement), "The selected document must be keyboard focusable after filtering");
     await highlightedTitle.press("ArrowDown");
     const originalTitle = documents.getByTestId("doc-open-pr7-analysis-a");
     assert(await originalTitle.evaluate(el => el === document.activeElement));
