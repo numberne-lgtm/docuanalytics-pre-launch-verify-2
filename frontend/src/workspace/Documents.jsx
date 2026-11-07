@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { navigateRows, markActiveRow, selectRowWithMouse } from "./keyboard";
 import { ws, errMsg, fmtDate } from "./api";
 import { Level } from "./RiskDashboard";
@@ -122,9 +122,17 @@ export default function Documents({ highlightedId, listRef, onOpenDoc, onCompare
     return matches && byFilter;
   });
   const focusId = visibleDocs?.[0]?.analysis_id;
+  const firstFocusDone = useRef(false);
   useEffect(() => {
-    if (focusId) listRef.current?.querySelector("[data-document-title]")?.focus();
-  }, [focusId, listRef]);
+    // Focus on initial entry, not on each search/filter keystroke.
+    if (!docs || firstFocusDone.current) return;
+    firstFocusDone.current = true;
+    const target = highlightedId
+      ? [...(listRef.current?.querySelectorAll("[data-document-title]") || [])]
+          .find(el => el.dataset.documentTitle === highlightedId)
+      : listRef.current?.querySelector("[data-document-title]");
+    target?.focus({ preventScroll: true });
+  }, [docs, highlightedId, listRef]);
 
   const toggle = (id) => setSel((s) => (s.includes(id) ? s.filter((x) => x !== id) : s.length >= 10 ? s : [...s, id]));
   if (err) return <div className="ws-error">{err}</div>;
