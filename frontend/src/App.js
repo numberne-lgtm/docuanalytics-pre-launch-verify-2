@@ -97,6 +97,7 @@ const T = {
     up_drop: "Trascina qui il tuo documento", up_hint: "PDF, JPG, PNG — Max 10MB",
     analyze: "Analizza Documento", analyzing: "Analisi in corso...",
     results_title: "Risultati Analisi",
+    results_workspace: "Vai all’area di lavoro", results_workspace_desc: "Associa il documento a un cliente e tieni sotto controllo rischi e scadenze.",
     feat_title: "Nuove Funzionalità Avanzate", feat_sub: "Non solo estrazione dati: intelligenza che protegge il tuo studio",
     serv_title: "Servizi AI Specialistici per il Tuo Settore", serv_sub: "Algoritmi addestrati per Commercialisti, Avvocati, Notai e CFO",
     guide_btn: "Guida Completa ai Servizi Enterprise",
@@ -133,6 +134,7 @@ const T = {
     up_drop: "Drag your document here", up_hint: "PDF, JPG, PNG — Max 10MB",
     analyze: "Analyze Document", analyzing: "Analyzing...",
     results_title: "Analysis Results",
+    results_workspace: "Go to workspace", results_workspace_desc: "Link the document to a client and keep track of risks and deadlines.",
     feat_title: "Advanced New Features", feat_sub: "Beyond data extraction: intelligence that protects your practice",
     serv_title: "Specialized AI Services for Your Sector", serv_sub: "Algorithms trained for Accountants, Lawyers, Notaries and CFOs",
     guide_btn: "Full Guide to Enterprise Services",
@@ -169,6 +171,7 @@ const T = {
     up_drop: "Arrastra aquí tu documento", up_hint: "PDF, JPG, PNG — Máx 10MB",
     analyze: "Analizar Documento", analyzing: "Analizando...",
     results_title: "Resultados del Análisis",
+    results_workspace: "Ir al área de trabajo", results_workspace_desc: "Asocia el documento a un cliente y consulta los riesgos y plazos.",
     feat_title: "Nuevas Funciones Avanzadas", feat_sub: "Más que extracción de datos: inteligencia que protege tu despacho",
     serv_title: "Servicios de IA Especializados para tu Sector", serv_sub: "Algoritmos entrenados para Contables, Abogados, Notarios y directores financieros",
     guide_btn: "Guía Completa de Servicios Enterprise",
@@ -205,6 +208,7 @@ const T = {
     up_drop: "Dokument hierher ziehen", up_hint: "PDF, JPG, PNG — max. 10 MB",
     analyze: "Dokument analysieren", analyzing: "Analyse läuft...",
     results_title: "Analyseergebnisse",
+    results_workspace: "Zum Arbeitsbereich", results_workspace_desc: "Ordne das Dokument einem Mandanten zu und behalte Risiken und Fristen im Blick.",
     feat_title: "Neue erweiterte Funktionen", feat_sub: "Mehr als Datenextraktion: Intelligenz, die Ihre Kanzlei schützt",
     serv_title: "Spezialisierte KI-Dienste für Ihre Branche", serv_sub: "Algorithmen für Steuerberater, Anwälte, Notare und CFOs",
     guide_btn: "Vollständiger Leitfaden zu Enterprise-Diensten",
@@ -241,6 +245,7 @@ const T = {
     up_drop: "Glissez votre document ici", up_hint: "PDF, JPG, PNG — Max 10 Mo",
     analyze: "Analyser le document", analyzing: "Analyse en cours...",
     results_title: "Résultats de l'analyse",
+    results_workspace: "Accéder à l’espace de travail", results_workspace_desc: "Associez le document à un client et suivez les risques et les échéances.",
     feat_title: "Nouvelles fonctionnalités avancées", feat_sub: "Au-delà de l'extraction : une intelligence qui protège votre cabinet",
     serv_title: "Services IA spécialisés pour votre secteur", serv_sub: "Algorithmes entraînés pour experts-comptables, avocats, notaires et directeurs financiers",
     guide_btn: "Guide complet des services Enterprise",
@@ -1013,6 +1018,13 @@ function Results({ result, analysisId, notify, credits, onTopup, onAgain, aiMode
             <Bot size={13} /> {provLabel(provider)}
           </span>
         )}
+      </div>
+
+      <div className="after-cta glass pad mb1" data-testid="results-workspace-cta">
+        <p className="section-sub">{t("results_workspace_desc")}</p>
+        <Link to="/area" className="btn btn-primary btn-lg" data-testid="results-workspace-link">
+          <Briefcase size={20} aria-hidden="true" /> {t("results_workspace")} <ArrowRight size={18} aria-hidden="true" />
+        </Link>
       </div>
 
       <div className="results-grid">
