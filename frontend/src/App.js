@@ -493,10 +493,10 @@ function LanguageSwitcher() {
 }
 
 const SOCIALS = [
-  { name: "Facebook", Icon: Facebook, url: process.env.REACT_APP_DOCUANALYTICS_FACEBOOK_URL },
-  { name: "Instagram", Icon: Instagram, url: process.env.REACT_APP_DOCUANALYTICS_INSTAGRAM_URL },
-  { name: "LinkedIn", Icon: Linkedin, url: process.env.REACT_APP_DOCUANALYTICS_LINKEDIN_URL },
-].filter(({ url }) => url?.trim());
+  { name: "Facebook", Icon: Facebook, url: "https://www.facebook.com/profile.php?id=61596449900675" },
+  { name: "Instagram", Icon: Instagram, url: "https://www.instagram.com/docuanalyticsai/" },
+  { name: "LinkedIn", Icon: Linkedin, url: "https://www.linkedin.com/company/https-docuanalytics-online/" },
+];
 
 const DOC_TYPES = [
   { id: "fattura", Icon: FileText },
@@ -2028,7 +2028,7 @@ function Footer({ onTopup, onGuide }) {
 
         {SOCIALS.length > 0 && <div className="socials" data-testid="social-links">
           {SOCIALS.map(({ name, Icon, url }) => (
-            <a key={name} className="social-btn" href={url.trim()} target="_blank" rel="noreferrer"
+            <a key={name} className="social-btn" href={url} target="_blank" rel="noreferrer"
               aria-label={name} title={name} data-testid={`social-${name.toLowerCase().split(" ")[0]}`}>
               <Icon size={18} />
             </a>
