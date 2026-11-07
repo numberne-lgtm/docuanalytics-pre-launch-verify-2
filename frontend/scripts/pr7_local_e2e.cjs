@@ -135,6 +135,27 @@ async function loginFromPriority(page, path, email) {
     const highlighted = documents.getByTestId(`doc-${newDoc}`);
     await highlighted.waitFor();
     assert(await highlighted.evaluate(el => el.classList.contains("ws-doc-highlight")));
+    // Operational workflow: search, human review state, filters, without altering AI risk.
+    const beforeReview = await page.request.get(origin + "/api/workspace/documents/" + newDoc, {
+      headers: { Authorization: "Bearer " + token }
+    });
+    assert.equal(beforeReview.status(), 200);
+    const originalRisk = (await beforeReview.json()).risk_level;
+    const reviewSelect = documents.getByTestId(`review-state-${newDoc}`);
+    await reviewSelect.selectOption("in_progress");
+    const afterReview = await page.request.get(origin + "/api/workspace/documents/" + newDoc, {
+      headers: { Authorization: "Bearer " + token }
+    });
+    assert.equal(afterReview.status(), 200);
+    assert.equal((await afterReview.json()).review_status, "in_progress");
+    assert.equal((await afterReview.json()).risk_level, originalRisk);
+    await documents.getByTestId("documents-filter").selectOption("verified");
+    assert.equal(await highlighted.count(), 0);
+    await documents.getByTestId("documents-filter").selectOption("all");
+    await documents.getByTestId("documents-search").fill("contratto-flusso-area.pdf");
+    await highlighted.waitFor();
+    await documents.getByTestId("documents-search").fill("");
+    await documents.getByTestId(`review-state-${newDoc}`).selectOption("to_review");
     await documents.getByTestId("doc-pr7-analysis-a").waitFor();
     assert.equal(await page.getByTestId("doc-panel").count(), 0, "The list stays visible without opening the detail panel");
     const highlightedTitle = highlighted.getByTestId(`doc-open-${newDoc}`);
