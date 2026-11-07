@@ -14,7 +14,7 @@ export default function WorkspaceSearch({ onDocument, onClient, onDeadlines, rel
     let active = true;
     Promise.all([ws.get("/documents"), ws.get("/clients"), ws.get("/deadlines")])
       .then(([docs, clients, deadlines]) => {
-        if (active) { setData({ docs: docs.documents || [], clients: clients.clients || [], deadlines: deadlines.deadlines || [] }); setError(""); }
+        if (active) { setData({ docs: docs.documents || [], clients: clients.clients || [], deadlines: Object.values(deadlines.buckets || {}).flat().filter(d => d && d.reminder_id) }); setError(""); }
       })
       .catch(() => { if (active) setError("Ricerca non disponibile. Riprova."); });
     return () => { active = false; };
