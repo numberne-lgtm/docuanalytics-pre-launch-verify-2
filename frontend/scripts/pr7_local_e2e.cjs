@@ -173,6 +173,25 @@ async function loginFromPriority(page, path, email) {
     assert(await addedClient.evaluate(el => el === document.activeElement));
     await page.keyboard.press("Enter");
     await page.getByTestId("client-name").filter({ hasText: "Zeta test tastiera" }).waitFor();
+    // Returning to the client list must restore the originating row.
+    await page.getByTestId("client-back").click();
+    await page.waitForFunction(id => document.activeElement?.getAttribute("data-testid") === id, `client-${secondClient}`);
+    await page.keyboard.press("ArrowUp");
+    assert(await originalClient.evaluate(el => el === document.activeElement));
+    await page.keyboard.press("ArrowDown");
+    assert(await addedClient.evaluate(el => el === document.activeElement));
+    await page.getByTestId("ws-nav-deadlines").click();
+    const deadlines = page.getByTestId("deadlines-view");
+    await deadlines.waitFor();
+    await deadlines.getByTestId("deadline-tab-later").click();
+    const deadlineRow = deadlines.getByTestId("deadline-pr7-deadline-a");
+    await deadlineRow.waitFor();
+    await deadlineRow.focus();
+    assert(await deadlineRow.evaluate(el => document.activeElement === el));
+    await page.keyboard.press("ArrowDown");
+    assert(await deadlineRow.evaluate(el => document.activeElement === el), "End of list must remain keyboard-safe");
+    await page.getByTestId("ws-nav-clients").click();
+
     assert.equal((await page.request.delete(origin + "/api/workspace/clients/" + secondClient, { headers })).status(), 200);
 
     const cleanup = await page.request.delete(origin + "/api/workspace/documents/" + newDoc, {
