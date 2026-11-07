@@ -87,7 +87,7 @@ const server = http.createServer((req, res) => {
       await page.getByTestId("legal-page").waitFor();
       assert.equal(await page.locator("h1").innerText(), heading);
       assert.equal(await page.getByTestId("legal-draft-banner").count(), 1);
-      assert.equal(await page.getByText("docuanalyticsai@docuanalytics.online").count() > 0, true);
+      assert.ok(await page.getByRole("navigation", {name:"Documentazione e informazioni legali"}).count() > 0);
       const legalWidth = await page.evaluate(() => ({
         viewport: document.documentElement.clientWidth,
         content: document.documentElement.scrollWidth,
