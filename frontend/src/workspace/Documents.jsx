@@ -3,7 +3,7 @@ import { navigateRows, markActiveRow, selectRowWithMouse } from "./keyboard";
 import { ws, errMsg, fmtDate } from "./api";
 import { Level } from "./RiskDashboard";
 import PriorityQrPdf from "./PriorityQrPdf";
-import DocumentReviewControl, { reviewLabel } from "./DocumentReviewControl";
+import DocumentReviewControl from "./DocumentReviewControl";
 import { FileSearch, Users, Files, FileCheck2, CircleHelp } from "lucide-react";
 
 function clientActionError(error) {
