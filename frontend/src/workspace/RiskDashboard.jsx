@@ -62,7 +62,7 @@ export default function RiskDashboard({ onOpenDoc, onOpenClient, reloadKey, list
             </button>
             <PriorityQrPdf kind={p.type} itemId={p.type === "document" ? p.analysis_id : p.reminder_id} testId={`priority-qr-${i}`} />
             <button type="button" className="ws-priority-read" data-testid={`priority-read-${i}`}
-              aria-label={p.is_read ? "Segna come non letta" : "Segna come già letta"}
+              aria-label={p.is_read ? "Già letta: segna come non letta" : "Non letta: segna come già letta"}
               disabled={!!saving[`${p.type}:${p.type === "document" ? p.analysis_id : p.reminder_id}`]}
               onClick={() => markRead(p)}>
               {p.is_read ? "✓ Già letta" : "● Non letta"}
