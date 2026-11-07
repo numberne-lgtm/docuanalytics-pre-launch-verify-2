@@ -311,7 +311,6 @@ export default function Deadlines({ reloadKey, onChanged, onOpenDoc, tab, onTabC
 
   const buckets = Object.fromEntries(Object.entries(b).map(([key, list]) => [key, Array.isArray(list) ? list : []]));
   const inbox = BUCKET_ORDER.flatMap(key => buckets[key] || []);
-  const all = [...inbox, ...(buckets.later || [])];
   const counts = {
     inbox: inbox.length, overdue:(buckets.overdue || []).length, today:(buckets.today || []).length,
     next7:(buckets.next7 || []).length, next30:(buckets.next30 || []).length,
