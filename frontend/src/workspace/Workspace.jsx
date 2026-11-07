@@ -22,8 +22,27 @@ function DocPanel({ aid, onClose, onStep, onOpenClient, reloadKey, onChanged }) 
   const [deleting, setDeleting] = useState(false);
   const panelRef = useRef(null);
   const keyboardNavigation = Boolean(onStep);
-  useEffect(() => { if (keyboardNavigation) panelRef.current?.focus({ preventScroll: true }); }, [keyboardNavigation]);
+  useEffect(() => { panelRef.current?.focus({ preventScroll: true }); }, [keyboardNavigation]);
   const navigatePanel = (event) => {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      onClose();
+      return;
+    }
+    if (event.key === "Tab") {
+      const focusable = [...(panelRef.current?.querySelectorAll(
+        'a[href], button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])'
+      ) || [])].filter((element) => element.getClientRects().length);
+      if (focusable.length) {
+        const first = focusable[0], last = focusable[focusable.length - 1];
+        if (event.shiftKey && (document.activeElement === first || document.activeElement === panelRef.current)) {
+          event.preventDefault(); last.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault(); first.focus();
+        }
+      }
+      return;
+    }
     if (!onStep || deleting || !["ArrowDown", "ArrowUp"].includes(event.key) ||
         event.target.closest("input, textarea, select, [contenteditable='true']")) return;
     event.preventDefault();
@@ -46,12 +65,12 @@ function DocPanel({ aid, onClose, onStep, onOpenClient, reloadKey, onChanged }) 
   };
   return (
     <div className="ws-panel" data-testid="doc-panel">
-      <div className="ws-panel-in" ref={panelRef} tabIndex={-1} onKeyDown={navigatePanel}>
+      <div className="ws-panel-in" ref={panelRef} tabIndex={-1} role="dialog" aria-modal="true" aria-labelledby="ws-doc-dialog-title" onKeyDown={navigatePanel}>
         <button className="ws-x" onClick={onClose} aria-label="Chiudi" data-testid="doc-panel-close"><X size={18} /></button>
         {err && <div className="ws-error">{err}</div>}
         {!d ? <div className="ws-muted">Caricamento…</div> : (
           <>
-            <div className="ws-bar ws-panel-head"><h2 className="ws-h2">{d.doc_type || d.filename}</h2><Level level={d.risk_level} /></div>
+            <div className="ws-bar ws-panel-head"><h2 className="ws-h2" id="ws-doc-dialog-title">{d.doc_type || d.filename}</h2><Level level={d.risk_level} /></div>
             <p className="ws-muted">{d.filename}</p>
             <p>{d.summary}</p>
             {d.client_id ? <button className="ws-link" onClick={() => onOpenClient(d.client_id)} data-testid="doc-panel-client">Cliente: {d.client_name} →</button> : <p className="ws-muted">Nessun cliente associato (associalo da "Documenti").</p>}
