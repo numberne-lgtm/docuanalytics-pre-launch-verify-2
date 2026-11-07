@@ -19,7 +19,8 @@ import { AssistantFab } from "./assistant/AssistantFab";
 import { AssistantPromo, AssistantNudge } from "./assistant/AssistantPromo";
 import { reportAssistantSignup } from "./assistant/signupTracking";
 import AdminPrivacy from "./AdminPrivacy";
-import PrivacyPage from "./PrivacyPage";
+import PrivacyPage, { LegalPage } from "./PrivacyPage";
+import CookiePreferences from "./CookiePreferences";
 import Workspace from "./workspace/Workspace";
 import PriorityShare from "./workspace/PriorityShare";
 import ReminderFromAnalysis from "./workspace/ReminderFromAnalysis";
@@ -2050,6 +2051,8 @@ function Footer({ onTopup, onGuide }) {
           <button className="btn btn-sm btn-ghost" onClick={onGuide}><BookOpen size={14} /> {t("foot_guide")}</button>
           <a className="btn btn-sm btn-ghost" href="/assistant?utm_source=site&utm_medium=footer" data-testid="footer-assistant-link"><Bot size={14} /> {t("assistant_cta")}</a>
           <Link to="/privacy" className="btn btn-sm btn-ghost" data-testid="footer-privacy-link"><ShieldCheck size={14} /> Privacy</Link>
+          <Link to="/dati-legali" className="btn btn-sm btn-ghost">Dati legali</Link>
+          <Link to="/privacy#preferenze-cookie" className="btn btn-sm btn-ghost">Preferenze cookie</Link>
           <a className="btn btn-sm btn-ghost" href="mailto:docuanalyticsai@docuanalytics.online" data-testid="footer-contact"><Mail size={14} /> {t("contact")}</a>
           <button className="btn btn-primary btn-sm" onClick={onTopup}><CreditCard size={14} /> {t("foot_topup")}</button>
         </div>
@@ -2401,11 +2404,13 @@ function App() {
           <Route path="/assistant" element={<AssistantPage />} />
           <Route path="/admin/assistant" element={<AdminAssistant />} />
           <Route path="/privacy" element={<PrivacyPage />} />
+          <Route path="/dati-legali" element={<LegalPage />} />
           <Route path="/area/priorita/:kind/:itemId" element={<PriorityShare />} />
           <Route path="/area" element={<Workspace />} />
           <Route path="/admin/privacy" element={<AdminPrivacy />} />
           <Route path="*" element={<Home />} />
         </Routes>
+        <CookiePreferences />
       </BrowserRouter>
     </I18nProvider>
   );
