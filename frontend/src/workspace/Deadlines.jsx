@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { navigateRows } from "./keyboard";
+import { navigateRows, markActiveRow, selectRowWithMouse } from "./keyboard";
 import { ws, errMsg, fmtDate, dueText } from "./api";
 import { Level } from "./RiskDashboard";
 import DateField from "./DateField";
@@ -34,7 +34,7 @@ function Row({ d, onChanged }) {
   const [err, setErr] = useState("");
   const run = (p) => { setErr(""); return p.then(() => { setEdit(false); onChanged(); }).catch((e) => setErr(errMsg(e))); };
   return (
-    <div className="ws-dl" data-ws-nav-row data-testid={`deadline-${d.reminder_id}`}>
+    <div className="ws-dl" data-ws-nav-row data-ws-nav-key={d.reminder_id} tabIndex={0} role="group" aria-label={`Scadenza: ${d.label}`} data-testid={`deadline-${d.reminder_id}`}>
       <div className="ws-dl-main">
         <Level level={d.priority} />
         <span><b>{d.label}</b> <span className="ws-muted">· {d.kind_label !== d.label && `${d.kind_label} · `} {d.due_date ? fmtDate(d.due_date) : `"${d.raw_date}"`} · {dueText(d.status === "to_verify" ? null : d.days_left)}</span>
@@ -76,7 +76,7 @@ function Row({ d, onChanged }) {
 }
 
 export const DeadlineList = ({ items, onChanged }) => (
-  items.length ? <div onKeyDown={navigateRows}>{items.map((d) => <Row key={d.reminder_id} d={d} onChanged={onChanged} />)}</div> : <p className="ws-muted">Nessuna scadenza.</p>
+  items.length ? <div data-ws-nav-list onKeyDown={navigateRows} onFocus={markActiveRow} onMouseDown={markActiveRow} onClick={selectRowWithMouse}>{items.map((d) => <Row key={d.reminder_id} d={d} onChanged={onChanged} />)}</div> : <p className="ws-muted">Nessuna scadenza.</p>
 );
 
 function HistoricalReview({ reloadKey, onChanged }) {
@@ -103,12 +103,12 @@ function HistoricalReview({ reloadKey, onChanged }) {
   if (err) return <p role="alert" className="ws-error">{err}</p>;
   if (!data) return <p className="ws-muted">Caricamento revisione…</p>;
   return (
-    <div data-testid="historical-review" onKeyDown={navigateRows}>
+    <div data-testid="historical-review" data-ws-nav-list onKeyDown={navigateRows} onFocus={markActiveRow} onMouseDown={markActiveRow} onClick={selectRowWithMouse}>
       <p className="ws-muted">Eventi storici e scadenze escluse. Non sono cancellati: puoi consultarli, correggerli o ripristinare quelli effettivamente operativi. Una data storica rilevata automaticamente richiede conferma esplicita per essere riattivata.</p>
       {data.limited && <p className="ws-note">Elenco parziale: sono mostrati al massimo 250 elementi.</p>}
       {data.items.length === 0 && <p className="ws-muted">Nessuna voce da revisionare.</p>}
       {data.items.map((d) => (
-        <div key={d.reminder_id} className="ws-dl" data-ws-nav-row data-testid={`review-${d.reminder_id}`}>
+        <div key={d.reminder_id} className="ws-dl" data-ws-nav-row data-ws-nav-key={d.reminder_id} tabIndex={0} role="group" aria-label={`Revisione: ${d.label}`} data-testid={`review-${d.reminder_id}`}>
           <div className="ws-dl-main">
             <span><b>{d.label}</b> · {d.due_date ? fmtDate(d.due_date) : (d.raw_date || "Data incerta")}</span>
             <span className="ws-tag">{d.operational_excluded ? "Esclusa dalle scadenze" : d.legacy_historical ? "Evento storico non confermato" : d.legal_date_review ? "Data legale da verificare" : "Da valutare"}</span>
