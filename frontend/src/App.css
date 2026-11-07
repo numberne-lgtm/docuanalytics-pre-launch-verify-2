@@ -87,6 +87,11 @@ body{background:var(--bg-color);color:var(--text-primary);font-family:'Inter',sa
 
 /* Upload */
 .upload{border:2px dashed #00d2ff44;border-radius:var(--radius);padding:2.4rem 1.5rem;text-align:center;background:#00d2ff08;transition:border-color .2s,background-color .2s;cursor:pointer}
+.upload.upload-selected{border-style:solid;border-color:var(--success);background:#00dc8212}
+.upload.upload-selected .ic,.upload-status{color:var(--success)}
+.upload-status{font-size:.95rem;font-weight:700}
+.upload-filename{font-size:clamp(1.3rem,3vw,1.85rem);line-height:1.25;font-weight:800;margin-top:.35rem;overflow-wrap:anywhere}
+.upload-change{color:var(--text-secondary);font-size:.9rem;margin-top:.65rem}
 .upload.drag{border-color:var(--accent);background:#00d2ff14}
 .upload .ic{width:64px;height:64px;color:var(--accent);margin:0 auto .8rem}
 .chips{display:flex;justify-content:center;gap:.5rem;flex-wrap:wrap;margin-top:1.2rem}

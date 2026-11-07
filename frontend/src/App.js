@@ -96,6 +96,7 @@ const T = {
     up_title: "Carica Documento", up_sub: "Trascina un file o scegli il tipo di documento per l'analisi immediata",
     up_drop: "Trascina qui il tuo documento", up_hint: "PDF, JPG, PNG — Max 10MB",
     analyze: "Analizza Documento", analyzing: "Analisi in corso...",
+    up_selected: "File selezionato", up_change: "Clicca per cambiare file",
     results_title: "Risultati Analisi",
     results_workspace: "Vai all’area di lavoro", results_workspace_desc: "Associa il documento a un cliente e tieni sotto controllo rischi e scadenze.",
     feat_title: "Nuove Funzionalità Avanzate", feat_sub: "Non solo estrazione dati: intelligenza che protegge il tuo studio",
@@ -133,6 +134,7 @@ const T = {
     up_title: "Upload Document", up_sub: "Drag a file or pick a document type for instant analysis",
     up_drop: "Drag your document here", up_hint: "PDF, JPG, PNG — Max 10MB",
     analyze: "Analyze Document", analyzing: "Analyzing...",
+    up_selected: "File selected", up_change: "Click to change file",
     results_title: "Analysis Results",
     results_workspace: "Go to workspace", results_workspace_desc: "Link the document to a client and keep track of risks and deadlines.",
     feat_title: "Advanced New Features", feat_sub: "Beyond data extraction: intelligence that protects your practice",
@@ -170,6 +172,7 @@ const T = {
     up_title: "Subir Documento", up_sub: "Arrastra un archivo o elige el tipo de documento para un análisis inmediato",
     up_drop: "Arrastra aquí tu documento", up_hint: "PDF, JPG, PNG — Máx 10MB",
     analyze: "Analizar Documento", analyzing: "Analizando...",
+    up_selected: "Archivo seleccionado", up_change: "Haz clic para cambiar el archivo",
     results_title: "Resultados del Análisis",
     results_workspace: "Ir al área de trabajo", results_workspace_desc: "Asocia el documento a un cliente y consulta los riesgos y plazos.",
     feat_title: "Nuevas Funciones Avanzadas", feat_sub: "Más que extracción de datos: inteligencia que protege tu despacho",
@@ -207,6 +210,7 @@ const T = {
     up_title: "Dokument hochladen", up_sub: "Datei ziehen oder Dokumenttyp für die sofortige Analyse wählen",
     up_drop: "Dokument hierher ziehen", up_hint: "PDF, JPG, PNG — max. 10 MB",
     analyze: "Dokument analysieren", analyzing: "Analyse läuft...",
+    up_selected: "Datei ausgewählt", up_change: "Klicken, um die Datei zu ändern",
     results_title: "Analyseergebnisse",
     results_workspace: "Zum Arbeitsbereich", results_workspace_desc: "Ordne das Dokument einem Mandanten zu und behalte Risiken und Fristen im Blick.",
     feat_title: "Neue erweiterte Funktionen", feat_sub: "Mehr als Datenextraktion: Intelligenz, die Ihre Kanzlei schützt",
@@ -244,6 +248,7 @@ const T = {
     up_title: "Importer un document", up_sub: "Glissez un fichier ou choisissez le type de document pour une analyse immédiate",
     up_drop: "Glissez votre document ici", up_hint: "PDF, JPG, PNG — Max 10 Mo",
     analyze: "Analyser le document", analyzing: "Analyse en cours...",
+    up_selected: "Fichier sélectionné", up_change: "Cliquez pour changer de fichier",
     results_title: "Résultats de l'analyse",
     results_workspace: "Accéder à l’espace de travail", results_workspace_desc: "Associez le document à un client et suivez les risques et les échéances.",
     feat_title: "Nouvelles fonctionnalités avancées", feat_sub: "Au-delà de l'extraction : une intelligence qui protège votre cabinet",
@@ -816,14 +821,23 @@ function Home() {
             ))}
           </div>
 
-          <div className={`upload ${drag ? "drag" : ""}`} data-testid="upload-zone"
+          <div className={`upload${file ? " upload-selected" : ""}${drag ? " drag" : ""}`} data-testid="upload-zone"
             onClick={() => inputRef.current?.click()}
             onDragOver={(e) => { e.preventDefault(); setDrag(true); }}
             onDragLeave={() => setDrag(false)}
             onDrop={(e) => { e.preventDefault(); setDrag(false); onFile(e.dataTransfer.files[0]); }}>
-            <Upload className="ic" />
-            <p style={{ fontWeight: 700, fontSize: "1.05rem" }}>{file ? file.name : t("up_drop")}</p>
-            <p style={{ color: "var(--text-muted)", fontSize: ".85rem", marginTop: ".3rem" }}>{t("up_hint")}</p>
+            {file ? (
+              <div role="status" data-testid="selected-file">
+                <CheckCircle2 className="ic" aria-hidden="true" />
+                <p className="upload-status">{t("up_selected")}</p>
+                <p className="upload-filename">{file.name}</p>
+                <p className="upload-change">{t("up_change")}</p>
+              </div>
+            ) : <>
+              <Upload className="ic" aria-hidden="true" />
+              <p style={{ fontWeight: 700, fontSize: "1.05rem" }}>{t("up_drop")}</p>
+              <p style={{ color: "var(--text-muted)", fontSize: ".85rem", marginTop: ".3rem" }}>{t("up_hint")}</p>
+            </>}
             <input ref={inputRef} type="file" hidden accept=".pdf,.jpg,.jpeg,.png"
               data-testid="file-input" onChange={(e) => onFile(e.target.files[0])} />
           </div>
