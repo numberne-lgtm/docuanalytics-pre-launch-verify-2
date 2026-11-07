@@ -65,7 +65,7 @@ function DocPanel({ aid, onClose, onStep, onOpenClient, reloadKey, onChanged }) 
   };
   return (
     <div className="ws-panel" data-testid="doc-panel">
-      <div className="ws-panel-in" ref={panelRef} tabIndex={-1} role="dialog" aria-modal="true" aria-labelledby="ws-doc-dialog-title" onKeyDown={navigatePanel}>
+      <div className="ws-panel-in" ref={panelRef} tabIndex={-1} role="dialog" aria-modal="true" aria-label="Dettaglio documento" onKeyDown={navigatePanel}>
         <button className="ws-x" onClick={onClose} aria-label="Chiudi" data-testid="doc-panel-close"><X size={18} /></button>
         {err && <div className="ws-error">{err}</div>}
         {!d ? <div className="ws-muted">Caricamento…</div> : (
@@ -156,7 +156,7 @@ function WorkspaceView({ documentId }) {
   const openClient = (cid) => { setDoc(null); setAudit(null); setView("clients"); setClient(cid); };
   return (
     <div className="App">
-      <main className="wrap ws-page" data-testid="workspace-page">
+      <main className="wrap ws-page" data-testid="workspace-page" inert={Boolean(doc)}>
         <div className="ws-top">
           <Link to="/" className="ws-link" data-testid="workspace-home">← DocuAnalytics AI</Link>
           <h1 className="ws-h1">Area di lavoro</h1>
