@@ -102,12 +102,11 @@ export function DocCard({ d, selectable, selected, highlighted, onToggle, onOpen
   );
 }
 
-export default function Documents({ highlightedId, listRef, onOpenDoc, onCompare, reloadKey, onChanged }) {
+export default function Documents({ highlightedId, listRef, onOpenDoc, onCompare, reloadKey, onChanged, query, onQueryChange, filter, onFilterChange }) {
   const [docs, setDocs] = useState(null);
   const [sel, setSel] = useState([]);
   const [err, setErr] = useState("");
-  const [query, setQuery] = useState("");
-  const [filter, setFilter] = useState("all");
+
   useEffect(() => { ws.get("/documents").then((d) => setDocs(d.documents)).catch((e) => setErr(errMsg(e))); }, [reloadKey]);
   const highlightedDoc = docs?.find((d) => d.analysis_id === highlightedId);
   const orderedDocs = highlightedDoc ? [highlightedDoc, ...docs.filter((d) => d.analysis_id !== highlightedId)] : docs;
@@ -138,10 +137,10 @@ export default function Documents({ highlightedId, listRef, onOpenDoc, onCompare
       </div>
       <p className="ws-muted">Seleziona da 2 a 10 documenti per il Multi-Document Audit. Il livello di rischio AI è distinto dalla verifica professionale.</p>
       <div className="ws-searchbar" role="search" aria-label="Cerca documenti">
-        <input className="as-input" type="search" value={query} onChange={(e) => setQuery(e.target.value)}
+        <input className="as-input" type="search" value={query} onChange={(e) => onQueryChange(e.target.value)}
           placeholder="Cerca documento, cliente o testo" aria-label="Cerca nell'archivio documenti" data-testid="documents-search" />
         <label className="ws-filter-label">Mostra
-          <select className="as-input" value={filter} onChange={(e) => setFilter(e.target.value)} data-testid="documents-filter">
+          <select className="as-input" value={filter} onChange={(e) => onFilterChange(e.target.value)} data-testid="documents-filter">
             <option value="all">Tutti</option>
             <option value="pending">Da gestire</option>
             <option value="verified">Verificati</option>
