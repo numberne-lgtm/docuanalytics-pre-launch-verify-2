@@ -293,6 +293,12 @@ async function loginFromPriority(page, path, email) {
     await page.getByTestId("ws-nav-deadlines").click();
     const deadlines = page.getByTestId("deadlines-view");
     await deadlines.waitFor();
+    await deadlines.getByTestId("deadline-tab-inbox").waitFor();
+    assert.equal(await deadlines.getByTestId("deadline-tab-inbox").getAttribute("aria-pressed"), "true");
+    await deadlines.getByTestId("deadline-add-toggle").click();
+    await deadlines.getByTestId("deadline-new-panel").waitFor();
+    await deadlines.getByTestId("deadline-add-toggle").click();
+    await deadlines.getByTestId("deadline-new-panel").waitFor({state:"detached"});
     await deadlines.getByTestId("deadline-tab-later").click();
     const deadlineRow = deadlines.getByTestId("deadline-pr7-deadline-a");
     await deadlineRow.waitFor();
@@ -300,6 +306,28 @@ async function loginFromPriority(page, path, email) {
     assert(await deadlineRow.evaluate(el => document.activeElement === el));
     await page.keyboard.press("ArrowDown");
     assert(await deadlineRow.evaluate(el => document.activeElement === el), "End of list must remain keyboard-safe");
+    await deadlineRow.getByTestId("deadline-edit-pr7-deadline-a").click();
+    await deadlineRow.getByTestId("deadline-edit-note").fill("Nota di prova per organizzazione dello studio");
+    const [savedDeadline] = await Promise.all([
+      page.waitForResponse(resp => resp.url() === origin + "/api/workspace/deadlines/pr7-deadline-a" && resp.request().method() === "PATCH"),
+      deadlineRow.getByTestId("deadline-edit-save").click(),
+    ]);
+    assert.equal(savedDeadline.status(), 200);
+    await deadlines.getByTestId("deadline-note-pr7-deadline-a").waitFor();
+    await deadlines.getByTestId("deadline-search").fill("Scadenza sintetica A");
+    assert.equal(await deadlines.getByTestId("deadline-results-count").innerText().then(t => t.startsWith("1 ")), true);
+    await page.getByTestId("ws-nav-clients").click();
+    await page.getByTestId("ws-nav-deadlines").click();
+    assert.equal(await deadlines.getByTestId("deadline-search").inputValue(), "Scadenza sintetica A");
+    assert.equal(await deadlines.getByTestId("deadline-tab-later").getAttribute("aria-pressed"), "true");
+    await deadlines.getByTestId("deadline-reset-filters").click();
+    assert.equal(await deadlines.getByTestId("deadline-search").inputValue(), "");
+    assert.equal(await deadlines.getByTestId("deadline-tab-inbox").getAttribute("aria-pressed"), "true");
+    await deadlines.getByTestId("deadline-tab-later").click();
+    await deadlines.getByTestId("deadline-document-pr7-deadline-a").click();
+    await page.getByTestId("doc-panel").waitFor();
+    await page.getByTestId("doc-panel-close").click();
+    await page.getByTestId("doc-panel").waitFor({state:"detached"});
     await page.getByTestId("ws-nav-clients").click();
 
     assert.equal((await page.request.delete(origin + "/api/workspace/clients/" + secondClient, { headers })).status(), 200);
