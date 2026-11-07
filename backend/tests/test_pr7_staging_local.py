@@ -115,6 +115,12 @@ def test_local_client_and_manual_deadline_lifecycle(staged):
     assert staged.delete(cp, headers=b).status_code == 404
     assert staged.patch(cp, headers=a, json={"name": "Cliente aggiornato"}).status_code == 200
     assert staged.get(cp, headers=a).json()["client"]["name"] == "Cliente aggiornato"
+    candidates = "/api/workspace/documents/pr7-analysis-a/candidates"
+    assert staged.get(candidates).status_code == 401
+    assert staged.get(candidates, headers=b).status_code == 404
+    panel = staged.get(candidates, headers=a)
+    assert panel.status_code == 200, panel.text
+    assert panel.json()["current_client_id"] == "pr7-client-a"
     assign = "/api/workspace/documents/pr7-analysis-a/assign"
     assert staged.post(assign, headers=b, json={"client_id": cid}).status_code == 404
     assert staged.post(assign, headers=a, json={"client_id": "pr7-client-b"}).status_code == 404

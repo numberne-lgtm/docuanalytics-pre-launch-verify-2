@@ -52,6 +52,7 @@ app = FastAPI(title="PR7 local synthetic staging", docs_url=None, redoc_url=None
 SAFE_WORKSPACE = {
     "GET": [
         r"/overview", r"/documents", r"/documents/[A-Za-z0-9-]{1,128}",
+        r"/documents/[A-Za-z0-9-]{1,128}/candidates",
         r"/clients", r"/clients/[A-Za-z0-9-]{1,128}", r"/deadlines",
         r"/deadlines/review", r"/calendar\.ics", r"/settings", r"/studio",
         r"/calendar/feed", r"/clients/[A-Za-z0-9-]{1,128}/calendar(?:\.ics|/feed)",
