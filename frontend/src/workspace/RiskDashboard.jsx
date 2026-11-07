@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { navigateRows } from "./keyboard";
 import PriorityQrPdf from "./PriorityQrPdf";
 import { ws, errMsg, LEVEL, dueText } from "./api";
 
@@ -50,11 +51,11 @@ export default function RiskDashboard({ onOpenDoc, onOpenClient, reloadKey }) {
       <h3 className="ws-h3">Priorità ({data.priorities.length})</h3>
       {readErr && <p className="ws-error" role="alert">{readErr}</p>}
       {data.priorities.length === 0 && <p className="ws-muted" data-testid="priorities-empty">Nessuna priorità: nessuna criticità o scadenza rilevata.</p>}
-      <div className="ws-list" data-testid="priorities-list">
+      <div className="ws-list" data-testid="priorities-list" onKeyDown={navigateRows}>
         {data.priorities.map((p, i) => (
-          <div key={`${p.type}:${p.type === "document" ? p.analysis_id : p.reminder_id}`} className="ws-priority-item">
+          <div key={`${p.type}:${p.type === "document" ? p.analysis_id : p.reminder_id}`} className="ws-priority-item" data-ws-nav-row>
             <button className="ws-row ws-priority-open" data-testid={`priority-${i}`}
-              onClick={() => (p.analysis_id ? onOpenDoc(p.analysis_id) : p.client_id && onOpenClient(p.client_id))}>
+              data-ws-nav-target onClick={(event) => (p.analysis_id ? onOpenDoc(p.analysis_id, event.currentTarget) : p.client_id && onOpenClient(p.client_id))}>
               <span className="ws-priority-number" aria-label={`Posizione ${i + 1}`} style={{ minWidth: "2.5rem", textAlign: "center", fontWeight: 800, fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>#{i + 1}</span>
               <Level level={p.level} />
               <span className="ws-row-main"><b>{p.client_name || "Cliente non associato"}</b><span>{p.title} — {p.type === "deadline" ? `${p.detail}, ${dueText(p.days_left)}` : p.detail}</span></span>

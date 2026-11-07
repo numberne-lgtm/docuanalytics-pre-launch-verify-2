@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { navigateRows } from "./keyboard";
 import { FileDown } from "lucide-react";
 import { ws, errMsg, fmtDate, download } from "./api";
 import CalendarExport from "./CalendarExport";
@@ -27,10 +28,13 @@ function NewClient({ onCreated }) {
   );
 }
 
-export function ClientList({ onOpen, reloadKey, onChanged }) {
+export function ClientList({ onOpen, reloadKey, onChanged, focusClient }) {
   const [list, setList] = useState(null);
   const [err, setErr] = useState("");
   useEffect(() => { ws.get("/clients").then((d) => setList(d.clients)).catch((e) => setErr(errMsg(e))); }, [reloadKey]);
+  useEffect(() => {
+    if (list && focusClient) document.getElementById(`ws-client-${focusClient}`)?.focus();
+  }, [list, focusClient]);
   if (err) return <div className="ws-error">{err}</div>;
   return (
     <div data-testid="clients-view">
@@ -38,9 +42,9 @@ export function ClientList({ onOpen, reloadKey, onChanged }) {
       <p className="ws-muted">I documenti vengono associati automaticamente solo se P.IVA o codice fiscale coincidono con un cliente esistente. Negli altri casi scegli tu da "Documenti".</p>
       <NewClient onCreated={(c) => { onChanged(); onOpen(c.client_id); }} />
       {!list ? <div className="ws-muted">Caricamento…</div> : list.length === 0 ? <p className="ws-muted">Nessun cliente.</p> : (
-        <div className="ws-list">
+        <div className="ws-list" onKeyDown={navigateRows}>
           {list.map((c) => (
-            <button key={c.client_id} className="ws-row" onClick={() => onOpen(c.client_id)} data-testid={`client-${c.client_id}`}>
+            <button key={c.client_id} className="ws-row" id={`ws-client-${c.client_id}`} data-ws-nav-row onClick={() => onOpen(c.client_id)} data-testid={`client-${c.client_id}`}>
               <Level level={c.risk_level} />
               <span className="ws-row-main"><b>{c.name}</b><span>{c.piva && `P.IVA ${c.piva} · `}{c.cf && `CF ${c.cf} · `}{c.documents} {c.documents === 1 ? "documento" : "documenti"}</span></span>
             </button>
@@ -85,11 +89,11 @@ export function Client360({ cid, onBack, onOpenDoc, reloadKey, onChanged }) {
           {(reg.legal_representatives || []).length > 0 && <div className="ws-kpi ws-kpi-text"><span>Amministratori / rappresentanti</span><b>{reg.legal_representatives.map((p) => `${p.name}${p.role ? ` (${p.role})` : ""}`).join(", ")}</b></div>}
         </div>
       )}
-      {tab === "docs" && d.documents.map((x) => <DocCard key={x.analysis_id} d={x} onOpen={onOpenDoc} onChanged={onChanged} />)}
-      {tab === "risks" && (d.risks.length ? d.risks.map((r, i) => (
-        <button key={i} className="ws-row" onClick={() => onOpenDoc(r.analysis_id)} data-testid={`client-risk-${i}`}>
+      {tab === "docs" && <div onKeyDown={navigateRows}>{d.documents.map((x) => <DocCard key={x.analysis_id} d={x} onOpen={onOpenDoc} onChanged={onChanged} />)}</div>}
+      {tab === "risks" && (d.risks.length ? <div onKeyDown={navigateRows}>{d.risks.map((r, i) => (
+        <button key={i} className="ws-row" data-ws-nav-row onClick={(event) => onOpenDoc(r.analysis_id, event.currentTarget)} data-testid={`client-risk-${i}`}>
           <Level level={r.level === "error" ? "high" : "medium"} /><span className="ws-row-main"><b>{r.doc_type || r.filename}</b><span>{r.message}</span></span>
-        </button>)) : <p className="ws-muted">Nessuna anomalia rilevata.</p>)}
+        </button>))}</div> : <p className="ws-muted">Nessuna anomalia rilevata.</p>)}
       {tab === "deadlines" && <>
         <DeadlineList items={d.deadlines} onChanged={onChanged} />
         <CalendarExport path={`/clients/${cid}`} title={`Esporta le scadenze di ${c.name}`} fileName={`scadenze-${slug}.ics`} tid="client-calendar" />

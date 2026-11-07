@@ -120,6 +120,38 @@ async function loginFromPriority(page, path, email) {
     await page.reload();
     await highlighted.waitFor();
     assert(await highlighted.evaluate(el => el.classList.contains("ws-doc-highlight")));
+    await page.goto(origin + "/area");
+    await page.getByTestId("ws-nav-documents").click();
+    await highlightedTitle.click();
+    const panel = page.getByTestId("doc-panel");
+    await panel.getByText("contratto-flusso-area.pdf", { exact: true }).waitFor();
+    await page.keyboard.press("ArrowDown");
+    await panel.getByText("contratto-fittizio-a.pdf", { exact: true }).waitFor();
+    await panel.getByTestId("doc-panel-close").click();
+    assert(await originalTitle.evaluate(el => el === document.activeElement));
+    await page.keyboard.press("ArrowUp");
+    assert(await highlightedTitle.evaluate(el => el === document.activeElement));
+    await documents.getByTestId(`doc-select-${newDoc}`).click();
+    await page.keyboard.press("ArrowDown");
+    assert(await originalTitle.evaluate(el => el === document.activeElement));
+    assert(await documents.getByTestId(`doc-select-${newDoc}`).isChecked());
+
+    const headers = { Authorization: "Bearer " + token };
+    const clientResponse = await page.request.post(origin + "/api/workspace/clients", { headers, data: { name: "Zeta test tastiera" } });
+    assert.equal(clientResponse.status(), 200);
+    const { client_id: secondClient } = await clientResponse.json();
+    await page.getByTestId("ws-nav-clients").click();
+    const originalClient = page.getByTestId("client-pr7-client-a");
+    const addedClient = page.getByTestId(`client-${secondClient}`);
+    await originalClient.click();
+    await page.getByTestId("client-back").click();
+    await page.waitForFunction(() => document.activeElement?.getAttribute("data-testid") === "client-pr7-client-a");
+    await page.keyboard.press("ArrowDown");
+    assert(await addedClient.evaluate(el => el === document.activeElement));
+    await page.keyboard.press("Enter");
+    await page.getByTestId("client-name").filter({ hasText: "Zeta test tastiera" }).waitFor();
+    assert.equal((await page.request.delete(origin + "/api/workspace/clients/" + secondClient, { headers })).status(), 200);
+
     const cleanup = await page.request.delete(origin + "/api/workspace/documents/" + newDoc, {
       headers: { Authorization: "Bearer " + token }
     });

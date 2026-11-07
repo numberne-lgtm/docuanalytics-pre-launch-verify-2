@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { navigateRows } from "./keyboard";
 import { ws, errMsg, fmtDate, dueText } from "./api";
 import { Level } from "./RiskDashboard";
 import DateField from "./DateField";
@@ -33,7 +34,7 @@ function Row({ d, onChanged }) {
   const [err, setErr] = useState("");
   const run = (p) => { setErr(""); return p.then(() => { setEdit(false); onChanged(); }).catch((e) => setErr(errMsg(e))); };
   return (
-    <div className="ws-dl" data-testid={`deadline-${d.reminder_id}`}>
+    <div className="ws-dl" data-ws-nav-row data-testid={`deadline-${d.reminder_id}`}>
       <div className="ws-dl-main">
         <Level level={d.priority} />
         <span><b>{d.label}</b> <span className="ws-muted">· {d.kind_label !== d.label && `${d.kind_label} · `} {d.due_date ? fmtDate(d.due_date) : `"${d.raw_date}"`} · {dueText(d.status === "to_verify" ? null : d.days_left)}</span>
@@ -43,7 +44,7 @@ function Row({ d, onChanged }) {
       </div>
       <div className="ws-dl-actions">
         {d.status !== "confirmed" && <button className="as-btn" onClick={() => (d.days_left == null || d.days_left >= 0 || window.confirm("Questa data è già passata: nessun promemoria email potrà partire. Confermare comunque?")) && run(ws.post(`/deadlines/${d.reminder_id}/confirm`, { notify: true, notify_days: days }))} data-testid={`deadline-confirm-${d.reminder_id}`}>Conferma + promemoria</button>}
-        <button className="as-btn" onClick={() => setEdit(!edit)} data-testid={`deadline-edit-${d.reminder_id}`}>Modifica</button>
+        <button className="as-btn" data-ws-nav-target onClick={() => setEdit(!edit)} data-testid={`deadline-edit-${d.reminder_id}`}>Modifica</button>
         <button className="as-btn" onClick={() =>
           window.confirm("Escludere questa data dalle scadenze operative, dai calendari e dai promemoria? La voce resterà disponibile nella revisione.") &&
           run(ws.put(`/deadlines/${d.reminder_id}/operational`, { excluded: true, reason: "Esclusa dopo verifica manuale" }))
@@ -75,7 +76,7 @@ function Row({ d, onChanged }) {
 }
 
 export const DeadlineList = ({ items, onChanged }) => (
-  items.length ? items.map((d) => <Row key={d.reminder_id} d={d} onChanged={onChanged} />) : <p className="ws-muted">Nessuna scadenza.</p>
+  items.length ? <div onKeyDown={navigateRows}>{items.map((d) => <Row key={d.reminder_id} d={d} onChanged={onChanged} />)}</div> : <p className="ws-muted">Nessuna scadenza.</p>
 );
 
 function HistoricalReview({ reloadKey, onChanged }) {
@@ -102,12 +103,12 @@ function HistoricalReview({ reloadKey, onChanged }) {
   if (err) return <p role="alert" className="ws-error">{err}</p>;
   if (!data) return <p className="ws-muted">Caricamento revisione…</p>;
   return (
-    <div data-testid="historical-review">
+    <div data-testid="historical-review" onKeyDown={navigateRows}>
       <p className="ws-muted">Eventi storici e scadenze escluse. Non sono cancellati: puoi consultarli, correggerli o ripristinare quelli effettivamente operativi. Una data storica rilevata automaticamente richiede conferma esplicita per essere riattivata.</p>
       {data.limited && <p className="ws-note">Elenco parziale: sono mostrati al massimo 250 elementi.</p>}
       {data.items.length === 0 && <p className="ws-muted">Nessuna voce da revisionare.</p>}
       {data.items.map((d) => (
-        <div key={d.reminder_id} className="ws-dl" data-testid={`review-${d.reminder_id}`}>
+        <div key={d.reminder_id} className="ws-dl" data-ws-nav-row data-testid={`review-${d.reminder_id}`}>
           <div className="ws-dl-main">
             <span><b>{d.label}</b> · {d.due_date ? fmtDate(d.due_date) : (d.raw_date || "Data incerta")}</span>
             <span className="ws-tag">{d.operational_excluded ? "Esclusa dalle scadenze" : d.legacy_historical ? "Evento storico non confermato" : d.legal_date_review ? "Data legale da verificare" : "Da valutare"}</span>
