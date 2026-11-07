@@ -205,6 +205,42 @@ async function loginFromPriority(page, path, email) {
     assert(await highlightedTitle.evaluate(el => el === document.activeElement));
     await highlightedTitle.press("Enter");
     await page.getByTestId("doc-panel").getByText("contratto-flusso-area.pdf", { exact: true }).waitFor();
+    const detail = page.getByTestId("doc-panel");
+    await detail.getByTestId("document-review-workspace").waitFor();
+    await detail.getByTestId("review-outcome").selectOption("needs_info");
+    await detail.getByTestId("review-note").fill("Chiedere allegato al cliente prima di completare la verifica.");
+    const [reviewDetailsSaved] = await Promise.all([
+      page.waitForResponse(resp => resp.url() === origin + "/api/workspace/documents/" + newDoc + "/review-details" && resp.request().method() === "PUT"),
+      detail.getByTestId("review-details-save").click()
+    ]);
+    assert.equal(reviewDetailsSaved.status(), 200);
+    await detail.getByTestId("review-correct-0").click();
+    await detail.getByTestId("review-value-0").fill("12 byte corretti manualmente");
+    await detail.getByTestId("review-reason-0").fill("Valore ricontrollato sul file sintetico");
+    const [correctionSaved] = await Promise.all([
+      page.waitForResponse(resp => resp.url() === origin + "/api/workspace/documents/" + newDoc + "/field-correction" && resp.request().method() === "PUT"),
+      detail.getByTestId("review-correction-save-0").click()
+    ]);
+    assert.equal(correctionSaved.status(), 200);
+    const amended = await page.request.get(origin + "/api/workspace/documents/" + newDoc, {
+      headers: { Authorization: "Bearer " + token }
+    });
+    assert.equal(amended.status(), 200);
+    const amendedDoc = await amended.json();
+    assert.equal(amendedDoc.review_outcome, "needs_info");
+    assert.match(amendedDoc.review_note, /Chiedere allegato/);
+    assert.equal(amendedDoc.field_corrections["0"].value, "12 byte corretti manualmente");
+    assert.equal(amendedDoc.fields[0].value, (await beforeReview.json()).fields[0].value,
+      "Original AI data must be preserved when correcting an extracted value");
+    assert.equal(amendedDoc.risk_level, originalRisk,
+      "Human changes must never rewrite the automatic risk assessment");
+    await detail.getByTestId("review-correct-0").click();
+    await detail.getByTestId("review-reason-0").fill("Ripristino del valore originale");
+    const [revertSaved] = await Promise.all([
+      page.waitForResponse(resp => resp.url() === origin + "/api/workspace/documents/" + newDoc + "/field-correction" && resp.request().method() === "PUT"),
+      detail.getByTestId("review-correction-undo-0").click()
+    ]);
+    assert.equal(revertSaved.status(), 200);
 
     await page.reload();
     await page.getByTestId("risk-dashboard").waitFor();
@@ -291,6 +327,14 @@ async function loginFromPriority(page, path, email) {
         data: { status: "verified" }
       });
       assert.equal(crossReview.status(), 404, "Cross-account human review writes must be denied");
+      for (const endpoint of ["review-details", "field-correction"]) {
+        const forbidden = await other.request.put(origin + "/api/workspace/documents/pr7-analysis-a/" + endpoint, {
+          headers: { Authorization: "Bearer " + btoken },
+          data: endpoint === "review-details" ? { outcome: "ok", note: "Tentativo non autorizzato" }
+            : { index: 0, corrected_value: "alterato", reason: "Tentativo non autorizzato" },
+        });
+        assert.equal(forbidden.status(), 404, "Cross-account " + endpoint + " must be rejected");
+      }
       await other.goto(origin + priorityPath);
       await other.getByText("Contratto sintetico").first().waitFor({ state:"detached", timeout: 10000 }).catch(() => {});
       await other.getByRole("alert").waitFor({ timeout: 10000 });
