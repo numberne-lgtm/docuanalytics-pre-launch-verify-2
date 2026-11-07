@@ -97,7 +97,7 @@ jobs:
       - name: React build
         run: yarn build
       - name: Install isolated Chromium smoke-test dependencies
-        run: npm install --prefix /tmp/pr7-playwright --no-audit --no-fund --no-save playwright@1.58.2
+        run: npm install --prefix /tmp/pr7-playwright --no-audit --no-fund --no-save playwright@1.58.2 axe-core@4.10.3
       - name: Run mobile browser smoke with system Chrome
         env:
           NODE_PATH: /tmp/pr7-playwright/node_modules
@@ -135,6 +135,19 @@ jobs:
         run: |
           export PR7_CHROME_PATH="$(command -v google-chrome || command -v google-chrome-stable)"
           node scripts/pr7_local_e2e.cjs
+      - name: Audit WCAG accessibility on isolated workspace (diagnostic report)
+        env:
+          NODE_PATH: /tmp/pr7-playwright/node_modules
+        run: |
+          export PR7_CHROME_PATH="$(command -v google-chrome || command -v google-chrome-stable)"
+          node scripts/pr7_accessibility_audit.cjs
+      - name: Attach synthetic accessibility audit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr7-accessibility-audit
+          path: /tmp/pr7-accessibility-report.json
+          if-no-files-found: warn
       - name: Stop local staging
         if: always()
         run: |
