@@ -3,15 +3,26 @@ import { ws, errMsg, fmtDate } from "./api";
 import { Level } from "./RiskDashboard";
 import PriorityQrPdf from "./PriorityQrPdf";
 
+function clientActionError(error) {
+  if (error?.response?.status === 401) return "Accedi di nuovo e riprova.";
+  if (!error?.response) return "Controlla la connessione e riprova.";
+  if (error.response.status >= 500 && !error.response.data?.detail) {
+    return "Il servizio non ha risposto correttamente. Riprova tra poco.";
+  }
+  if (!error.response.data?.detail) return "La richiesta è stata rifiutata. Ricarica la pagina e riprova.";
+  return errMsg(error);
+}
+
 function Candidates({ aid, onDone }) {
   const [data, setData] = useState(null);
   const [clients, setClients] = useState([]);
+  const [clientsError, setClientsError] = useState("");
   const [selectedClient, setSelectedClient] = useState("");
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState("");
   useEffect(() => {
-    ws.get(`/documents/${aid}/candidates`).then(setData).catch((e) => setErr(errMsg(e)));
-    ws.get("/clients").then((d) => setClients(d.clients)).catch(() => {});
+    ws.get(`/documents/${aid}/candidates`).then(setData).catch((e) => setErr(`Impossibile aprire la scelta cliente. ${clientActionError(e)}`));
+    ws.get("/clients").then((d) => setClients(d.clients)).catch((e) => setClientsError(`Impossibile caricare i clienti. ${clientActionError(e)}`));
   }, [aid]);
   const run = async (save) => {
     setSaving(true);
@@ -20,11 +31,11 @@ function Candidates({ aid, onDone }) {
       await save();
       onDone();
     } catch (e) {
-      setErr(errMsg(e));
+      setErr(`Salvataggio non confermato. ${clientActionError(e)}`);
       setSaving(false);
     }
   };
-  if (!data) return <div className="ws-muted">{err || "Caricamento…"}</div>;
+  if (!data) return err ? <div className="ws-error" role="alert">{err}</div> : <div className="ws-muted">Caricamento…</div>;
   return (
     <div className="ws-cand" data-testid="doc-candidates">
       <p className="ws-muted">Soggetti rilevati nel documento. Scegli tu a quale cliente associarlo.</p>
@@ -46,7 +57,8 @@ function Candidates({ aid, onDone }) {
         </button>
         {data.current_client_id && <button className="as-btn" data-testid="unassign-btn" disabled={saving} onClick={() => run(() => ws.post(`/documents/${aid}/assign`, { client_id: null }))}>Rimuovi associazione</button>}
       </div>
-      {err && <div className="ws-error">{err}</div>}
+      {clientsError && <div className="ws-error" role="alert">{clientsError}</div>}
+      {err && <div className="ws-error" role="alert">{err}</div>}
     </div>
   );
 }
