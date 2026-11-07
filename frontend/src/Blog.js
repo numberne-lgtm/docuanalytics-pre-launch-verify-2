@@ -36,6 +36,9 @@ export const ARTICLES = {
       "tag": "Area di lavoro",
       "excerpt": "Dopo l’analisi, ritrova il documento, collegalo al cliente e organizza i controlli e le scadenze.",
       "workspaceCta": "Vai all’area di lavoro",
+      "reportTitle": "Invia il report via email, all’indirizzo PEC o a entrambi",
+      "reportInstructions": "Apri Clienti, entra nella scheda del cliente e premi «Invia report». Scegli la destinazione, controlla gli indirizzi proposti dai Contatti e aggiungi un messaggio se serve. DocuAnalytics allega il report PDF e mostra l’esito dell’invio.",
+      "reportNote": "L’invio all’indirizzo PEC parte da email ordinaria. La casella può rifiutarlo e l’invio è privo di ricevuta PEC.",
       "body": [
         {
           "h": "1. Parti dai risultati",
@@ -113,6 +116,9 @@ export const ARTICLES = {
       "tag": "Workspace",
       "excerpt": "After analysis, find the document, link it to a client and organise reviews and deadlines.",
       "workspaceCta": "Go to workspace",
+      "reportTitle": "Send the report to an email address, a PEC address or both",
+      "reportInstructions": "Open the client record and select Send report. Choose a destination, check the addresses from Contacts and add an optional message. DocuAnalytics attaches the PDF and shows the send status.",
+      "reportNote": "Messages to PEC addresses are sent from ordinary email. The recipient may reject them and no PEC receipt is issued.",
       "body": [
         {
           "h": "From results to documents",
@@ -178,6 +184,9 @@ export const ARTICLES = {
       "tag": "Área de trabajo",
       "excerpt": "Después del análisis, encuentra el documento, vincúlalo a un cliente y organiza las revisiones y los plazos.",
       "workspaceCta": "Ir al área de trabajo",
+      "reportTitle": "Envía el informe por email, a una dirección PEC o a ambas",
+      "reportInstructions": "Abre la ficha del cliente y pulsa Enviar informe. Elige el destino, revisa las direcciones de Contactos y añade un mensaje si lo necesitas. DocuAnalytics adjunta el PDF y muestra el resultado del envío.",
+      "reportNote": "Los mensajes a direcciones PEC salen desde un correo ordinario. El destinatario puede rechazarlos y no se genera un recibo PEC.",
       "body": [
         {
           "h": "De los resultados a Documentos",
@@ -243,6 +252,9 @@ export const ARTICLES = {
       "tag": "Arbeitsbereich",
       "excerpt": "Finden Sie analysierte Dokumente, ordnen Sie sie Mandanten zu und organisieren Sie Prüfungen und Fristen.",
       "workspaceCta": "Zum Arbeitsbereich",
+      "reportTitle": "Bericht an eine E-Mail-Adresse, eine PEC-Adresse oder beide senden",
+      "reportInstructions": "Öffnen Sie die Mandantenakte und wählen Sie Bericht senden. Wählen Sie das Ziel, prüfen Sie die Kontaktdaten und ergänzen Sie bei Bedarf eine Nachricht. DocuAnalytics hängt den PDF-Bericht an und zeigt den Sendestatus an.",
+      "reportNote": "Der Versand an PEC-Adressen erfolgt per gewöhnlicher E-Mail. Die Empfängeradresse kann die Nachricht ablehnen und es wird keine PEC-Quittung ausgestellt.",
       "body": [
         {
           "h": "Von der Analyse zur Dokumentenliste",
@@ -308,6 +320,9 @@ export const ARTICLES = {
       "tag": "Espace de travail",
       "excerpt": "Retrouvez le document analysé, associez-le à un client et organisez les vérifications et les échéances.",
       "workspaceCta": "Accéder à l’espace de travail",
+      "reportTitle": "Envoyez le rapport par email, à une adresse PEC ou aux deux",
+      "reportInstructions": "Ouvrez la fiche client et cliquez sur Envoyer le rapport. Sélectionnez la destination, vérifiez les adresses proposées et ajoutez un message si besoin. DocuAnalytics joint le PDF et indique le résultat de l’envoi.",
+      "reportNote": "Les messages vers une adresse PEC sont envoyés par email ordinaire. Le destinataire peut les refuser et aucun reçu PEC n’est émis.",
       "body": [
         {
           "h": "Des résultats aux documents",
@@ -507,6 +522,7 @@ export function BlogIndex() {
             <span className="badge badge-info">{featured.tag}</span>
             <h2 style={{ margin: ".5rem 0" }}>{featured.title}</h2>
             <p className="section-sub">{featured.excerpt}</p>
+            <p className="mt1"><strong>{featured.reportTitle}</strong></p>
           </div>
           <Link to={`/blog/${featured.slug}`} className="btn btn-primary btn-lg" data-testid={`blog-card-${featured.slug}`}>
             {ui.readMore} <ArrowRight size={16} />
@@ -577,6 +593,14 @@ export function BlogPost() {
         </div>
         <h1 style={{ fontSize: "clamp(1.7rem, 4vw, 2.6rem)", lineHeight: 1.2 }}>{article.title}</h1>
         <p className="section-sub" style={{ marginTop: ".6rem", marginBottom: "1.5rem" }}>{article.excerpt}</p>
+
+        {article.reportTitle && (
+          <section className="glass pad mb1" data-testid="blog-report-highlight" style={{ border: "1px solid #00d2ff44" }}>
+            <h2 style={{ fontSize: "1.25rem", marginBottom: ".6rem" }}>{article.reportTitle}</h2>
+            <p className="section-sub">{article.reportInstructions}</p>
+            <p className="section-sub" style={{ marginTop: ".6rem" }}>{article.reportNote}</p>
+          </section>
+        )}
 
         {article.body.map((sec, i) => (
           <div key={i} className="mb1">
