@@ -12,6 +12,7 @@ import Deadlines, { DeadlineList } from "./Deadlines";
 import { ClientList, Client360 } from "./Clients";
 import AuditView from "./AuditView";
 import DocumentReviewControl from "./DocumentReviewControl";
+import WorkspaceSearch from "./WorkspaceSearch";
 import "../assistant/assistant.css";
 import "./workspace.css";
 
@@ -176,6 +177,8 @@ function WorkspaceView({ documentId }) {
           {credits != null && <span className="ws-credits" data-testid="workspace-credits"><Zap size={14} /> {credits} crediti</span>}
           <Link to="/#upload" className="btn btn-sm btn-primary" data-testid="workspace-analyze">Analizza documento</Link>
         </div>
+        <WorkspaceSearch onDocument={openDocument} onClient={openClient}
+          onDeadlines={() => go("deadlines")} reloadKey={reloadKey} />
         <nav className="ws-nav" data-testid="workspace-nav">
           {NAV.map(([k, l, Icon]) => <button key={k} className={view === k ? "on" : ""} onClick={() => go(k)} data-testid={`ws-nav-${k}`}><Icon size={15} /> {l}</button>)}
         </nav>
