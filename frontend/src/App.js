@@ -509,8 +509,8 @@ const DOC_TYPES = [
 
 const SECTOR_SLUGS = ["commercialisti", "avvocati", "notai", "cfo", "hr"];
 const PUBLIC_ORIGIN = "https://docuanalytics.online";
-// After login, return only to a protected priority path. Never redirect to arbitrary URLs.
-const PRIORITY_RETURN_RE = /^\/area\/priorita\/(?:document|deadline)\/[A-Za-z0-9-]{1,128}$/;
+// After login, return only to a known workspace detail path.
+const PRIORITY_RETURN_RE = /^\/area\/(?:priorita\/(?:document|deadline)\/|documenti\/)[A-Za-z0-9-]{1,128}$/;
 const PRIORITY_RETURN_KEY = "da_priority_return";
 function returnToPriorityAfterLogin() {
   const destination = sessionStorage.getItem(PRIORITY_RETURN_KEY);
@@ -1062,7 +1062,7 @@ function Results({ result, analysisId, notify, credits, onTopup, onAgain, aiMode
 
       <div className="after-cta glass pad mb1" data-testid="results-workspace-cta">
         <p className="section-sub">{t("results_workspace_desc")}</p>
-        <Link to="/area" className="btn btn-primary btn-lg" data-testid="results-workspace-link">
+        <Link to={analysisId ? `/area/documenti/${encodeURIComponent(analysisId)}` : "/area"} className="btn btn-primary btn-lg" data-testid="results-workspace-link">
           <Briefcase size={20} aria-hidden="true" /> {t("results_workspace")} <ArrowRight size={18} aria-hidden="true" />
         </Link>
       </div>
@@ -2407,6 +2407,7 @@ function App() {
           <Route path="/dati-legali" element={<LegalPage />} />
           <Route path="/area/priorita/:kind/:itemId" element={<PriorityShare />} />
           <Route path="/area" element={<Workspace />} />
+          <Route path="/area/documenti/:analysisId" element={<Workspace />} />
           <Route path="/admin/privacy" element={<AdminPrivacy />} />
           <Route path="*" element={<Home />} />
         </Routes>

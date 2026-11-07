@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ws, errMsg, fmtDate } from "./api";
 import { Level } from "./RiskDashboard";
 import PriorityQrPdf from "./PriorityQrPdf";
@@ -69,14 +69,14 @@ function Candidates({ aid, onDone, onCancel }) {
   );
 }
 
-export function DocCard({ d, selectable, selected, onToggle, onOpen, onChanged }) {
+export function DocCard({ d, selectable, selected, highlighted, onToggle, onOpen, onChanged }) {
   const [open, setOpen] = useState(false);
   const associated = Boolean(d.client_id);
   return (
-    <div className={`ws-doc ${selected ? "sel" : ""}`} data-testid={`doc-${d.analysis_id}`}>
+    <div className={`ws-doc ${selected ? "sel" : ""}${highlighted ? " ws-doc-highlight" : ""}`} data-testid={`doc-${d.analysis_id}`}>
       <div className="ws-doc-head">
         {selectable && <input type="checkbox" checked={selected} onChange={onToggle} data-testid={`doc-select-${d.analysis_id}`} aria-label="Seleziona" />}
-        <button className="ws-link" onClick={() => onOpen(d.analysis_id)} data-testid={`doc-open-${d.analysis_id}`}><b>{d.doc_type || d.filename}</b> <span className="ws-muted">{d.filename} · {fmtDate(d.created_at)}</span></button>
+        <button className="ws-link" onClick={() => onOpen(d.analysis_id)} data-testid={`doc-open-${d.analysis_id}`} aria-current={highlighted ? "true" : undefined} data-document-title="true"><b>{d.doc_type || d.filename}</b> <span className="ws-muted">{d.filename} · {fmtDate(d.created_at)}</span></button>
         <Level level={d.risk_level} />
       </div>
       <div className="ws-doc-meta">
@@ -99,11 +99,26 @@ export function DocCard({ d, selectable, selected, onToggle, onOpen, onChanged }
   );
 }
 
-export default function Documents({ onOpenDoc, onCompare, reloadKey, onChanged }) {
+export default function Documents({ highlightedId, onOpenDoc, onCompare, reloadKey, onChanged }) {
   const [docs, setDocs] = useState(null);
+  const listRef = useRef(null);
   const [sel, setSel] = useState([]);
   const [err, setErr] = useState("");
   useEffect(() => { ws.get("/documents").then((d) => setDocs(d.documents)).catch((e) => setErr(errMsg(e))); }, [reloadKey]);
+  const highlightedDoc = docs?.find((d) => d.analysis_id === highlightedId);
+  const orderedDocs = highlightedDoc ? [highlightedDoc, ...docs.filter((d) => d.analysis_id !== highlightedId)] : docs;
+  const activeId = highlightedDoc?.analysis_id;
+  useEffect(() => {
+    if (activeId) listRef.current?.querySelector('[data-document-title][aria-current="true"]')?.focus();
+  }, [activeId]);
+
+  const navigateTitles = (event) => {
+    if (!event.target.matches("[data-document-title]") || !["ArrowDown", "ArrowUp"].includes(event.key)) return;
+    event.preventDefault();
+    const titles = [...event.currentTarget.querySelectorAll("[data-document-title]")];
+    const next = titles.indexOf(event.target) + (event.key === "ArrowDown" ? 1 : -1);
+    titles[next]?.focus();
+  };
   const toggle = (id) => setSel((s) => (s.includes(id) ? s.filter((x) => x !== id) : s.length >= 10 ? s : [...s, id]));
   if (err) return <div className="ws-error">{err}</div>;
   if (!docs) return <div className="ws-muted">Caricamento…</div>;
@@ -115,7 +130,10 @@ export default function Documents({ onOpenDoc, onCompare, reloadKey, onChanged }
       </div>
       <p className="ws-muted">Seleziona da 2 a 10 documenti per il Multi-Document Audit.</p>
       {docs.length === 0 && <p className="ws-muted">Nessun documento analizzato.</p>}
-      {docs.map((d) => <DocCard key={d.analysis_id} d={d} selectable selected={sel.includes(d.analysis_id)} onToggle={() => toggle(d.analysis_id)} onOpen={onOpenDoc} onChanged={onChanged} />)}
+      {activeId && <p className="ws-muted">Usa ↑ e ↓ per spostarti tra i documenti e Invio per aprire la scheda.</p>}
+      <div ref={listRef} onKeyDown={navigateTitles}>
+        {orderedDocs.map((d) => <DocCard key={d.analysis_id} d={d} highlighted={d.analysis_id === highlightedId} selectable selected={sel.includes(d.analysis_id)} onToggle={() => toggle(d.analysis_id)} onOpen={onOpenDoc} onChanged={onChanged} />)}
+      </div>
     </div>
   );
 }

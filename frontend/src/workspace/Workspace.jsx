@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import axios from "axios";
 import { LayoutDashboard, Users, FileText, CalendarClock, X, Zap } from "lucide-react";
 import { ws, errMsg, hasToken } from "./api";
@@ -66,7 +66,13 @@ function DocPanel({ aid, onClose, onOpenClient, reloadKey, onChanged }) {
 }
 
 export default function Workspace() {
-  const [view, setView] = useState("dashboard");
+  const { analysisId } = useParams();
+  const documentId = /^[A-Za-z0-9-]{1,128}$/.test(analysisId || "") ? analysisId : null;
+  return <WorkspaceView key={documentId || "dashboard"} documentId={documentId} />;
+}
+
+function WorkspaceView({ documentId }) {
+  const [view, setView] = useState(documentId ? "documents" : "dashboard");
   const [client, setClient] = useState(null);
   const [doc, setDoc] = useState(null);
   const [audit, setAudit] = useState(null);
@@ -75,16 +81,17 @@ export default function Workspace() {
   const [credits, setCredits] = useState(null);
   useEffect(() => {
     document.title = "Area di lavoro · DocuAnalytics AI";
+    if (documentId) window.scrollTo(0, 0);
     if (hasToken()) axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/auth/me`, { headers: { Authorization: `Bearer ${localStorage.getItem("da_token")}` } })
       .then(({ data }) => setCredits(data.user.credits)).catch(() => {});
-  }, []);
+  }, [documentId]);
 
   if (!hasToken()) {
     return (
       <div className="App"><main className="wrap ws-page" data-testid="workspace-locked">
         <h1 className="ws-h1">Area di lavoro</h1>
         <p className="ws-muted">Clienti, Risk Dashboard, Scadenze e Confronto documenti sono riservati agli utenti registrati.</p>
-        <a className="btn btn-primary" href="/?auth=register" data-testid="workspace-login">Accedi o registrati</a>
+        <a className="btn btn-primary" href={documentId ? `/?auth=login&return_to=${encodeURIComponent(`/area/documenti/${documentId}`)}` : "/?auth=register"} data-testid="workspace-login">Accedi o registrati</a>
       </main></div>
     );
   }
@@ -106,7 +113,7 @@ export default function Workspace() {
         {view === "clients" && (client ? <Client360 cid={client} onBack={() => setClient(null)} onOpenDoc={setDoc} reloadKey={reloadKey} onChanged={reload} />
           : <ClientList onOpen={setClient} reloadKey={reloadKey} onChanged={reload} />)}
         {view === "documents" && (audit ? <AuditView ids={audit} onBack={() => setAudit(null)} onCredits={setCredits} />
-          : <Documents onOpenDoc={setDoc} onCompare={setAudit} reloadKey={reloadKey} onChanged={reload} />)}
+          : <Documents highlightedId={documentId} onOpenDoc={setDoc} onCompare={setAudit} reloadKey={reloadKey} onChanged={reload} />)}
         {view === "deadlines" && <Deadlines reloadKey={reloadKey} onChanged={reload} />}
         <p className="ws-disclaimer">DocuAnalytics evidenzia dati e possibili anomalie: non sostituisce il commercialista, l'avvocato o il notaio.</p>
       </main>

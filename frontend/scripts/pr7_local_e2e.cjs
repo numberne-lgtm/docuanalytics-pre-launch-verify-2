@@ -88,6 +88,43 @@ async function loginFromPriority(page, path, email) {
     });
     assert.equal(blocked.status(), 503, "Paid Copilot must be unavailable locally");
 
+    await page.goto(origin + "/#upload");
+    await page.getByTestId("user-badge").waitFor();
+    await page.getByTestId("file-input").setInputFiles({
+      name: "contratto-flusso-area.pdf", mimeType: "application/pdf", buffer: Buffer.from("%PDF-1.7\n")
+    });
+    const [uploadResponse] = await Promise.all([
+      page.waitForResponse(response => response.url() === origin + "/api/pr7-staging/analyze"),
+      page.getByTestId("analyze-btn").click(),
+    ]);
+    assert.equal(uploadResponse.status(), 200);
+    const { analysis_id: newDoc } = await uploadResponse.json();
+    await page.getByTestId("results-workspace-link").click();
+    await page.waitForURL(origin + "/area/documenti/" + newDoc);
+    const documents = page.getByTestId("documents-view");
+    const highlighted = documents.getByTestId(`doc-${newDoc}`);
+    await highlighted.waitFor();
+    assert(await highlighted.evaluate(el => el.classList.contains("ws-doc-highlight")));
+    await documents.getByTestId("doc-pr7-analysis-a").waitFor();
+    assert.equal(await page.getByTestId("doc-panel").count(), 0, "The list stays visible without opening the detail panel");
+    const highlightedTitle = highlighted.getByTestId(`doc-open-${newDoc}`);
+    await page.waitForFunction(id => document.activeElement?.getAttribute("data-testid") === id, `doc-open-${newDoc}`);
+    await highlightedTitle.press("ArrowDown");
+    const originalTitle = documents.getByTestId("doc-open-pr7-analysis-a");
+    assert(await originalTitle.evaluate(el => el === document.activeElement));
+    await originalTitle.press("ArrowUp");
+    assert(await highlightedTitle.evaluate(el => el === document.activeElement));
+    await highlightedTitle.press("Enter");
+    await page.getByTestId("doc-panel").getByText("contratto-flusso-area.pdf", { exact: true }).waitFor();
+
+    await page.reload();
+    await highlighted.waitFor();
+    assert(await highlighted.evaluate(el => el.classList.contains("ws-doc-highlight")));
+    const cleanup = await page.request.delete(origin + "/api/workspace/documents/" + newDoc, {
+      headers: { Authorization: "Bearer " + token }
+    });
+    assert.equal(cleanup.status(), 200);
+
     const other = await browser.newPage({ viewport: {width: 390, height: 844} });
     await other.route("**/*", route => {
       const url = new URL(route.request().url());
