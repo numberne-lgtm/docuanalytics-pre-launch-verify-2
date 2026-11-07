@@ -3,6 +3,7 @@ import { navigateRows, markActiveRow, selectRowWithMouse } from "./keyboard";
 import { ws, errMsg, fmtDate } from "./api";
 import { Level } from "./RiskDashboard";
 import PriorityQrPdf from "./PriorityQrPdf";
+import DocumentReviewControl from "./DocumentReviewControl";
 
 function clientActionError(error) {
   if (error?.response?.status === 401) return "Accedi di nuovo e riprova.";
@@ -80,6 +81,7 @@ export function DocCard({ d, selectable, selected, highlighted, onToggle, onOpen
         <button className="ws-link" onClick={(event) => onOpen(d.analysis_id, event.currentTarget)} data-testid={`doc-open-${d.analysis_id}`} aria-current={highlighted ? "true" : undefined} data-document-title={d.analysis_id} data-ws-nav-target><b>{d.doc_type || d.filename}</b> <span className="ws-muted">{d.filename} · {fmtDate(d.created_at)}</span></button>
         <Level level={d.risk_level} />
       </div>
+      <DocumentReviewControl documentId={d.analysis_id} status={d.review_status} onChanged={onChanged} compact />
       <div className="ws-doc-meta">
         <div>
           {d.client_name && <span>{`Cliente: ${d.client_name}${d.client_link === "auto" ? " (automatico)" : ""}`}</span>}
@@ -104,10 +106,23 @@ export default function Documents({ highlightedId, listRef, onOpenDoc, onCompare
   const [docs, setDocs] = useState(null);
   const [sel, setSel] = useState([]);
   const [err, setErr] = useState("");
+  const [query, setQuery] = useState("");
+  const [filter, setFilter] = useState("all");
   useEffect(() => { ws.get("/documents").then((d) => setDocs(d.documents)).catch((e) => setErr(errMsg(e))); }, [reloadKey]);
   const highlightedDoc = docs?.find((d) => d.analysis_id === highlightedId);
   const orderedDocs = highlightedDoc ? [highlightedDoc, ...docs.filter((d) => d.analysis_id !== highlightedId)] : docs;
-  const focusId = orderedDocs?.[0]?.analysis_id;
+  const visibleDocs = (orderedDocs || []).filter((d) => {
+    const q = query.trim().toLocaleLowerCase("it");
+    const matches = !q || [d.filename, d.doc_type, d.client_name, d.summary]
+      .some((value) => String(value || "").toLocaleLowerCase("it").includes(q));
+    const state = d.review_status || "to_review";
+    const byFilter = filter === "all" || (filter === "pending" && state !== "verified")
+      || (filter === "verified" && state === "verified")
+      || (filter === "high" && d.risk_level === "high")
+      || (filter === "unassigned" && !d.client_id);
+    return matches && byFilter;
+  });
+  const focusId = visibleDocs?.[0]?.analysis_id;
   useEffect(() => {
     if (focusId) listRef.current?.querySelector("[data-document-title]")?.focus();
   }, [focusId, listRef]);
@@ -121,11 +136,26 @@ export default function Documents({ highlightedId, listRef, onOpenDoc, onCompare
         <h2 className="ws-h2">Documenti</h2>
         <button className="btn btn-primary" disabled={sel.length < 2} onClick={() => onCompare(sel)} data-testid="compare-btn">Confronta documenti ({sel.length})</button>
       </div>
-      <p className="ws-muted">Seleziona da 2 a 10 documenti per il Multi-Document Audit.</p>
+      <p className="ws-muted">Seleziona da 2 a 10 documenti per il Multi-Document Audit. Il livello di rischio AI è distinto dalla verifica professionale.</p>
+      <div className="ws-searchbar" role="search" aria-label="Cerca documenti">
+        <input className="as-input" type="search" value={query} onChange={(e) => setQuery(e.target.value)}
+          placeholder="Cerca documento, cliente o testo" aria-label="Cerca nell'archivio documenti" data-testid="documents-search" />
+        <label className="ws-filter-label">Mostra
+          <select className="as-input" value={filter} onChange={(e) => setFilter(e.target.value)} data-testid="documents-filter">
+            <option value="all">Tutti</option>
+            <option value="pending">Da gestire</option>
+            <option value="verified">Verificati</option>
+            <option value="high">Rischio alto</option>
+            <option value="unassigned">Senza cliente</option>
+          </select>
+        </label>
+      </div>
+      <p className="ws-muted" role="status" data-testid="documents-count">{visibleDocs.length} documenti visualizzati su {docs.length}.</p>
       {docs.length === 0 && <p className="ws-muted">Nessun documento analizzato.</p>}
+      {docs.length > 0 && visibleDocs.length === 0 && <p className="ws-muted">Nessun documento corrisponde alla ricerca o al filtro.</p>}
       {focusId && <p className="ws-muted">Usa ↑ e ↓ per spostarti tra i documenti e Invio per aprire la scheda.</p>}
       <div ref={listRef} data-ws-nav-list onKeyDown={navigateRows} onFocus={markActiveRow} onMouseDown={markActiveRow} onClick={selectRowWithMouse}>
-        {orderedDocs.map((d) => <DocCard key={d.analysis_id} d={d} highlighted={d.analysis_id === highlightedId} selectable selected={sel.includes(d.analysis_id)} onToggle={() => toggle(d.analysis_id)} onOpen={onOpenDoc} onChanged={onChanged} />)}
+        {visibleDocs.map((d) => <DocCard key={d.analysis_id} d={d} highlighted={d.analysis_id === highlightedId} selectable selected={sel.includes(d.analysis_id)} onToggle={() => toggle(d.analysis_id)} onOpen={onOpenDoc} onChanged={onChanged} />)}
       </div>
     </div>
   );
