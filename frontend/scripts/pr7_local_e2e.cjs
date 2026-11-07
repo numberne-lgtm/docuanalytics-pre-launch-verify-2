@@ -93,7 +93,7 @@ async function loginFromPriority(page, path, email) {
       await page.keyboard.press("ArrowDown");
       assert(await priorityButtons.nth(1).evaluate(el => el === document.activeElement));
       await page.keyboard.press("ArrowUp");
-      assert(await priorityButtons.first().evaluate(el => el === document.activeElement));
+      await page.waitForFunction(() => document.activeElement?.getAttribute("data-testid") === "priority-0");
     }
     await priorityButtons.first().click();
     if (await page.getByTestId("doc-panel").count()) {
@@ -151,7 +151,7 @@ async function loginFromPriority(page, path, email) {
     await page.keyboard.press("ArrowDown");
     await panel.getByText("contratto-fittizio-a.pdf", { exact: true }).waitFor();
     await panel.getByTestId("doc-panel-close").click();
-    assert(await originalTitle.evaluate(el => el === document.activeElement));
+    await page.waitForFunction(() => document.activeElement?.getAttribute("data-testid") === "doc-open-pr7-analysis-a");
     await page.keyboard.press("ArrowUp");
     assert(await highlightedTitle.evaluate(el => el === document.activeElement));
     await documents.getByTestId(`doc-select-${newDoc}`).click();
