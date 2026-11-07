@@ -13,6 +13,7 @@ import { ClientList, Client360 } from "./Clients";
 import AuditView from "./AuditView";
 import DocumentReviewControl from "./DocumentReviewControl";
 import WorkspaceSearch from "./WorkspaceSearch";
+import ReminderFromAnalysis from "./ReminderFromAnalysis";
 import "../assistant/assistant.css";
 import "./workspace.css";
 
@@ -77,6 +78,7 @@ function DocPanel({ aid, onClose, onStep, onOpenClient, onLocate, reloadKey, onC
             <div className="ws-report-quick-actions" aria-label="Azioni sul documento">
               <DocumentReviewControl documentId={aid} status={d.review_status} onChanged={onChanged} />
               <button type="button" className="as-btn" onClick={() => onLocate(aid)} data-testid="report-locate">Mostra in Documenti</button>
+              <ReminderFromAnalysis analysisId={aid} guess={null} docType={d.doc_type} loggedIn notify={onChanged} />
             </div>
             <p>{d.summary}</p>
             {d.client_id ? <button className="ws-link" onClick={() => onOpenClient(d.client_id)} data-testid="doc-panel-client">Cliente: {d.client_name} →</button> : <p className="ws-muted">Nessun cliente associato (associalo da "Documenti").</p>}
