@@ -84,6 +84,10 @@ const browserPath = process.env.PR7_CHROME_PATH || "/usr/bin/google-chrome";
       }
     }
     console.log("Automated audit done:", findings.length, "views,", total, "rule violations. See artifact for details.");
+    if (total > 0) {
+      console.error("Accessibility gate: failing CI until the recorded rule violations are resolved.");
+      process.exitCode = 1;
+    }
   } finally {
     await context.close();
     await browser.close();
