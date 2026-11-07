@@ -26,3 +26,32 @@ def test_missing_or_ambiguous_app_env_fails_closed(tmp_path, monkeypatch, invali
         monkeypatch.setenv("APP_ENV", invalid)
     with pytest.raises(RuntimeError):
         load_app_env(tmp_path)
+
+
+def test_public_qr_assistant_explains_preview_without_account_access():
+    from assistant.workspace_guide import WORKSPACE_GUIDE, PUBLIC_RELEASE_NOTE
+    from assistant.router import _system_prompt
+    system = _system_prompt("- Starter: €19, 50 crediti", "commercialista")
+    for feature in ("Panoramica", "Documenti", "Scadenze", "verifica professionale", "QR"):
+        assert feature.casefold() in system.casefold(), feature
+    assert WORKSPACE_GUIDE in system
+    assert PUBLIC_RELEASE_NOTE in system
+    assert "ANTEPRIMA" in system
+    assert "Non hai accesso a documenti, account, dati di utenti o database" in system
+    assert "€19" in system
+
+
+def test_public_assistant_qr_link_does_not_depend_on_registered_account():
+    from pathlib import Path
+    p = Path(__file__).resolve().parents[2] / "frontend" / "public" / "assistant-qr" / "links.txt"
+    links = p.read_text(encoding="utf-8")
+    assert "https://docuanalytics.online/assistant" in links
+    assert "utm_source=qr" in links
+    assert "/area/documenti" not in links
+
+
+def test_public_and_account_assistant_guides_are_separated():
+    from assistant.workspace_guide import WORKSPACE_GUIDE, PUBLIC_RELEASE_NOTE
+    assert "documenti" in WORKSPACE_GUIDE.lower()
+    assert "non" in PUBLIC_RELEASE_NOTE.lower() and "produzione" in PUBLIC_RELEASE_NOTE.lower()
+    assert "non" in WORKSPACE_GUIDE.lower() and "scadenze" in WORKSPACE_GUIDE.lower()
