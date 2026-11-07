@@ -142,7 +142,11 @@ async function loginFromPriority(page, path, email) {
     assert.equal(beforeReview.status(), 200);
     const originalRisk = (await beforeReview.json()).risk_level;
     const reviewSelect = documents.getByTestId(`review-state-${newDoc}`);
-    await reviewSelect.selectOption("in_progress");
+    const [savedReview] = await Promise.all([
+      page.waitForResponse(resp => resp.url() === origin + "/api/workspace/documents/" + newDoc + "/review-state" && resp.request().method() === "PUT"),
+      reviewSelect.selectOption("in_progress"),
+    ]);
+    assert.equal(savedReview.status(), 200);
     const afterReview = await page.request.get(origin + "/api/workspace/documents/" + newDoc, {
       headers: { Authorization: "Bearer " + token }
     });
@@ -155,7 +159,11 @@ async function loginFromPriority(page, path, email) {
     await documents.getByTestId("documents-search").fill("contratto-flusso-area.pdf");
     await highlighted.waitFor();
     await documents.getByTestId("documents-search").fill("");
-    await documents.getByTestId(`review-state-${newDoc}`).selectOption("to_review");
+    const [resetReview] = await Promise.all([
+      page.waitForResponse(resp => resp.url() === origin + "/api/workspace/documents/" + newDoc + "/review-state" && resp.request().method() === "PUT"),
+      documents.getByTestId(`review-state-${newDoc}`).selectOption("to_review"),
+    ]);
+    assert.equal(resetReview.status(), 200);
     await documents.getByTestId("doc-pr7-analysis-a").waitFor();
     assert.equal(await page.getByTestId("doc-panel").count(), 0, "The list stays visible without opening the detail panel");
     const highlightedTitle = highlighted.getByTestId(`doc-open-${newDoc}`);
