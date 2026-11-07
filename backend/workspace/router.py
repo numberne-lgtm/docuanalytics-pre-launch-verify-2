@@ -39,6 +39,7 @@ class ClientPatch(BaseModel):
     piva: Optional[str] = None
     cf: Optional[str] = None
     email: Optional[str] = None
+    pec: Optional[str] = Field(None, max_length=254)
     phone: Optional[str] = Field(None, max_length=60)
     contact_name: Optional[str] = Field(None, max_length=120)
     notes: Optional[str] = Field(None, max_length=2000)
@@ -107,10 +108,10 @@ def _notify(days):
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]{2,}$")
 
 
-def _email(v):
+def _email(v, label="email"):
     v = (v or "").strip().lower()
     if v and not EMAIL_RE.match(v):
-        raise HTTPException(400, "Indirizzo email non valido.")
+        raise HTTPException(400, f"Indirizzo {label} non valido.")
     return v
 
 
@@ -632,7 +633,7 @@ def build_workspace_router(db, get_current_user, llm_key, default_notify_days, s
     async def patch_client(cid: str, req: ClientPatch, request: Request):
         u = await _user(request)
         await _client(u["user_id"], cid)
-        upd = {k: (core.norm_id(v) if k in ("piva", "cf") else _email(v) if k == "email" else v.strip()) for k, v in req.model_dump().items() if v is not None}
+        upd = {k: (core.norm_id(v) if k in ("piva", "cf") else _email(v, "PEC" if k == "pec" else "email") if k in ("email", "pec") else v.strip()) for k, v in req.model_dump().items() if v is not None}
         if upd.get("email") == "" and "email" in upd:
             await db.reminders.update_many({"user_id": u["user_id"], "client_id": cid}, {"$set": {"notify_client": False}})
         if "name" in upd and not upd["name"]:

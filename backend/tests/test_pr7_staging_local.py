@@ -115,7 +115,8 @@ def test_local_client_and_manual_deadline_lifecycle(staged):
     assert staged.delete(cp, headers=b).status_code == 404
     assert staged.patch(cp, headers=a, json={"name": "Cliente aggiornato"}).status_code == 200
     assert staged.get(cp, headers=a).json()["client"]["name"] == "Cliente aggiornato"
-    contacts = {"phone": "+39 000 0000000", "contact_name": "Referente sintetico"}
+    contacts = {"phone": "+39 000 0000000", "contact_name": "Referente sintetico", "pec": "studio@pec.example.invalid"}
+    assert staged.patch(cp, headers=a, json={"pec": "indirizzo-non-valido"}).status_code == 400
     assert staged.patch(cp, headers=b, json=contacts).status_code == 404
     assert staged.patch(cp, headers=a, json=contacts).status_code == 200
     saved = staged.get(cp, headers=a).json()["client"]

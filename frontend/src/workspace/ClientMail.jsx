@@ -4,6 +4,7 @@ import { ws, errMsg } from "./api";
 
 const contactFields = [
   { key: "email", label: "Email", type: "email", autoComplete: "email" },
+  { key: "pec", label: "PEC", type: "email", maxLength: 254 },
   { key: "phone", label: "Telefono", type: "tel", autoComplete: "tel", maxLength: 60 },
   { key: "contact_name", label: "Referente", type: "text", autoComplete: "name", maxLength: 120 },
 ];

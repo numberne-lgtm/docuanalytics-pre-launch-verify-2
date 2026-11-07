@@ -10,7 +10,7 @@ import { DocCard } from "./Documents";
 import { DeadlineList } from "./Deadlines";
 
 const TABS = [["overview", "Panoramica"], ["docs", "Documenti"], ["risks", "Rischi"], ["deadlines", "Scadenze"], ["emails", "Email inviate"], ["activity", "Attività"]];
-const REG = [["rea", "REA"], ["pec", "PEC"], ["registered_office", "Sede"], ["legal_form", "Forma giuridica"], ["share_capital", "Capitale sociale"]];
+const REG = [["rea", "REA"], ["registered_office", "Sede"], ["legal_form", "Forma giuridica"], ["share_capital", "Capitale sociale"]];
 
 function NewClient({ onCreated }) {
   const [f, setF] = useState({ name: "", piva: "", cf: "" });
@@ -71,7 +71,7 @@ export function Client360({ cid, onBack, onOpenDoc, reloadKey, onChanged }) {
         <span className="ws-bar-actions"><button className="as-btn ws-btn-icon" onClick={pdf} disabled={pdfBusy} data-testid="client-report-pdf"><FileDown size={14} /> {pdfBusy ? "Preparazione…" : "Report PDF per il cliente"}</button>
         <button className="as-btn" data-testid="client-delete" onClick={() => window.confirm("Eliminare la scheda cliente? Documenti e scadenze restano, senza associazione.") && ws.del(`/clients/${cid}`).then(() => { onChanged(); onBack(); }).catch((e) => setErr(errMsg(e)))}>Elimina scheda</button></span></div>
       {pdfErr && <div className="ws-error" data-testid="client-report-error">{pdfErr}</div>}
-      <ClientContacts key={c.client_id} c={c} onChanged={onChanged} />
+      <ClientContacts key={c.client_id} c={{ ...c, pec: c.pec ?? reg.pec }} onChanged={onChanged} />
       <SendReport key={`s-${c.email || ""}`} c={c} onSent={onChanged} />
       <p className="ws-muted">{c.piva ? `P.IVA ${c.piva}` : "P.IVA non disponibile"} · {c.cf ? `CF ${c.cf}` : "CF non disponibile"}</p>
       <div className="ws-tabs">{TABS.map(([k, l]) => <button key={k} className={tab === k ? "on" : ""} onClick={() => setTab(k)} data-testid={`client-tab-${k}`}>{l}</button>)}</div>
