@@ -123,6 +123,8 @@ function WorkspaceView({ documentId, initialView }) {
   const [selectedDocument, setSelectedDocument] = useState(documentId);
   const [documentQuery, setDocumentQuery] = useState("");
   const [documentFilter, setDocumentFilter] = useState("all");
+  const [deadlineTab, setDeadlineTab] = useState("inbox");
+  const [deadlineQuery, setDeadlineQuery] = useState("");
   const [client, setClient] = useState(null);
   const [doc, setDoc] = useState(null);
   const [audit, setAudit] = useState(null);
@@ -207,7 +209,8 @@ function WorkspaceView({ documentId, initialView }) {
           : <ClientList focusClient={focusClient} onOpen={setClient} reloadKey={reloadKey} onChanged={reload} />)}
         {view === "documents" && (audit ? <AuditView ids={audit} onBack={() => setAudit(null)} onCredits={setCredits} />
           : <Documents listRef={documentListRef} highlightedId={selectedDocument} onOpenDoc={openDocument} onCompare={setAudit} reloadKey={reloadKey} onChanged={reload} query={documentQuery} onQueryChange={setDocumentQuery} filter={documentFilter} onFilterChange={setDocumentFilter} />)}
-        {view === "deadlines" && <Deadlines reloadKey={reloadKey} onChanged={reload} />}
+        {view === "deadlines" && <Deadlines reloadKey={reloadKey} onChanged={reload} onOpenDoc={openDocument}
+          tab={deadlineTab} onTabChange={setDeadlineTab} query={deadlineQuery} onQueryChange={setDeadlineQuery} />}
         <p className="ws-disclaimer">DocuAnalytics evidenzia dati e possibili anomalie: non sostituisce il commercialista, l'avvocato o il notaio.</p>
       </main>
       {doc && <DocPanel key={doc} aid={doc} onClose={closeDocument} onStep={view === "documents" ? stepDocument : undefined} onOpenClient={openClient} onLocate={showDocumentInArchive} reloadKey={reloadKey} onChanged={reload} />}
