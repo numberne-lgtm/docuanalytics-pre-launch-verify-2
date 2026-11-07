@@ -70,7 +70,7 @@ function DocPanel({ aid, onClose, onStep, onOpenClient, reloadKey, onChanged }) 
         {err && <div className="ws-error">{err}</div>}
         {!d ? <div className="ws-muted">Caricamento…</div> : (
           <>
-            <div className="ws-bar ws-panel-head"><h2 className="ws-h2" id="ws-doc-dialog-title">{d.doc_type || d.filename}</h2><Level level={d.risk_level} /></div>
+            <div className={`ws-bar ws-panel-head ${["high", "medium", "low"].includes(d.risk_level) ? `ws-tone-${d.risk_level}` : ""}`}><h2 className="ws-h2" id="ws-doc-dialog-title">{d.doc_type || d.filename}</h2><Level level={d.risk_level} /></div>
             <p className="ws-muted">{d.filename}</p>
             <p>{d.summary}</p>
             {d.client_id ? <button className="ws-link" onClick={() => onOpenClient(d.client_id)} data-testid="doc-panel-client">Cliente: {d.client_name} →</button> : <p className="ws-muted">Nessun cliente associato (associalo da "Documenti").</p>}
