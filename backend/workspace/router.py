@@ -85,6 +85,17 @@ class DocumentReviewReq(BaseModel):
     status: Literal["to_review", "in_progress", "verified"]
 
 
+class DocumentReviewDetailsReq(BaseModel):
+    outcome: Literal["pending", "ok", "confirmed_issue", "false_positive", "needs_info"]
+    note: str = Field("", max_length=2000)
+
+
+class DocumentFieldCorrectionReq(BaseModel):
+    index: int = Field(..., ge=0, le=999)
+    corrected_value: Optional[str] = Field(None, max_length=500)
+    reason: str = Field(..., min_length=3, max_length=250)
+
+
 class PriorityReadReq(BaseModel):
     type: Literal["document", "deadline"]
     item_id: str = Field(..., min_length=1, max_length=128)
@@ -208,7 +219,9 @@ def build_workspace_router(db, get_current_user, llm_key, default_notify_days, s
                 "client_link": (a.get("client_link") or {}).get("status"),
                 "review_status": (a.get("workspace_review") or {}).get("status") or "to_review",
                 "reviewed_at": (a.get("workspace_review") or {}).get("verified_at"),
-                "review_updated_at": (a.get("workspace_review") or {}).get("updated_at")}
+                "review_updated_at": (a.get("workspace_review") or {}).get("updated_at"),
+                "review_outcome": (a.get("workspace_review_details") or {}).get("outcome") or "pending",
+                "review_note": (a.get("workspace_review_details") or {}).get("note") or ""}
 
     def _dl_out(rm):
         dl = core.days_left(rm.get("due_date"))
@@ -556,6 +569,9 @@ def build_workspace_router(db, get_current_user, llm_key, default_notify_days, s
         res = a.get("result") or {}
         clients = {c["client_id"]: c async for c in db.clients.find({"user_id": u["user_id"]}, {"_id": 0})}
         return {**_doc_out(a, clients), "fields": res.get("fields") or [], "audit": res.get("audit") or [],
+                "field_corrections": a.get("workspace_field_corrections") or {},
+                "field_correction_history": (a.get("workspace_field_correction_history") or [])[-20:],
+                "review_details_history": (a.get("workspace_review_details_history") or [])[-20:],
                 "deadlines": await _deadlines(u["user_id"], {"analysis_id": aid})}
 
     @r.delete("/documents/{aid}")
@@ -594,6 +610,54 @@ def build_workspace_router(db, get_current_user, llm_key, default_notify_days, s
             raise HTTPException(404, "Documento non trovato")
         return {"ok": True, "review_status": status,
                 "reviewed_at": review["verified_at"], "review_updated_at": now}
+
+    @r.put("/documents/{aid}/review-details")
+    async def save_document_review_details(aid: str, req: DocumentReviewDetailsReq, request: Request):
+        uid = (await _user(request))["user_id"]
+        await _analysis(uid, aid)
+        now = _now()
+        note = req.note.strip()
+        details = {"outcome": req.outcome, "note": note, "updated_at": now, "updated_by": uid}
+        await db.analyses.update_one(
+            {"analysis_id": aid, "user_id": uid},
+            {"$set": {"workspace_review_details": details},
+             "$push": {"workspace_review_details_history": {
+                 "$each": [{**details}], "$slice": -50}}})
+        return {"ok": True, "review_outcome": req.outcome, "review_note": note}
+
+    @r.put("/documents/{aid}/field-correction")
+    async def save_document_field_correction(aid: str, req: DocumentFieldCorrectionReq, request: Request):
+        uid = (await _user(request))["user_id"]
+        a = await _analysis(uid, aid)
+        fields = (a.get("result") or {}).get("fields") or []
+        if not isinstance(fields, list) or req.index >= len(fields):
+            raise HTTPException(400, "Campo del documento non valido.")
+        original_field = fields[req.index]
+        if not isinstance(original_field, dict):
+            raise HTTPException(400, "Campo del documento non modificabile.")
+        now = _now()
+        key = str(req.index)
+        existing = (a.get("workspace_field_corrections") or {}).get(key)
+        reason = req.reason.strip()
+        if len(reason) < 3:
+            raise HTTPException(400, "Specifica il motivo della correzione.")
+        change = {
+            "index": req.index,
+            "field": str(original_field.get("label") or "")[:200],
+            "original_value": str(original_field.get("value") if original_field.get("value") is not None else "")[:1000],
+            "previous_correction": existing.get("value") if isinstance(existing, dict) else None,
+            "corrected_value": req.corrected_value,
+            "reason": reason, "at": now, "by": uid,
+        }
+        update = {"$push": {"workspace_field_correction_history": {"$each": [change], "$slice": -50}}}
+        if req.corrected_value is None:
+            update["$unset"] = {f"workspace_field_corrections.{key}": ""}
+        else:
+            update["$set"] = {f"workspace_field_corrections.{key}": {
+                "value": req.corrected_value, "reason": reason, "at": now, "by": uid}}
+        await db.analyses.update_one({"analysis_id": aid, "user_id": uid}, update)
+        return {"ok": True, "index": req.index,
+                "correction": (update.get("$set") or {}).get(f"workspace_field_corrections.{key}")}
 
     @r.get("/documents/{aid}/candidates")
     async def candidates(aid: str, request: Request):
