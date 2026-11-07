@@ -48,6 +48,9 @@ const browserPath = process.env.PR7_CHROME_PATH || "/usr/bin/google-chrome";
     await check("Risk Dashboard / Priorità");
     await page.getByTestId("priority-0").click();
     await page.getByTestId("doc-panel").waitFor();
+    await page.getByTestId("doc-panel").getByText("Contratto sintetico", { exact: true }).first().waitFor();
+    // Wait for slide-in opacity animation to finish before measuring real text contrast.
+    await page.waitForTimeout(450);
     await check("Dettaglio documento (dialogo)");
     await page.keyboard.press("Escape");
     await page.getByTestId("doc-panel").waitFor({state: "detached"});
