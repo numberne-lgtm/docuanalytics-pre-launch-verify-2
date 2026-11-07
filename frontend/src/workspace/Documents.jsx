@@ -71,6 +71,7 @@ function Candidates({ aid, onDone, onCancel }) {
 
 export function DocCard({ d, selectable, selected, onToggle, onOpen, onChanged }) {
   const [open, setOpen] = useState(false);
+  const associated = Boolean(d.client_id);
   return (
     <div className={`ws-doc ${selected ? "sel" : ""}`} data-testid={`doc-${d.analysis_id}`}>
       <div className="ws-doc-head">
@@ -79,8 +80,18 @@ export function DocCard({ d, selectable, selected, onToggle, onOpen, onChanged }
         <Level level={d.risk_level} />
       </div>
       <div className="ws-doc-meta">
-        <span>{d.client_name ? `Cliente: ${d.client_name}${d.client_link === "auto" ? " (automatico)" : ""}` : "Nessun cliente associato"}</span>
-        {!open && <button className="ws-link" onClick={() => setOpen(true)} data-testid={`doc-assign-${d.analysis_id}`}>Scegli cliente</button>}
+        <div>
+          {d.client_name && <span>{`Cliente: ${d.client_name}${d.client_link === "auto" ? " (automatico)" : ""}`}</span>}
+          {!open && <>
+            {" "}
+            <button className="ws-link" onClick={() => setOpen(true)} data-testid={`doc-assign-${d.analysis_id}`}>
+              {associated ? "Cambia cliente" : "Scegli cliente"}
+            </button>
+          </>}
+        </div>
+        <span role="status" className={associated ? "ws-ok" : "ws-muted"}>
+          {associated ? "Cliente associato" : "Nessun cliente associato"}
+        </span>
       </div>
       {open && <Candidates aid={d.analysis_id} onCancel={() => setOpen(false)} onDone={() => { setOpen(false); onChanged(); }} />}
       <PriorityQrPdf kind="document" itemId={d.analysis_id} testId={`document-qrpdf-${d.analysis_id}`} />
