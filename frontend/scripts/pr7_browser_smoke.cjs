@@ -76,7 +76,25 @@ const server = http.createServer((req, res) => {
       page.getByTestId("priority-pdf-download").click(),
     ]);
     assert.equal(download.suggestedFilename(), "docuanalytics-priorita.pdf");
-    console.log("PR7 mobile browser smoke PASS: login and return flow, protected detail, viewport, PDF download");
+    for (const [route, heading] of [
+      ["/dati-legali", "Dati legali"],
+      ["/termini", "Condizioni di servizio"],
+      ["/acquisti-rimborsi", "Acquisti, crediti e rimborsi"],
+      ["/cookie-policy", "Cookie e tecnologie simili"],
+      ["/accessibilita", "Accessibilità"],
+    ]) {
+      await page.goto("http://127.0.0.1:" + port + route);
+      await page.getByTestId("legal-page").waitFor();
+      assert.equal(await page.locator("h1").innerText(), heading);
+      assert.equal(await page.getByTestId("legal-draft-banner").count(), 1);
+      assert.equal(await page.getByText("docuanalyticsai@docuanalytics.online").count() > 0, true);
+      const legalWidth = await page.evaluate(() => ({
+        viewport: document.documentElement.clientWidth,
+        content: document.documentElement.scrollWidth,
+      }));
+      assert.ok(legalWidth.content <= legalWidth.viewport + 2, route + " overflow " + JSON.stringify(legalWidth));
+    }
+    console.log("PR7 mobile browser smoke PASS: login, PDF, and five pre-launch legal routes");
   } finally {
     await browser.close();
     await new Promise(resolve => server.close(resolve));
