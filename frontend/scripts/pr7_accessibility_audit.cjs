@@ -76,6 +76,9 @@ const browserPath = process.env.PR7_CHROME_PATH || "/usr/bin/google-chrome";
     const total = findings.reduce((n, x) => n + x.violations.length, 0);
     for (const v of findings) {
       console.log("A11Y", v.view, v.violations.map(x => x.id + ":" + x.impact).join(",") || "0 reported violations");
+      for (const item of v.violations) for (const node of item.nodes.slice(0, 8)) {
+        console.log("A11Y_NODE", JSON.stringify({view:v.view,rule:item.id,target:node.target,summary:(node.summary || "").slice(0,350)}));
+      }
     }
     console.log("Automated audit done:", findings.length, "views,", total, "rule violations. See artifact for details.");
   } finally {
