@@ -13,7 +13,7 @@ function clientActionError(error) {
   return errMsg(error);
 }
 
-function Candidates({ aid, onDone }) {
+function Candidates({ aid, onDone, onCancel }) {
   const [data, setData] = useState(null);
   const [clients, setClients] = useState([]);
   const [clientsError, setClientsError] = useState("");
@@ -35,7 +35,12 @@ function Candidates({ aid, onDone }) {
       setSaving(false);
     }
   };
-  if (!data) return err ? <div className="ws-error" role="alert">{err}</div> : <div className="ws-muted">Caricamento…</div>;
+  if (!data) return (
+    <div className="ws-cand">
+      {err ? <div className="ws-error" role="alert">{err}</div> : <div className="ws-muted">Caricamento…</div>}
+      <button className="as-btn" onClick={onCancel}>Annulla</button>
+    </div>
+  );
   return (
     <div className="ws-cand" data-testid="doc-candidates">
       <p className="ws-muted">Soggetti rilevati nel documento. Scegli tu a quale cliente associarlo.</p>
@@ -55,6 +60,7 @@ function Candidates({ aid, onDone }) {
         <button className="as-btn as-btn-primary" disabled={!selectedClient || saving} data-testid="assign-confirm" onClick={() => run(() => ws.post(`/documents/${aid}/assign`, { client_id: selectedClient }))}>
           {saving ? "Salvataggio…" : "Associa cliente"}
         </button>
+        <button className="as-btn" disabled={saving} onClick={onCancel}>Annulla</button>
         {data.current_client_id && <button className="as-btn" data-testid="unassign-btn" disabled={saving} onClick={() => run(() => ws.post(`/documents/${aid}/assign`, { client_id: null }))}>Rimuovi associazione</button>}
       </div>
       {clientsError && <div className="ws-error" role="alert">{clientsError}</div>}
@@ -74,9 +80,9 @@ export function DocCard({ d, selectable, selected, onToggle, onOpen, onChanged }
       </div>
       <div className="ws-doc-meta">
         <span>{d.client_name ? `Cliente: ${d.client_name}${d.client_link === "auto" ? " (automatico)" : ""}` : "Nessun cliente associato"}</span>
-        <button className="ws-link" aria-expanded={open} onClick={() => setOpen(!open)} data-testid={`doc-assign-${d.analysis_id}`}>{open ? "Chiudi scelta cliente" : "Scegli cliente"}</button>
+        {!open && <button className="ws-link" onClick={() => setOpen(true)} data-testid={`doc-assign-${d.analysis_id}`}>Scegli cliente</button>}
       </div>
-      {open && <Candidates aid={d.analysis_id} onDone={() => { setOpen(false); onChanged(); }} />}
+      {open && <Candidates aid={d.analysis_id} onCancel={() => setOpen(false)} onDone={() => { setOpen(false); onChanged(); }} />}
       <PriorityQrPdf kind="document" itemId={d.analysis_id} testId={`document-qrpdf-${d.analysis_id}`} />
     </div>
   );
