@@ -33,13 +33,15 @@ const browserPath = process.env.PR7_CHROME_PATH || "/usr/bin/google-chrome";
     });
   };
   try {
-    await page.goto(origin + "/area");
+    await page.goto(origin + "/area/priorita/document/pr7-analysis-a");
     await page.getByRole("button", { name: "Solo necessari", exact: true }).click();
-    await page.getByTestId("workspace-login").click();
+    await page.getByTestId("priority-login-required").locator("a").click();
     await page.getByTestId("auth-modal").waitFor();
     await page.getByTestId("auth-email").fill("studio-a@demo.invalid");
     await page.getByTestId("auth-password").fill("synthetic-local-only");
     await page.getByTestId("auth-submit").click();
+    await page.waitForURL(origin + "/area/priorita/document/pr7-analysis-a");
+    await page.goto(origin + "/area");
     await page.getByTestId("workspace-page").waitFor();
     await page.getByTestId("risk-dashboard").waitFor();
     await page.getByTestId("priorities-list").locator("[data-ws-nav-row]").first().waitFor();
