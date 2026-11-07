@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { navigateRows } from "./keyboard";
+import { navigateRows, markActiveRow, selectRowWithMouse } from "./keyboard";
 import { ws, errMsg, fmtDate } from "./api";
 import { Level } from "./RiskDashboard";
 import PriorityQrPdf from "./PriorityQrPdf";
@@ -74,7 +74,7 @@ export function DocCard({ d, selectable, selected, highlighted, onToggle, onOpen
   const [open, setOpen] = useState(false);
   const associated = Boolean(d.client_id);
   return (
-    <div className={`ws-doc ${selected ? "sel" : ""}${highlighted ? " ws-doc-highlight" : ""}`} data-testid={`doc-${d.analysis_id}`} data-ws-nav-row>
+    <div className={`ws-doc ${selected ? "sel" : ""}${highlighted ? " ws-doc-highlight" : ""}`} data-testid={`doc-${d.analysis_id}`} data-ws-nav-row data-ws-nav-key={d.analysis_id}>
       <div className="ws-doc-head">
         {selectable && <input type="checkbox" checked={selected} onChange={onToggle} data-testid={`doc-select-${d.analysis_id}`} aria-label="Seleziona" />}
         <button className="ws-link" onClick={(event) => onOpen(d.analysis_id, event.currentTarget)} data-testid={`doc-open-${d.analysis_id}`} aria-current={highlighted ? "true" : undefined} data-document-title={d.analysis_id} data-ws-nav-target><b>{d.doc_type || d.filename}</b> <span className="ws-muted">{d.filename} · {fmtDate(d.created_at)}</span></button>
@@ -124,7 +124,7 @@ export default function Documents({ highlightedId, listRef, onOpenDoc, onCompare
       <p className="ws-muted">Seleziona da 2 a 10 documenti per il Multi-Document Audit.</p>
       {docs.length === 0 && <p className="ws-muted">Nessun documento analizzato.</p>}
       {focusId && <p className="ws-muted">Usa ↑ e ↓ per spostarti tra i documenti e Invio per aprire la scheda.</p>}
-      <div ref={listRef} onKeyDown={navigateRows}>
+      <div ref={listRef} data-ws-nav-list onKeyDown={navigateRows} onFocus={markActiveRow} onMouseDown={markActiveRow} onClick={selectRowWithMouse}>
         {orderedDocs.map((d) => <DocCard key={d.analysis_id} d={d} highlighted={d.analysis_id === highlightedId} selectable selected={sel.includes(d.analysis_id)} onToggle={() => toggle(d.analysis_id)} onOpen={onOpenDoc} onChanged={onChanged} />)}
       </div>
     </div>
