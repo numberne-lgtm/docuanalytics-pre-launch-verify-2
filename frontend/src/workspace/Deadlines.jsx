@@ -190,7 +190,7 @@ export const DeadlineList = ({ items, onChanged, onOpenDoc }) => (
   items.length ? <div data-ws-nav-list onKeyDown={navigateRows} onFocus={markActiveRow} onMouseDown={markActiveRow} onClick={selectRowWithMouse}>{items.map((d) => <Row key={d.reminder_id} d={d} onChanged={onChanged} onOpenDoc={onOpenDoc} />)}</div> : <p className="ws-muted">Nessuna scadenza.</p>
 );
 
-function HistoricalReview({ reloadKey, onChanged }) {
+function HistoricalReview({ reloadKey, onChanged, query }) {
   const [data, setData] = useState(null);
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(null);
@@ -213,12 +213,15 @@ function HistoricalReview({ reloadKey, onChanged }) {
   };
   if (err) return <p role="alert" className="ws-error">{err}</p>;
   if (!data) return <p className="ws-muted">Caricamento revisione…</p>;
+  const q = (query || "").trim().toLocaleLowerCase("it");
+  const items = data.items.filter(x => !q || [x.label,x.raw_date,x.due_date,x.doc_type]
+    .some(v => String(v || "").toLocaleLowerCase("it").includes(q)));
   return (
     <div data-testid="historical-review" data-ws-nav-list onKeyDown={navigateRows} onFocus={markActiveRow} onMouseDown={markActiveRow} onClick={selectRowWithMouse}>
       <p className="ws-muted">Eventi storici e scadenze escluse. Non sono cancellati: puoi consultarli, correggerli o ripristinare quelli effettivamente operativi. Una data storica rilevata automaticamente richiede conferma esplicita per essere riattivata.</p>
       {data.limited && <p className="ws-note">Elenco parziale: sono mostrati al massimo 250 elementi.</p>}
-      {data.items.length === 0 && <p className="ws-muted">Nessuna voce da revisionare.</p>}
-      {data.items.map((d) => (
+      {items.length === 0 && <p className="ws-muted">Nessuna voce da revisionare con i filtri selezionati.</p>}
+      {items.map((d) => (
         <div key={d.reminder_id} className="ws-dl" data-ws-nav-row data-ws-nav-key={d.reminder_id} tabIndex={0} role="group" aria-label={`Revisione: ${d.label}`} data-testid={`review-${d.reminder_id}`}>
           <div className="ws-dl-main">
             <span><b>{d.label}</b> · {d.due_date ? fmtDate(d.due_date) : (d.raw_date || "Data incerta")}</span>
@@ -377,7 +380,7 @@ export default function Deadlines({ reloadKey, onChanged, onOpenDoc, tab, onTabC
           </button>
         ))}
       </div>
-      {tab === "review" ? <HistoricalReview reloadKey={reloadKey} onChanged={onChanged} /> : (
+      {tab === "review" ? <HistoricalReview reloadKey={reloadKey} onChanged={onChanged} query={query} /> : (
         <>
           <p className="ws-muted" role="status" data-testid="deadline-results-count">
             {visible.length} scadenze visualizzate. {tab === "inbox" ? "Ordinate per attività da gestire." : ""}
