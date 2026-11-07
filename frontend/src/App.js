@@ -493,10 +493,10 @@ function LanguageSwitcher() {
 }
 
 const SOCIALS = [
-  { name: "Facebook", Icon: Facebook, url: "https://www.facebook.com/profile.php?id=61596449900675" },
-  { name: "Instagram", Icon: Instagram, url: "https://www.instagram.com/docuanalyticsai/" },
-  { name: "LinkedIn", Icon: Linkedin, url: "https://www.linkedin.com/company/https-docuanalytics-online/" },
-];
+  { name: "Facebook", Icon: Facebook, url: process.env.REACT_APP_DOCUANALYTICS_FACEBOOK_URL },
+  { name: "Instagram", Icon: Instagram, url: process.env.REACT_APP_DOCUANALYTICS_INSTAGRAM_URL },
+  { name: "LinkedIn", Icon: Linkedin, url: process.env.REACT_APP_DOCUANALYTICS_LINKEDIN_URL },
+].filter(({ url }) => url?.trim());
 
 const DOC_TYPES = [
   { id: "fattura", Icon: FileText },
@@ -947,6 +947,27 @@ function Header({ credits, authed, user, onTopup, onAuth, onReferral, onLogout, 
   );
 }
 
+function saveAnalysisPdf(result) {
+  const doc = new jsPDF();
+  doc.setFontSize(16); doc.text("Executive Summary — DocuAnalytics AI", 14, 16);
+  doc.setFontSize(10); doc.setTextColor(90); doc.text(String(result.doc_type || ""), 14, 23);
+  const sum = doc.splitTextToSize(result.summary || "", 180); doc.text(sum, 14, 30);
+  let y = 30 + sum.length * 5 + 4;
+  autoTable(doc, { head: [["Campo", "Valore"]], body: (result.fields || []).map((f) => [f.label, String(f.value)]), startY: y, styles: { fontSize: 9 }, headStyles: { fillColor: [107, 92, 231] } });
+  y = doc.lastAutoTable.finalY + 6;
+  if ((result.audit || []).length) {
+    autoTable(doc, { head: [["Livello", "Controllo / Red-Flag"]], body: result.audit.map((a) => [a.level, a.message]), startY: y, styles: { fontSize: 9 }, headStyles: { fillColor: [220, 90, 60] } });
+    y = doc.lastAutoTable.finalY + 6;
+  }
+  if (result.full_text) {
+    if (y > 250) { doc.addPage(); y = 16; }
+    doc.setFontSize(11); doc.setTextColor(20); doc.text("Testo estratto (verifica OCR)", 14, y); y += 6;
+    doc.setFontSize(8); doc.setTextColor(90);
+    doc.text(doc.splitTextToSize(String(result.full_text).slice(0, 3000), 180), 14, y);
+  }
+  doc.save("executive-summary.pdf");
+}
+
 function Results({ result, analysisId, notify, credits, onTopup, onAgain, aiModel, provider, compare, comparing, onCompare, canCompare, userEmail }) {
   const { t } = useI18n();
   const [q, setQ] = useState("");
@@ -975,6 +996,11 @@ function Results({ result, analysisId, notify, credits, onTopup, onAgain, aiMode
   };
 
   const exportData = (fmt) => {
+    if (fmt === "pdf") {
+      saveAnalysisPdf(result);
+      notify(`${t("exported")} PDF`);
+      return;
+    }
     let content, mime, name;
     if (fmt === "json") { content = JSON.stringify(result, null, 2); mime = "application/json"; name = "docuanalytics.json"; }
     else { // csv
@@ -1047,6 +1073,7 @@ function Results({ result, analysisId, notify, credits, onTopup, onAgain, aiMode
             <div className="flex gap" style={{ flexWrap: "wrap" }}>
               <button className="btn btn-sm btn-primary" data-testid="export-sync-btn" onClick={() => setExportOpen(true)}><FileDown size={14} /> {t("export_sync")}</button>
               <ReminderFromAnalysis analysisId={analysisId} guess={deadline} docType={result.doc_type} loggedIn={!!userEmail} notify={notify} />
+              <button className="btn btn-sm" data-testid="export-pdf" onClick={() => exportData("pdf")}><Download size={14} /> PDF</button>
               <button className="btn btn-sm" data-testid="export-csv" onClick={() => exportData("csv")}><Download size={14} /> CSV</button>
               <button className="btn btn-sm" data-testid="export-json" onClick={() => exportData("json")}><Download size={14} /> JSON</button>
             </div>
@@ -1191,24 +1218,7 @@ function ExportDrawer({ result, notify, onClose }) {
   };
 
   const exportExecPDF = () => {
-    const doc = new jsPDF();
-    doc.setFontSize(16); doc.text("Executive Summary — DocuAnalytics AI", 14, 16);
-    doc.setFontSize(10); doc.setTextColor(90); doc.text(String(result.doc_type || ""), 14, 23);
-    const sum = doc.splitTextToSize(result.summary || "", 180); doc.text(sum, 14, 30);
-    let y = 30 + sum.length * 5 + 4;
-    autoTable(doc, { head: [["Campo", "Valore"]], body: (result.fields || []).map((f) => [f.label, String(f.value)]), startY: y, styles: { fontSize: 9 }, headStyles: { fillColor: [107, 92, 231] } });
-    y = doc.lastAutoTable.finalY + 6;
-    if ((result.audit || []).length) {
-      autoTable(doc, { head: [["Livello", "Controllo / Red-Flag"]], body: result.audit.map((a) => [a.level, a.message]), startY: y, styles: { fontSize: 9 }, headStyles: { fillColor: [220, 90, 60] } });
-      y = doc.lastAutoTable.finalY + 6;
-    }
-    if (result.full_text) {
-      if (y > 250) { doc.addPage(); y = 16; }
-      doc.setFontSize(11); doc.setTextColor(20); doc.text("Testo estratto (verifica OCR)", 14, y); y += 6;
-      doc.setFontSize(8); doc.setTextColor(90);
-      doc.text(doc.splitTextToSize(String(result.full_text).slice(0, 3000), 180), 14, y);
-    }
-    doc.save("executive-summary.pdf");
+    saveAnalysisPdf(result);
     notify(`${t("exported")} PDF`);
   };
 
@@ -2028,7 +2038,7 @@ function Footer({ onTopup, onGuide }) {
 
         {SOCIALS.length > 0 && <div className="socials" data-testid="social-links">
           {SOCIALS.map(({ name, Icon, url }) => (
-            <a key={name} className="social-btn" href={url} target="_blank" rel="noreferrer"
+            <a key={name} className="social-btn" href={url.trim()} target="_blank" rel="noreferrer"
               aria-label={name} title={name} data-testid={`social-${name.toLowerCase().split(" ")[0]}`}>
               <Icon size={18} />
             </a>
