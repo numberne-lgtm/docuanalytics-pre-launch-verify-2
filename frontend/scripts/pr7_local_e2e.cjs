@@ -159,7 +159,20 @@ async function loginFromPriority(page, path, email) {
     assert.equal(afterReview.status(), 200);
     assert.equal((await afterReview.json()).review_status, "in_progress");
     assert.equal((await afterReview.json()).risk_level, originalRisk);
+    page.once("dialog", dialog => dialog.accept());
+    const [verifiedResponse] = await Promise.all([
+      page.waitForResponse(resp => resp.url() === origin + "/api/workspace/documents/" + newDoc + "/review-state" && resp.request().method() === "PUT"),
+      documents.getByTestId(`review-state-${newDoc}`).selectOption("verified"),
+    ]);
+    assert.equal(verifiedResponse.status(), 200);
+    const verifiedDoc = await page.request.get(origin + "/api/workspace/documents/" + newDoc, {
+      headers: { Authorization: "Bearer " + token }
+    });
+    assert.equal((await verifiedDoc.json()).review_status, "verified");
+    assert.equal((await verifiedDoc.json()).risk_level, originalRisk, "Human verification must preserve AI risk");
     await documents.getByTestId("documents-filter").selectOption("verified");
+    await highlighted.waitFor();
+    await documents.getByTestId("documents-filter").selectOption("pending");
     assert.equal(await highlighted.count(), 0);
     await documents.getByTestId("documents-filter").selectOption("all");
     await documents.getByTestId("documents-search").fill("contratto-flusso-area.pdf");
