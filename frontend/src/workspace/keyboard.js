@@ -14,8 +14,8 @@ export function navigationRows(list) {
 function primaryControl(row) {
   if (row.matches("button:not(:disabled)")) return row;
   return row.querySelector("[data-ws-nav-target]:not(:disabled)") ||
-    row.querySelector("button:not(:disabled)") ||
-    (row.hasAttribute("tabindex") ? row : null);
+    (row.hasAttribute("tabindex") ? row : null) ||
+    row.querySelector("button:not(:disabled)");
 }
 
 export function focusListRow(list, key) {
