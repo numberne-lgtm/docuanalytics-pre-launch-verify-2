@@ -14,6 +14,8 @@ import AuditView from "./AuditView";
 import DocumentReviewControl from "./DocumentReviewControl";
 import WorkspaceSearch from "./WorkspaceSearch";
 import ReminderFromAnalysis from "./ReminderFromAnalysis";
+import DocumentReviewWorkspace from "./DocumentReviewWorkspace";
+import { FileSearch, ListChecks, CalendarPlus, FileDown, AlertTriangle } from "lucide-react";
 import "../assistant/assistant.css";
 import "./workspace.css";
 
@@ -75,20 +77,26 @@ function DocPanel({ aid, onClose, onStep, onOpenClient, onLocate, reloadKey, onC
           <>
             <div className={`ws-bar ws-panel-head ${["high", "medium", "low"].includes(d.risk_level) ? `ws-tone-${d.risk_level}` : ""}`}><h2 className="ws-h2" id="ws-doc-dialog-title">{d.doc_type || d.filename}</h2><Level level={d.risk_level} /></div>
             <p className="ws-muted">{d.filename}</p>
+            <p className="ws-report-note"><AlertTriangle size={15} aria-hidden="true" /> Rischio AI: {d.risk_level === "high" ? "alto" : d.risk_level === "medium" ? "medio" : "basso"}. La verifica del professionista è indipendente e va registrata dopo il controllo.</p>
             <div className="ws-report-quick-actions" aria-label="Azioni sul documento">
+              <h3 className="ws-h3">Cosa vuoi fare con questo documento?</h3>
               <DocumentReviewControl documentId={aid} status={d.review_status} onChanged={onChanged} />
-              <button type="button" className="as-btn" onClick={() => onLocate(aid)} data-testid="report-locate">Mostra in Documenti</button>
+              <button type="button" className="as-btn" onClick={() => onLocate(aid)} data-testid="report-locate"><FileSearch size={15} aria-hidden="true" /> Trova nell'archivio e associa cliente</button>
               <ReminderFromAnalysis analysisId={aid} guess={null} docType={d.doc_type} loggedIn notify={onChanged} />
+              <p className="ws-muted">Dal report puoi controllare i dati, annotare l'esito, correggere valori e gestire eventuali scadenze.</p>
             </div>
             <p>{d.summary}</p>
             {d.client_id ? <button className="ws-link" onClick={() => onOpenClient(d.client_id)} data-testid="doc-panel-client">Cliente: {d.client_name} →</button> : <p className="ws-muted">Nessun cliente associato (associalo da "Documenti").</p>}
-            <h3 className="ws-h3">Controlli e red flag</h3>
+            <DocumentReviewWorkspace document={d} onChanged={onChanged} />
+            <h3 className="ws-h3"><ListChecks size={18} aria-hidden="true" /> Controlli e anomalie rilevati dall'AI</h3>
             {d.audit.map((a, i) => <div key={i} className={`ws-finding lvl-${a.level}`}>{a.level === "error" ? "🔴" : a.level === "warning" ? "🟠" : "🟢"} {a.message}</div>)}
-            <h3 className="ws-h3">Dati estratti</h3>
+            <h3 className="ws-h3">Dati originali estratti dall'AI</h3>
             {d.fields.length === 0 && <p className="ws-muted">Nessun dato estratto disponibile.</p>}
             <div className="ws-fields">{d.fields.map((f, i) => <div key={i}><span className="ws-muted">{f.label}</span><b>{String(f.value)}</b></div>)}</div>
-            <h3 className="ws-h3">Scadenze del documento</h3>
+            <h3 className="ws-h3"><CalendarPlus size={18} aria-hidden="true" /> Scadenze del documento</h3>
+            <p className="ws-muted">Conferma o modifica le scadenze qui sotto: le correzioni ai valori estratti non cambiano automaticamente i promemoria.</p>
             <DeadlineList items={d.deadlines} onChanged={onChanged} />
+            <h3 className="ws-h3"><FileDown size={18} aria-hidden="true" /> Esporta o apri scheda protetta</h3>
             <PriorityQrPdf kind="document" itemId={aid} expandedInitially testId="doc-panel-qrpdf" />
             <div className="ws-dl-actions">
               <button type="button" className="as-btn" data-testid="doc-delete-analysis" onClick={deleteAnalysis} disabled={deleting}>
