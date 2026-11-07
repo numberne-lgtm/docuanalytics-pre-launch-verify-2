@@ -43,9 +43,9 @@ def app_client(request, report_outbox):
          "ws_synced": True, "risk_level": "low"},
     ])
     db.clients.insert_many([
-        {"user_id": "alice", "client_id": "client-alice", "name": "Cliente A", "email": ""},
-        {"user_id": "alice", "client_id": "client-other", "name": "Cliente Altro", "email": ""},
-        {"user_id": "bob", "client_id": "client-bob", "name": "Cliente B", "email": ""},
+        {"user_id": "alice", "client_id": "client-alice", "name": "Cliente A", "email": "", "created_at": "2026-11-06T00:00:00Z"},
+        {"user_id": "alice", "client_id": "client-other", "name": "Cliente Altro", "email": "", "created_at": "2026-11-06T00:00:00Z"},
+        {"user_id": "bob", "client_id": "client-bob", "name": "Cliente B", "email": "", "created_at": "2026-11-06T00:00:00Z"},
     ])
     db.reminders.insert_many([
         {"user_id": "alice", "reminder_id": "deadline-alice", "analysis_id": "doc-alice",

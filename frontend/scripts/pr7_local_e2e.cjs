@@ -12,6 +12,7 @@ const browserPath = process.env.PR7_CHROME_PATH || "/usr/bin/google-chrome";
 
 async function loginFromPriority(page, path, email) {
   await page.goto(origin + path);
+  await page.getByRole("button", { name: "Solo necessari", exact: true }).click();
   await page.getByTestId("priority-login-required").waitFor({ timeout: 20000 });
   const href = await page.getByTestId("priority-login-required").locator("a").getAttribute("href");
   assert(href.includes("return_to="), "The priority URL must survive login");
