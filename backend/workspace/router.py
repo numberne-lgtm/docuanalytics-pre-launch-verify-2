@@ -39,6 +39,8 @@ class ClientPatch(BaseModel):
     piva: Optional[str] = None
     cf: Optional[str] = None
     email: Optional[str] = None
+    phone: Optional[str] = Field(None, max_length=60)
+    contact_name: Optional[str] = Field(None, max_length=120)
     notes: Optional[str] = Field(None, max_length=2000)
 
 

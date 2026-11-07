@@ -1,25 +1,74 @@
 import { useState } from "react";
-import { Mail, Send } from "lucide-react";
+import { Send } from "lucide-react";
 import { ws, errMsg } from "./api";
 
-export function ClientEmail({ c, onChanged }) {
-  const [edit, setEdit] = useState(false);
-  const [v, setV] = useState(c.email || "");
+const contactFields = [
+  { key: "email", label: "Email", type: "email", autoComplete: "email" },
+  { key: "phone", label: "Telefono", type: "tel", autoComplete: "tel", maxLength: 60 },
+  { key: "contact_name", label: "Referente", type: "text", autoComplete: "name", maxLength: 120 },
+];
+
+export function ClientContacts({ c, onChanged }) {
+  const [draft, setDraft] = useState(null);
+  const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
-  const save = () => { setErr(""); ws.patch(`/clients/${c.client_id}`, { email: v }).then(() => { setEdit(false); onChanged(); }).catch((e) => setErr(errMsg(e))); };
+
+  const begin = () => {
+    setErr("");
+    setDraft(Object.fromEntries(contactFields.map(({ key }) => [key, c[key] || ""])));
+  };
+  const save = async (event) => {
+    event.preventDefault();
+    setBusy(true);
+    setErr("");
+    const changes = Object.fromEntries(
+      Object.entries(draft).map(([key, value]) => [key, value.trim()])
+        .filter(([key, value]) => value !== (c[key] || ""))
+    );
+    try {
+      if (Object.keys(changes).length) {
+        await ws.patch(`/clients/${c.client_id}`, changes);
+        onChanged();
+      }
+      setDraft(null);
+    } catch (e) {
+      setErr(errMsg(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
-    <div className="ws-mail-row" data-testid="client-email">
-      <Mail size={14} />
-      {!edit ? <>
-        <span data-testid="client-email-value">{c.email || <span className="ws-muted">Email cliente non inserita</span>}</span>
-        <button className="ws-link" onClick={() => setEdit(true)} data-testid="client-email-edit">{c.email ? "Modifica" : "Aggiungi email"}</button>
-      </> : <>
-        <input className="as-input" type="email" value={v} onChange={(e) => setV(e.target.value)} placeholder="cliente@esempio.it" data-testid="client-email-input" />
-        <button className="as-btn as-btn-primary" onClick={save} data-testid="client-email-save">Salva</button>
-        <button className="as-btn" onClick={() => { setEdit(false); setV(c.email || ""); }}>Annulla</button>
-      </>}
-      {err && <div className="ws-error" data-testid="client-email-error">{err}</div>}
-    </div>
+    <section className="ws-card" data-testid="client-email">
+      <h3 className="ws-h3">Contatti</h3>
+      {draft === null ? <>
+        {contactFields.map(({ key, label }) => (
+          <div className="ws-mail-row" key={key}>
+            <b>{label}</b>
+            <span data-testid={`client-${key}-value`}>{c[key] || <span className="ws-muted">—</span>}</span>
+          </div>
+        ))}
+        <button className="ws-link" onClick={begin} data-testid="client-email-edit">Modifica contatti</button>
+      </> : (
+        <form className="ws-send-form" onSubmit={save}>
+          {contactFields.map(({ key, label, ...inputProps }) => (
+            <label key={key} className="ws-send-form">
+              {label}
+              <input className="as-input" {...inputProps} value={draft[key]} disabled={busy}
+                onChange={(event) => setDraft({ ...draft, [key]: event.target.value })}
+                data-testid={`client-${key}-input`} />
+            </label>
+          ))}
+          <div className="ws-dl-actions">
+            <button className="as-btn as-btn-primary" type="submit" disabled={busy} data-testid="client-email-save">
+              {busy ? "Salvataggio…" : "Salva contatti"}
+            </button>
+            <button className="as-btn" type="button" disabled={busy} onClick={() => { setDraft(null); setErr(""); }}>Annulla</button>
+          </div>
+          {err && <div className="ws-error" role="alert" data-testid="client-email-error">{err}</div>}
+        </form>
+      )}
+    </section>
   );
 }
 
