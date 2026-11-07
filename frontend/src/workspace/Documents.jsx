@@ -3,7 +3,8 @@ import { navigateRows, markActiveRow, selectRowWithMouse } from "./keyboard";
 import { ws, errMsg, fmtDate } from "./api";
 import { Level } from "./RiskDashboard";
 import PriorityQrPdf from "./PriorityQrPdf";
-import DocumentReviewControl from "./DocumentReviewControl";
+import DocumentReviewControl, { reviewLabel } from "./DocumentReviewControl";
+import { FileSearch, Users, Files, FileCheck2, CircleHelp } from "lucide-react";
 
 function clientActionError(error) {
   if (error?.response?.status === 401) return "Accedi di nuovo e riprova.";
@@ -73,32 +74,61 @@ function Candidates({ aid, onDone, onCancel }) {
 
 export function DocCard({ d, selectable, selected, highlighted, onToggle, onOpen, onChanged }) {
   const [open, setOpen] = useState(false);
+  const [showShare, setShowShare] = useState(false);
   const associated = Boolean(d.client_id);
+  const flagged = d.flags?.length || 0;
   return (
-    <div className={`ws-doc ${["high", "medium", "low"].includes(d.risk_level) ? `ws-tone-${d.risk_level}` : ""} ${selected ? "sel" : ""}${highlighted ? " ws-doc-highlight" : ""}`} data-testid={`doc-${d.analysis_id}`} data-ws-nav-row data-ws-nav-key={d.analysis_id}>
-      <div className="ws-doc-head">
-        {selectable && <input type="checkbox" checked={selected} onChange={onToggle} data-testid={`doc-select-${d.analysis_id}`} aria-label="Seleziona" />}
-        <button className="ws-link" onClick={(event) => onOpen(d.analysis_id, event.currentTarget)} data-testid={`doc-open-${d.analysis_id}`} aria-current={highlighted ? "true" : undefined} data-document-title={d.analysis_id} data-ws-nav-target><b>{d.doc_type || d.filename}</b> <span className="ws-muted">{d.filename} · {fmtDate(d.created_at)}</span></button>
-        <Level level={d.risk_level} />
-      </div>
-      <DocumentReviewControl documentId={d.analysis_id} status={d.review_status} onChanged={onChanged} compact />
-      <div className="ws-doc-meta">
-        <div>
-          {d.client_name && <span>{`Cliente: ${d.client_name}${d.client_link === "auto" ? " (automatico)" : ""}`}</span>}
-          {!open && <>
-            {" "}
-            <button className="ws-link" onClick={() => setOpen(true)} data-testid={`doc-assign-${d.analysis_id}`}>
-              {associated ? "Cambia cliente" : "Scegli cliente"}
-            </button>
-          </>}
+    <article className={`ws-doc ws-document-card ${["high", "medium", "low"].includes(d.risk_level) ? `ws-tone-${d.risk_level}` : ""} ${selected ? "sel" : ""}${highlighted ? " ws-doc-highlight" : ""}`}
+      data-testid={`doc-${d.analysis_id}`} data-ws-nav-row data-ws-nav-key={d.analysis_id}>
+      <header className="ws-document-header">
+        <div className="ws-document-name">
+          {selectable && <input type="checkbox" checked={selected} onChange={onToggle}
+            data-testid={`doc-select-${d.analysis_id}`} aria-label={`Seleziona ${d.filename} per il confronto`} />}
+          <button className="ws-document-title" onClick={(event) => onOpen(d.analysis_id, event.currentTarget)}
+            data-testid={`doc-open-${d.analysis_id}`} aria-current={highlighted ? "true" : undefined}
+            data-document-title={d.analysis_id} data-ws-nav-target title="Apri report e controlli del documento">
+            <strong>{d.doc_type || "Documento"}</strong>
+            <span>{d.filename} · {fmtDate(d.created_at)}</span>
+          </button>
         </div>
-        <span role="status" className={associated ? "ws-ok" : "ws-muted"}>
-          {associated ? "Cliente associato" : "Nessun cliente associato"}
-        </span>
+        <div className="ws-document-risk">
+          <span className="ws-document-meta-label">Rischio rilevato dall'AI</span>
+          <Level level={d.risk_level} />
+        </div>
+      </header>
+      <div className="ws-document-summary">
+        <p><strong>Cliente:</strong> {d.client_name || "Non ancora associato"}</p>
+        <p><strong>Controlli AI:</strong> {flagged ? `${flagged} segnalazioni da esaminare` : "Nessuna criticità rilevata"}</p>
       </div>
-      {open && <Candidates aid={d.analysis_id} onCancel={() => setOpen(false)} onDone={() => { setOpen(false); onChanged(); }} />}
-      <PriorityQrPdf kind="document" itemId={d.analysis_id} testId={`document-qrpdf-${d.analysis_id}`} />
-    </div>
+      <div className="ws-document-review-row">
+        <div className="ws-document-review-context">
+          <span className="ws-document-meta-label">Verifica del professionista</span>
+          <span className="ws-muted">La valutazione AI non equivale al controllo umano.</span>
+        </div>
+        <DocumentReviewControl documentId={d.analysis_id} status={d.review_status} onChanged={onChanged} compact />
+      </div>
+      <div className="ws-document-actions" aria-label={`Azioni disponibili per ${d.filename}`}>
+        <button type="button" className="as-btn as-btn-primary" onClick={(event) => onOpen(d.analysis_id, event.currentTarget)}
+          data-testid={`doc-action-report-${d.analysis_id}`}>
+          <FileSearch size={16} aria-hidden="true" /> Apri report e verifica
+        </button>
+        <button type="button" className="as-btn" aria-expanded={open}
+          onClick={() => setOpen(value => !value)} data-testid={`doc-assign-${d.analysis_id}`}>
+          <Users size={16} aria-hidden="true" /> {associated ? "Cambia cliente" : "Associa cliente"}
+        </button>
+        <button type="button" className="as-btn" onClick={() => setShowShare(value => !value)}
+          aria-expanded={showShare} data-testid={`doc-share-${d.analysis_id}`}>
+          <Files size={16} aria-hidden="true" /> {showShare ? "Nascondi PDF e QR" : "PDF e QR protetto"}
+        </button>
+      </div>
+      {open && <Candidates aid={d.analysis_id} onCancel={() => setOpen(false)}
+        onDone={() => { setOpen(false); onChanged(); }} />}
+      {showShare && <div className="ws-document-share" data-testid={`doc-share-content-${d.analysis_id}`}>
+        <p className="ws-muted">Puoi scaricare un PDF della scheda o aprire un collegamento protetto tramite QR. Per consultarlo serve l'accesso autorizzato.</p>
+        <PriorityQrPdf kind="document" itemId={d.analysis_id}
+          testId={`document-qrpdf-${d.analysis_id}`} expandedInitially />
+      </div>}
+    </article>
   );
 }
 
@@ -143,7 +173,12 @@ export default function Documents({ highlightedId, listRef, onOpenDoc, onCompare
         <h2 className="ws-h2">Documenti</h2>
         <button className="btn btn-primary" disabled={sel.length < 2} onClick={() => onCompare(sel)} data-testid="compare-btn">Confronta documenti ({sel.length})</button>
       </div>
-      <p className="ws-muted">Seleziona da 2 a 10 documenti per il Multi-Document Audit. Il livello di rischio AI è distinto dalla verifica professionale.</p>
+      <p className="ws-muted">Qui trovi tutti i documenti analizzati. Apri il report per controllare i risultati, registrare la tua valutazione e correggere eventuali dati estratti.</p>
+      <div className="ws-documents-help" data-testid="documents-help">
+        <span><FileSearch size={17} aria-hidden="true" /> <strong>Apri report e verifica</strong> per controllare anomalie, dati e scadenze.</span>
+        <span><FileCheck2 size={17} aria-hidden="true" /> <strong>Stato verifica</strong> indica a che punto sei: non cambia il rischio AI.</span>
+        <span><CircleHelp size={17} aria-hidden="true" /> <strong>Seleziona le caselle</strong> di 2–10 documenti per confrontarli.</span>
+      </div>
       <div className="ws-searchbar" role="search" aria-label="Cerca documenti">
         <input className="as-input" type="search" value={query} onChange={(e) => onQueryChange(e.target.value)}
           placeholder="Cerca documento, cliente o testo" aria-label="Cerca nell'archivio documenti" data-testid="documents-search" />
