@@ -6,7 +6,7 @@ import {
   Upload, Zap, CreditCard, FileText, ScrollText, Building2, Landmark, Wallet,
   Bot, ShieldAlert, MessageSquare, Star, CheckCircle2, X, Send, Loader2,
   Download, ChevronRight, Bitcoin, LogIn, LogOut, User, Gift, BookOpen,
-  Sparkles, Copy, Play, Lock, Facebook, Linkedin, Youtube, Globe,
+  Sparkles, Copy, Play, Lock, Facebook, Linkedin, Instagram, Globe,
   ShieldCheck, Trash2, BadgeCheck, Ban, ChevronDown,
   Clock, AlertTriangle, Search, Rocket, Scale, FileSignature, TrendingUp,
   Users, Briefcase, Files, Server, ArrowRight, Mail, History, Cpu, UserCheck, FileDown, FileCode, Pencil, Bell, CalendarClock
@@ -492,12 +492,11 @@ function LanguageSwitcher() {
   );
 }
 
-// Social links reali dell'utente. Instagram/X rimossi finché non forniti (niente link morti).
 const SOCIALS = [
-  { name: "Facebook", Icon: Facebook, url: "https://www.facebook.com/FrancescoEllee" },
-  { name: "LinkedIn", Icon: Linkedin, url: "https://www.linkedin.com/in/francesco-e-l-l-e-20058920b/" },
-  { name: "YouTube", Icon: Youtube, url: "https://www.youtube.com/@MisteriSvelatix" },
-];
+  { name: "Facebook", Icon: Facebook, url: process.env.REACT_APP_DOCUANALYTICS_FACEBOOK_URL },
+  { name: "Instagram", Icon: Instagram, url: process.env.REACT_APP_DOCUANALYTICS_INSTAGRAM_URL },
+  { name: "LinkedIn", Icon: Linkedin, url: process.env.REACT_APP_DOCUANALYTICS_LINKEDIN_URL },
+].filter(({ url }) => url?.trim());
 
 const DOC_TYPES = [
   { id: "fattura", Icon: FileText },
@@ -2027,14 +2026,14 @@ function Footer({ onTopup, onGuide }) {
         </div>
         <p style={{ color: "var(--text-muted)", fontSize: ".82rem", marginTop: ".3rem" }}>{t("foot_desc")}</p>
 
-        <div className="socials" data-testid="social-links">
+        {SOCIALS.length > 0 && <div className="socials" data-testid="social-links">
           {SOCIALS.map(({ name, Icon, url }) => (
-            <a key={name} className="social-btn" href={url} target="_blank" rel="noreferrer"
+            <a key={name} className="social-btn" href={url.trim()} target="_blank" rel="noreferrer"
               aria-label={name} title={name} data-testid={`social-${name.toLowerCase().split(" ")[0]}`}>
               <Icon size={18} />
             </a>
           ))}
-        </div>
+        </div>}
 
         <div className="flex gap wrapf aic" style={{ justifyContent: "center", marginTop: "1rem" }}>
           <Link to="/blog" className="btn btn-sm btn-ghost" data-testid="footer-blog"><BookOpen size={14} /> {t("blog_link")}</Link>
