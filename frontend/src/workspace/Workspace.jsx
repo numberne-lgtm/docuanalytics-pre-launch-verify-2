@@ -11,12 +11,13 @@ import Documents from "./Documents";
 import Deadlines, { DeadlineList } from "./Deadlines";
 import { ClientList, Client360 } from "./Clients";
 import AuditView from "./AuditView";
+import DocumentReviewControl from "./DocumentReviewControl";
 import "../assistant/assistant.css";
 import "./workspace.css";
 
-const NAV = [["dashboard", "Dashboard", LayoutDashboard], ["clients", "Clienti", Users], ["documents", "Documenti", FileText], ["deadlines", "Scadenze", CalendarClock]];
+const NAV = [["dashboard", "Panoramica", LayoutDashboard], ["clients", "Clienti", Users], ["documents", "Documenti", FileText], ["deadlines", "Scadenze", CalendarClock]];
 
-function DocPanel({ aid, onClose, onStep, onOpenClient, reloadKey, onChanged }) {
+function DocPanel({ aid, onClose, onStep, onOpenClient, onLocate, reloadKey, onChanged }) {
   const [d, setD] = useState(null);
   const [err, setErr] = useState("");
   const [deleting, setDeleting] = useState(false);
@@ -72,6 +73,10 @@ function DocPanel({ aid, onClose, onStep, onOpenClient, reloadKey, onChanged }) 
           <>
             <div className={`ws-bar ws-panel-head ${["high", "medium", "low"].includes(d.risk_level) ? `ws-tone-${d.risk_level}` : ""}`}><h2 className="ws-h2" id="ws-doc-dialog-title">{d.doc_type || d.filename}</h2><Level level={d.risk_level} /></div>
             <p className="ws-muted">{d.filename}</p>
+            <div className="ws-report-quick-actions" aria-label="Azioni sul documento">
+              <DocumentReviewControl documentId={aid} status={d.review_status} onChanged={onChanged} />
+              <button type="button" className="as-btn" onClick={() => onLocate(aid)} data-testid="report-locate">Mostra in Documenti</button>
+            </div>
             <p>{d.summary}</p>
             {d.client_id ? <button className="ws-link" onClick={() => onOpenClient(d.client_id)} data-testid="doc-panel-client">Cliente: {d.client_name} →</button> : <p className="ws-muted">Nessun cliente associato (associalo da "Documenti").</p>}
             <h3 className="ws-h3">Controlli e red flag</h3>
@@ -102,6 +107,7 @@ export default function Workspace() {
 
 function WorkspaceView({ documentId }) {
   const [view, setView] = useState(documentId ? "documents" : "dashboard");
+  const [selectedDocument, setSelectedDocument] = useState(documentId);
   const [client, setClient] = useState(null);
   const [doc, setDoc] = useState(null);
   const [audit, setAudit] = useState(null);
@@ -130,6 +136,13 @@ function WorkspaceView({ documentId }) {
     );
   }
   const go = (v) => { setView(v); setClient(null); setAudit(null); setDoc(null); };
+  const showDocumentInArchive = (id) => {
+    setSelectedDocument(id);
+    setView("documents");
+    setClient(null);
+    setAudit(null);
+    setDoc(null);
+  };
   const titles = () => [...(documentListRef.current?.querySelectorAll("[data-document-title]") || [])];
   const openDocument = (id, trigger) => {
     documentTrigger.current = trigger || null;
@@ -166,15 +179,17 @@ function WorkspaceView({ documentId }) {
         <nav className="ws-nav" data-testid="workspace-nav">
           {NAV.map(([k, l, Icon]) => <button key={k} className={view === k ? "on" : ""} onClick={() => go(k)} data-testid={`ws-nav-${k}`}><Icon size={15} /> {l}</button>)}
         </nav>
-        {view === "dashboard" && <RiskDashboard onOpenDoc={openDocument} onOpenClient={openClient} reloadKey={reloadKey} listRef={priorityListRef} />}
+        {view === "dashboard" && <RiskDashboard onOpenDoc={openDocument} onOpenClient={openClient}
+          onGoDocuments={() => go("documents")} onGoDeadlines={() => go("deadlines")}
+          onChanged={reload} reloadKey={reloadKey} listRef={priorityListRef} />}
         {view === "clients" && (client ? <Client360 cid={client} onBack={() => { setFocusClient(client); setClient(null); }} onOpenDoc={openDocument} reloadKey={reloadKey} onChanged={reload} />
           : <ClientList focusClient={focusClient} onOpen={setClient} reloadKey={reloadKey} onChanged={reload} />)}
         {view === "documents" && (audit ? <AuditView ids={audit} onBack={() => setAudit(null)} onCredits={setCredits} />
-          : <Documents listRef={documentListRef} highlightedId={documentId} onOpenDoc={openDocument} onCompare={setAudit} reloadKey={reloadKey} onChanged={reload} />)}
+          : <Documents listRef={documentListRef} highlightedId={selectedDocument} onOpenDoc={openDocument} onCompare={setAudit} reloadKey={reloadKey} onChanged={reload} />)}
         {view === "deadlines" && <Deadlines reloadKey={reloadKey} onChanged={reload} />}
         <p className="ws-disclaimer">DocuAnalytics evidenzia dati e possibili anomalie: non sostituisce il commercialista, l'avvocato o il notaio.</p>
       </main>
-      {doc && <DocPanel key={doc} aid={doc} onClose={closeDocument} onStep={view === "documents" ? stepDocument : undefined} onOpenClient={openClient} reloadKey={reloadKey} onChanged={reload} />}
+      {doc && <DocPanel key={doc} aid={doc} onClose={closeDocument} onStep={view === "documents" ? stepDocument : undefined} onOpenClient={openClient} onLocate={showDocumentInArchive} reloadKey={reloadKey} onChanged={reload} />}
       <WorkspaceCopilot analysisId={doc} clientId={client} />
     </div>
   );
