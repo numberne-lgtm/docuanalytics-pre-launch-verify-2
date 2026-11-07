@@ -233,8 +233,11 @@ def build_workspace_router(db, get_current_user, llm_key, default_notify_days, s
 
     async def _deadlines(uid, flt=None):
         q = {"user_id": uid, "active": True, **(flt or {})}
-        mailable = {c["client_id"] async for c in db.clients.find({"user_id": uid, "email": {"$nin": [None, ""]}}, {"_id": 0, "client_id": 1})}
-        return [_dl_out(x) | {"client_has_email": x.get("client_id") in mailable}
+        clients = {c["client_id"]: c async for c in db.clients.find(
+            {"user_id": uid}, {"_id": 0, "client_id": 1, "name": 1, "email": 1})}
+        return [_dl_out(x) | {
+                    "client_name": (clients.get(x.get("client_id")) or {}).get("name"),
+                    "client_has_email": bool((clients.get(x.get("client_id")) or {}).get("email"))}
                 async for x in db.reminders.find(q, {"_id": 0}).sort("due_date", 1)
                 if core.show_operational_deadline(x)]
 
