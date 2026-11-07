@@ -403,3 +403,14 @@ section[id]{scroll-margin-top:84px}
 .cookie-preferences p{margin:.4rem 0 .75rem}
 .cookie-preferences a{color:#7dd3fc}
 .cookie-preferences .btn{justify-content:center}
+
+/* Pre-launch legal information: distinct review notices, legible navigation and mobile layout. */
+.pv-lead{color:var(--text-secondary);font-size:1rem;line-height:1.6;margin:.5rem 0 1rem}
+.pv-legal-nav{margin-top:1.5rem}
+.pv-legal-links{display:flex;flex-wrap:wrap;gap:.5rem .95rem;margin-top:.65rem}
+.pv-legal-links a{display:inline-block;padding:.3rem .1rem;font-weight:600}
+.pv-pending{border-left:3px solid #ffd38a;padding:.35rem .7rem;background:#ffd6000d;color:var(--text-primary)!important}
+.pv-inline-icon{display:inline;vertical-align:-.2em;margin-right:.15rem}
+.pv-sec strong{color:var(--text-primary)}
+.pv-upd{color:var(--text-secondary)}
+@media(max-width:560px){.pv-page{padding-top:1.4rem}.pv-page h1{font-size:1.9rem}.pv-sec{padding:1rem}.pv-draft{align-items:flex-start}}
