@@ -65,7 +65,7 @@ function Row({ d, onChanged, onOpenDoc }) {
   const category = d.status === "to_verify" ? "Data da controllare"
     : d.status === "detected" ? "Data rilevata dall'AI" : "Data confermata";
   return (
-    <article className={"ws-dl ws-deadline-card" + (["high","medium","low"].includes(tone) ? " ws-tone-" + tone : "")}
+    <div className={"ws-dl ws-deadline-card" + (["high","medium","low"].includes(tone) ? " ws-tone-" + tone : "")}
       data-ws-nav-row data-ws-nav-key={d.reminder_id} tabIndex={0} role="group"
       aria-label={"Scadenza: " + d.label} data-testid={"deadline-" + d.reminder_id}>
       <header className="ws-deadline-head">
@@ -182,7 +182,7 @@ function Row({ d, onChanged, onOpenDoc }) {
         </button>
       </section>}
       {err && <div className="ws-error" role="alert">{err}</div>}
-    </article>
+    </div>
   );
 }
 
