@@ -40,7 +40,7 @@ export default function RiskDashboard({ onOpenDoc, onOpenClient, reloadKey, list
       <p className="ws-muted">Basata solo su red flag, controlli e scadenze rilevati nelle tue analisi. Non sostituisce la verifica del professionista.</p>
       <div className="ws-kpis">
         {KPIS.map(([k, l]) => (
-          <div key={k} className={`ws-kpi ${k === "high" || k === "overdue" ? "kpi-red" : k === "to_verify" ? "kpi-orange" : ""}`} data-testid={`kpi-${k}`}>
+          <div key={k} className={`ws-kpi ${k === "high" || k === "overdue" ? "kpi-red" : k === "to_verify" || k === "upcoming" ? "kpi-orange" : k === "no_issues" ? "kpi-green" : ""}`} data-testid={`kpi-${k}`}>
             <b>{c[k]}</b><span>{l}</span>
           </div>
         ))}
@@ -53,7 +53,7 @@ export default function RiskDashboard({ onOpenDoc, onOpenClient, reloadKey, list
       {data.priorities.length === 0 && <p className="ws-muted" data-testid="priorities-empty">Nessuna priorità: nessuna criticità o scadenza rilevata.</p>}
       <div className="ws-list" data-testid="priorities-list" data-ws-nav-list ref={listRef} onKeyDown={navigateRows} onFocus={markActiveRow} onMouseDown={markActiveRow} onClick={selectRowWithMouse}>
         {data.priorities.map((p, i) => (
-          <div key={`${p.type}:${p.type === "document" ? p.analysis_id : p.reminder_id}`} className="ws-priority-item" data-ws-nav-row data-ws-nav-key={`${p.type}:${p.type === "document" ? p.analysis_id : p.reminder_id}`}>
+          <div key={`${p.type}:${p.type === "document" ? p.analysis_id : p.reminder_id}`} className={`ws-priority-item ${["high", "medium", "low"].includes(p.level) ? `ws-tone-${p.level}` : ""}`} data-ws-nav-row data-ws-nav-key={`${p.type}:${p.type === "document" ? p.analysis_id : p.reminder_id}`}>
             <button className="ws-row ws-priority-open" data-testid={`priority-${i}`}
               data-ws-nav-target onClick={(event) => (p.analysis_id ? onOpenDoc(p.analysis_id, event.currentTarget) : p.client_id && onOpenClient(p.client_id))}>
               <span className="ws-priority-number" aria-label={`Posizione ${i + 1}`} style={{ minWidth: "2.5rem", textAlign: "center", fontWeight: 800, fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>#{i + 1}</span>
