@@ -82,7 +82,7 @@ export default function PriorityShare() {
             <p className="ws-muted">Dopo l'accesso, riapri questo link o scansiona di nuovo il QR.</p>
           </div>
         ) : !allowed ? <p className="ws-error">Collegamento non valido.</p> : (
-          <div className="ws-doc">
+          <div className={`ws-doc ${priority && ["high", "medium", "low"].includes(priority.level) ? `ws-tone-${priority.level}` : ""}`}>
             {error && <p className="ws-error" role="alert">{error}</p>}
             {!priority && !error && <p className="ws-muted">Caricamento priorità…</p>}
             {priority && (
