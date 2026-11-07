@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { navigateRows } from "./keyboard";
+import { navigateRows, markActiveRow, selectRowWithMouse } from "./keyboard";
 import PriorityQrPdf from "./PriorityQrPdf";
 import { ws, errMsg, LEVEL, dueText } from "./api";
 
@@ -11,7 +11,7 @@ export const Level = ({ level }) => {
   return <span className={`ws-level ${l.cls}`} data-testid={`level-${level}`}>{l.dot} {l.label}</span>;
 };
 
-export default function RiskDashboard({ onOpenDoc, onOpenClient, reloadKey }) {
+export default function RiskDashboard({ onOpenDoc, onOpenClient, reloadKey, listRef }) {
   const [data, setData] = useState(null);
   const [err, setErr] = useState("");
   useEffect(() => { ws.get("/overview").then(setData).catch((e) => setErr(errMsg(e))); }, [reloadKey]);
@@ -51,9 +51,9 @@ export default function RiskDashboard({ onOpenDoc, onOpenClient, reloadKey }) {
       <h3 className="ws-h3">Priorità ({data.priorities.length})</h3>
       {readErr && <p className="ws-error" role="alert">{readErr}</p>}
       {data.priorities.length === 0 && <p className="ws-muted" data-testid="priorities-empty">Nessuna priorità: nessuna criticità o scadenza rilevata.</p>}
-      <div className="ws-list" data-testid="priorities-list" onKeyDown={navigateRows}>
+      <div className="ws-list" data-testid="priorities-list" data-ws-nav-list ref={listRef} onKeyDown={navigateRows} onFocus={markActiveRow} onMouseDown={markActiveRow} onClick={selectRowWithMouse}>
         {data.priorities.map((p, i) => (
-          <div key={`${p.type}:${p.type === "document" ? p.analysis_id : p.reminder_id}`} className="ws-priority-item" data-ws-nav-row>
+          <div key={`${p.type}:${p.type === "document" ? p.analysis_id : p.reminder_id}`} className="ws-priority-item" data-ws-nav-row data-ws-nav-key={`${p.type}:${p.type === "document" ? p.analysis_id : p.reminder_id}`}>
             <button className="ws-row ws-priority-open" data-testid={`priority-${i}`}
               data-ws-nav-target onClick={(event) => (p.analysis_id ? onOpenDoc(p.analysis_id, event.currentTarget) : p.client_id && onOpenClient(p.client_id))}>
               <span className="ws-priority-number" aria-label={`Posizione ${i + 1}`} style={{ minWidth: "2.5rem", textAlign: "center", fontWeight: 800, fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>#{i + 1}</span>
