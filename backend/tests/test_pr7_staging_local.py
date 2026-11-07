@@ -156,3 +156,27 @@ def test_local_metadata_reads_and_calendar_tokens_stay_blocked(staged):
                          ("POST", "/clients/pr7-client-a/calendar/feed"),
                          ("GET", "/feed/fake-token.ics"), ("POST", "/studio/logo")):
         assert staged.request(method, "/api/workspace" + path, headers=a).status_code == 503
+
+
+def test_pdf_simulation_spends_only_the_signed_in_demo_accounts_credit(staged):
+    a, b = _login(staged, "a"), _login(staged, "b")
+    path = "/api/pr7-staging/analyze"
+
+    def credits(headers):
+        return staged.get("/api/auth/me", headers=headers).json()["user"]["credits"]
+
+    assert credits(a) == credits(b) == 15
+    payload = {"filename": "contratto-prova.pdf", "file_base64": "data:application/pdf;base64,JVBERi0xLjcK"}
+    assert staged.post(path, json=payload).status_code == 401
+    assert staged.post(path, headers=a, json={**payload, "file_base64": "YWJj"}).status_code == 400
+    assert credits(a) == 15
+
+    response = staged.post(path, headers=a, json=payload)
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["credits"] == credits(a) == 14
+    assert credits(b) == 15
+    assert "simulazione" in body["result"]["doc_type"]
+    detail = f'/api/workspace/documents/{body["analysis_id"]}'
+    assert staged.get(detail, headers=a).json()["filename"] == payload["filename"]
+    assert staged.get(detail, headers=b).status_code == 404

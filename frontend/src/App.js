@@ -688,12 +688,17 @@ function Home() {
 
   const analyze = async () => {
     if (!file) return;
-    if (user.credits <= 0) { notify(t("n_credits_out")); openPricing("credits_out"); return; }
+    if (user.credits <= 0) {
+      if (user.synthetic_analysis) notify("Crediti di prova esauriti.");
+      else { notify(t("n_credits_out")); openPricing("credits_out"); }
+      return;
+    }
     setAnalyzing(true); setResult(null); setCompare(null); setStage(0);
     const timers = [0, 1, 2, 3].map((i) => setTimeout(() => setStage(i), i * 700));
     try {
       const b64 = await toBase64(file);
-      const { data } = await axios.post(`${API}/analyze`, {
+      const path = user.synthetic_analysis ? "pr7-staging/analyze" : "analyze";
+      const { data } = await axios.post(`${API}/${path}`, {
         user_id: user.user_id, doc_type: docType, filename: file.name,
         mime_type: file.type || "application/octet-stream", file_base64: b64, model: aiModel,
       });
@@ -705,7 +710,7 @@ function Home() {
     } catch (e) {
       const msg = e?.response?.data?.detail || t("n_analyze_fail");
       notify(msg);
-      if (e?.response?.status === 402) setPricingOpen(true);
+      if (e?.response?.status === 402 && !user.synthetic_analysis) setPricingOpen(true);
     } finally {
       timers.forEach(clearTimeout); setAnalyzing(false);
     }
@@ -793,7 +798,9 @@ function Home() {
         <section className="section" id="upload">
           <div className="accent-bar" />
           <h2 className="section-title">{t("up_title")}</h2>
-          <p className="section-sub mb1">{t("up_sub")}</p>
+          <p className="section-sub mb1">{user.synthetic_analysis
+            ? "Staging locale: usa un contratto fittizio in PDF (max 10 MB). Ogni prova usa un credito e restituisce un risultato simulato."
+            : t("up_sub")}</p>
 
           <div className="chips mb1">
             {DOC_TYPES.map(({ id, Icon }) => (
@@ -854,7 +861,7 @@ function Home() {
         </section>
 
         {result && <Results key={analysisId} result={result} analysisId={analysisId} notify={notify} aiModel={aiModel} provider={usedProvider}
-          compare={compare} comparing={comparing} onCompare={compareWithOther} canCompare={!!file}
+          compare={compare} comparing={comparing} onCompare={compareWithOther} canCompare={!!file && !user.synthetic_analysis}
           userEmail={user.email}
           credits={user.credits} onTopup={() => openPricing("after_analysis")}
           onAgain={() => { setFile(null); setResult(null); setStage(-1); scrollToId("upload"); }} />}

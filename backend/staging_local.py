@@ -4,16 +4,20 @@ This imports the actual workspace router, uses an isolated synthetic Mongo datab
 and refuses external billing/AI/email routes. It is NOT the full production server.
 It must never be hosted publicly or connected to a production DB.
 """
+import base64
+import binascii
 import os
 import re
 import secrets
 import uuid
+from datetime import datetime, timezone
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse, JSONResponse
 from motor.motor_asyncio import AsyncIOMotorClient
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+from pymongo import ReturnDocument
 from workspace.router import build_workspace_router
 
 if os.environ.get("APP_ENV") != "test" or os.environ.get("PR7_LOCAL_STAGING") != "1":
@@ -35,6 +39,8 @@ PUBLIC_ORIGIN = "http://127.0.0.1:8765"
 DB_NAME = "pr7_synthetic_local_only"
 USER_A = "pr7-synthetic-user-a"
 USER_B = "pr7-synthetic-user-b"
+DEMO_ANALYSIS_CREDITS = 15
+MAX_PDF_BYTES = 10 * 1024 * 1024
 DEMO_PASSWORD = "synthetic-local-only"  # Public fake credentials, never a real secret
 DEMO_EMAILS = {
     "studio-a@demo.invalid": USER_A,
@@ -80,7 +86,7 @@ async def deny_external_or_unreviewed_calls(request, call_next):
                    for pattern in SAFE_WORKSPACE.get(request.method, [])):
             return JSONResponse({"detail": "Non disponibile nello staging locale sintetico."}, status_code=503)
     elif request.url.path.startswith("/api/") and request.url.path not in (
-        "/api/auth/login", "/api/auth/me", "/api/session", "/api/pr7-staging/status"
+        "/api/auth/login", "/api/auth/me", "/api/session", "/api/pr7-staging/status", "/api/pr7-staging/analyze"
     ) and not re.fullmatch(r"/api/session/[A-Za-z0-9-]{1,128}", request.url.path):
         return JSONResponse({"detail": "Servizio esterno disattivato in staging."}, status_code=503)
     response = await call_next(request)
@@ -106,12 +112,7 @@ async def authenticated_user(request: Request):
     uid = sessions.get(token)
     if not uid:
         raise HTTPException(401, "Accesso richiesto allo staging locale")
-    return {
-        "user_id": uid,
-        "email": next(k for k, v in DEMO_EMAILS.items() if v == uid),
-        "credits": 0,
-        "name": "Studio sintetico A" if uid == USER_A else "Studio sintetico B",
-    }
+    return await _user_details(uid)
 
 
 async def disabled_email(*args, **kwargs):
@@ -139,10 +140,12 @@ async def local_login(payload: LocalLogin):
 
 
 async def _user_details(uid):
+    account = await db.users.find_one({"user_id": uid}, {"demo_analysis_credits": 1}) or {}
     return {
         "user_id": uid, "email": next(k for k, v in DEMO_EMAILS.items() if v == uid),
         "name": "Studio sintetico A" if uid == USER_A else "Studio sintetico B",
-        "credits": 0,
+        "credits": account.get("demo_analysis_credits", 0),
+        "synthetic_analysis": True,
     }
 
 
@@ -165,6 +168,51 @@ async def local_session(uid: str, request: Request):
     return await _user_details(uid)
 
 
+class LocalAnalysis(BaseModel):
+    filename: str = Field(min_length=1, max_length=255)
+    file_base64: str = Field(max_length=4 * ((MAX_PDF_BYTES + 2) // 3) + 128)
+
+
+@app.post("/api/pr7-staging/analyze")
+async def local_analyze(payload: LocalAnalysis, request: Request):
+    uid = (await authenticated_user(request))["user_id"]
+    encoded = payload.file_base64
+    if encoded.startswith("data:"):
+        encoded = encoded.partition(",")[2]
+    try:
+        pdf = base64.b64decode(encoded, validate=True)
+    except (ValueError, binascii.Error):
+        raise HTTPException(400, "File non leggibile.")
+    if len(pdf) > MAX_PDF_BYTES:
+        raise HTTPException(413, "Il PDF supera 10 MB.")
+    if not payload.filename.lower().endswith(".pdf") or not pdf.startswith(b"%PDF-"):
+        raise HTTPException(400, "Per la simulazione carica un contratto PDF.")
+    account = await db.users.find_one_and_update(
+        {"user_id": uid, "demo_analysis_credits": {"$gt": 0}},
+        {"$inc": {"demo_analysis_credits": -1}},
+        return_document=ReturnDocument.AFTER,
+    )
+    if account is None:
+        raise HTTPException(402, "Crediti di prova esauriti.")
+    aid = str(uuid.uuid4())
+    result = {
+        "doc_type": "Contratto PDF · simulazione",
+        "summary": "Caricamento locale riuscito. Il contenuto non è stato analizzato.",
+        "fields": [{"label": "Dimensione del file", "value": f"{len(pdf)} byte"}],
+        "audit": [],
+    }
+    try:
+        await db.analyses.insert_one({
+            "analysis_id": aid, "user_id": uid, "filename": payload.filename,
+            "created_at": datetime.now(timezone.utc).isoformat(), "ws_synced": True,
+            "risk_level": "low", "result": result,
+        })
+    except Exception:
+        await db.users.update_one({"user_id": uid}, {"$inc": {"demo_analysis_credits": 1}})
+        raise
+    return {"analysis_id": aid, "result": result, "credits": account["demo_analysis_credits"]}
+
+
 @app.get("/api/pr7-staging/status")
 async def local_status():
     return {"environment": "synthetic-local", "billable_integrations": False,
@@ -183,6 +231,10 @@ async def seed_only_synthetic_data():
             {"$setOnInsert": {"user_id": uid, "email": f"studio-{label.lower()}@demo.invalid",
                               "credits": 0, "name": f"Studio sintetico {label}"}},
             upsert=True,
+        )
+        await db.users.update_one(
+            {"user_id": uid, "demo_analysis_credits": {"$exists": False}},
+            {"$set": {"demo_analysis_credits": DEMO_ANALYSIS_CREDITS}},
         )
         await db.clients.update_one(
             {"user_id": uid, "client_id": cid},

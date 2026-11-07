@@ -1,6 +1,6 @@
 # Staging locale PR #7 — 0 crediti Emergent
 
-Questa configurazione consente una verifica **sul proprio computer**, senza account, chiavi o crediti Emergent. NON è un server pubblico, NON è la produzione e NON esegue AI, invii email, pagamenti, upload o richieste esterne.
+Questa configurazione consente una verifica **sul proprio computer**, senza account, chiavi o crediti Emergent. NON è un server pubblico, NON è la produzione e NON esegue AI, invii email, pagamenti o richieste esterne. Il caricamento di PDF fittizi è disponibile soltanto per la simulazione locale.
 
 ## Requisiti
 
@@ -53,7 +53,7 @@ I documenti e i clienti creati in questo ambiente sono tutti inventati e salvati
 - L'applicazione e MongoDB sono collegati soltanto alla rete Docker `internal`, senza accesso diretto alla rete esterna. Il proxy si collega a due reti, ma non ha credenziali né altri upstream configurati.
 - Lo staging applica `Content-Security-Policy` che vieta richieste browser verso servizi esterni (inclusi tracker e script di terze parti).
 - La modalità è `APP_ENV=test`, `PR7_LOCAL_STAGING=1`; il server blocca la presenza di chiavi AI, Stripe, PayPal e Resend.
-- Gli endpoint AI, pagamenti, invii email, upload, audit a pagamento e amministrazione rispondono con HTTP 503.
+- Gli endpoint AI, pagamenti, invii email, audit a pagamento e amministrazione rispondono con HTTP 503.
 - Le schede delle priorità, le scadenze, i clienti, i QR e i PDF usano **il router reale `backend/workspace/router.py`** e il database MongoDB fittizio.
 - Non usare `docker compose -f compose.pr7.yml up` in server remoti o host condivisi; non cambiare la porta in `0.0.0.0`.
 - I QR generati riportano un URL localhost. Per questo non sono scansionabili direttamente da un telefono esterno: il test della decodifica QR è coperto dalla CI.
@@ -86,7 +86,7 @@ La PR può restare in bozza fino alla verifica delle condizioni DPA/subprocessor
 
 Sul Mac sono stati osservati login sintetico, dashboard, dettaglio priorità, QR, download PDF e calendario ICS. Il PDF presentava etichette sovrapposte: i metadati ora usano blocchi verticali e livelli in italiano.
 
-Lo staging consente ora creazione, modifica ed eliminazione di clienti e scadenze sintetiche e associazione dei documenti, sempre tramite il router reale con isolamento per account. È consentita anche la lettura della firma studio e dello stato dell'abbonamento calendario. La generazione di link calendario, gli upload e gli invii email restano bloccati; i giorni di avviso possono essere salvati ma nessuno scheduler email è attivo.
+Lo staging consente ora creazione, modifica ed eliminazione di clienti e scadenze sintetiche e associazione dei documenti, sempre tramite il router reale con isolamento per account. È consentita anche la lettura della firma studio e dello stato dell'abbonamento calendario. La generazione di link calendario e gli invii email restano bloccati; i giorni di avviso possono essere salvati ma nessuno scheduler email è attivo.
 
 Il precedente errore HTTP 503 sul salvataggio delle scadenze proveniva dalla allowlist locale, non dimostrava un difetto dell'endpoint di produzione. Il collaudo manuale dei salvataggi va ripetuto dopo l'aggiornamento.
 
@@ -99,3 +99,6 @@ bash scripts/pr7_local.sh start
 ```
 
 Lo stop conserva il volume sintetico. Non usare `clean` per aggiornare.
+
+
+Per provare il caricamento, accedi con uno dei due account sintetici e usa **Analizza documento** con un contratto PDF fittizio (massimo 10 MB). Ogni account parte con 15 crediti locali. Il caricamento riuscito usa un credito e crea una scheda simulata in **Documenti**. Il simulatore controlla il formato e le dimensioni, scarta i byte del file e salva solo nome, dimensione e risultato fittizio.
