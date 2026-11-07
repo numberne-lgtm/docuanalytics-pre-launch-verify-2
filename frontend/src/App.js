@@ -1063,7 +1063,7 @@ function Results({ result, analysisId, notify, credits, onTopup, onAgain, aiMode
 
       <div className="after-cta glass pad mb1" data-testid="results-workspace-cta">
         <p className="section-sub">{t("results_workspace_desc")}</p>
-        <Link to={analysisId ? `/area/documenti/${encodeURIComponent(analysisId)}` : "/area"} className="btn btn-primary btn-lg" data-testid="results-workspace-link">
+        <Link to={analysisId ? `/area/panoramica/${encodeURIComponent(analysisId)}` : "/area"} className="btn btn-primary btn-lg" data-testid="results-workspace-link">
           <Briefcase size={20} aria-hidden="true" /> {t("results_workspace")} <ArrowRight size={18} aria-hidden="true" />
         </Link>
       </div>
@@ -2417,6 +2417,7 @@ function App() {
           <Route path="/area/priorita/:kind/:itemId" element={<PriorityShare />} />
           <Route path="/area" element={<Workspace />} />
           <Route path="/area/documenti/:analysisId" element={<Workspace />} />
+          <Route path="/area/panoramica/:analysisId" element={<Workspace />} />
           <Route path="/admin/privacy" element={<AdminPrivacy />} />
           <Route path="*" element={<Home />} />
         </Routes>

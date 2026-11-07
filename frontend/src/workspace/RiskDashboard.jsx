@@ -12,13 +12,22 @@ export const Level = ({ level }) => {
   return <span className={`ws-level ${l.cls}`} data-testid={`level-${level}`}>{l.dot} {l.label}</span>;
 };
 
-export default function RiskDashboard({ onOpenDoc, onOpenClient, onGoDocuments, onGoDeadlines, onChanged, reloadKey, listRef }) {
+export default function RiskDashboard({ onOpenDoc, onOpenClient, onGoDocuments, onGoDeadlines, onLocateDocument, highlightedId, onChanged, reloadKey, listRef }) {
   const [data, setData] = useState(null);
   const [err, setErr] = useState("");
   useEffect(() => { ws.get("/overview").then(setData).catch((e) => setErr(errMsg(e))); }, [reloadKey]);
   const [saving, setSaving] = useState({});
   const [readErr, setReadErr] = useState("");
   const [showAll, setShowAll] = useState(false);
+  const [requestedDoc, setRequestedDoc] = useState(null);
+  useEffect(() => {
+    if (!highlightedId) { setRequestedDoc(null); return; }
+    let active = true;
+    ws.get(`/documents/${highlightedId}`).then((doc) => {
+      if (active) setRequestedDoc(doc);
+    }).catch(() => { if (active) setRequestedDoc(null); });
+    return () => { active = false; };
+  }, [highlightedId, reloadKey]);
   const markRead = async (p) => {
     const itemId = p.type === "document" ? p.analysis_id : p.reminder_id;
     const key = `${p.type}:${itemId}`;
@@ -39,11 +48,31 @@ export default function RiskDashboard({ onOpenDoc, onOpenClient, onGoDocuments, 
   const priorities = showAll ? data.priorities : data.priorities.filter(
     (p) => p.type !== "document" || p.review_status !== "verified"
   );
-  const latest = data.recent_documents || [];
+  const recent = data.recent_documents || [];
+  const highlightedDoc = highlightedId
+    ? (recent.find((d) => d.analysis_id === highlightedId) || (requestedDoc?.analysis_id === highlightedId ? requestedDoc : null))
+    : null;
+  const latest = highlightedDoc
+    ? [highlightedDoc, ...recent.filter((d) => d.analysis_id !== highlightedId)].slice(0, 6)
+    : recent;
   return (
     <div data-testid="risk-dashboard">
       <h2 className="ws-h2">Panoramica dello studio</h2>
       <p className="ws-muted">Documenti, attività da gestire e scadenze in un unico posto. I risultati automatici non sostituiscono la verifica professionale.</p>
+      {highlightedDoc && (
+        <section className="ws-new-analysis" data-testid="overview-new-analysis" aria-label="Documento appena analizzato">
+          <div className="ws-new-analysis-text">
+            <span className="ws-new-analysis-caption">✓ Documento appena analizzato</span>
+            <strong>{highlightedDoc.doc_type || highlightedDoc.filename}</strong>
+            <span>{highlightedDoc.filename} · {highlightedDoc.client_name || "Cliente non associato"}</span>
+          </div>
+          <Level level={highlightedDoc.risk_level} />
+          <div className="ws-new-analysis-actions">
+            <button type="button" className="as-btn as-btn-primary" onClick={(event) => onOpenDoc(highlightedDoc.analysis_id, event.currentTarget)} data-testid="overview-new-open">Apri report</button>
+            <button type="button" className="as-btn" onClick={() => onLocateDocument(highlightedDoc.analysis_id)} data-testid="overview-new-to-documents">Mostra in Documenti</button>
+          </div>
+        </section>
+      )}
       <div className="ws-overview-actions">
         <button className="as-btn" type="button" onClick={onGoDocuments} data-testid="overview-all-documents">Apri archivio documenti</button>
         <button className="as-btn" type="button" onClick={onGoDeadlines} data-testid="overview-all-deadlines">Gestisci scadenze</button>
@@ -100,7 +129,8 @@ export default function RiskDashboard({ onOpenDoc, onOpenClient, onGoDocuments, 
         onMouseDown={markActiveRow} onClick={selectRowWithMouse}>
         {latest.length === 0 && <p className="ws-muted">Nessun documento analizzato.</p>}
         {latest.map((d) => (
-          <div key={d.analysis_id} className={`ws-recent-item ws-tone-${d.risk_level || "low"}`}
+          <div key={d.analysis_id} className={`ws-recent-item ws-tone-${d.risk_level || "low"}${d.analysis_id === highlightedId ? " ws-recent-highlight" : ""}`}
+            data-testid={d.analysis_id === highlightedId ? "overview-recent-highlight" : undefined}
             data-ws-nav-row data-ws-nav-key={d.analysis_id}>
             <button className="ws-row ws-recent-open" type="button" data-ws-nav-target
               onClick={(event) => onOpenDoc(d.analysis_id, event.currentTarget)}

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useLocation } from "react-router-dom";
 import axios from "axios";
 import { LayoutDashboard, Users, FileText, CalendarClock, X, Zap } from "lucide-react";
 import { ws, errMsg, hasToken } from "./api";
@@ -104,12 +104,14 @@ function DocPanel({ aid, onClose, onStep, onOpenClient, onLocate, reloadKey, onC
 
 export default function Workspace() {
   const { analysisId } = useParams();
+  const location = useLocation();
   const documentId = /^[A-Za-z0-9-]{1,128}$/.test(analysisId || "") ? analysisId : null;
-  return <WorkspaceView key={documentId || "dashboard"} documentId={documentId} />;
+  const initialView = location.pathname.startsWith("/area/panoramica/") ? "dashboard" : documentId ? "documents" : "dashboard";
+  return <WorkspaceView key={`${initialView}:${documentId || "dashboard"}`} documentId={documentId} initialView={initialView} />;
 }
 
-function WorkspaceView({ documentId }) {
-  const [view, setView] = useState(documentId ? "documents" : "dashboard");
+function WorkspaceView({ documentId, initialView }) {
+  const [view, setView] = useState(initialView);
   const [selectedDocument, setSelectedDocument] = useState(documentId);
   const [documentQuery, setDocumentQuery] = useState("");
   const [documentFilter, setDocumentFilter] = useState("all");
@@ -191,6 +193,7 @@ function WorkspaceView({ documentId }) {
         </nav>
         {view === "dashboard" && <RiskDashboard onOpenDoc={openDocument} onOpenClient={openClient}
           onGoDocuments={() => go("documents")} onGoDeadlines={() => go("deadlines")}
+          onLocateDocument={showDocumentInArchive} highlightedId={initialView === "dashboard" ? documentId : null}
           onChanged={reload} reloadKey={reloadKey} listRef={priorityListRef} />}
         {view === "clients" && (client ? <Client360 cid={client} onBack={() => { setFocusClient(client); setClient(null); }} onOpenDoc={openDocument} reloadKey={reloadKey} onChanged={reload} />
           : <ClientList focusClient={focusClient} onOpen={setClient} reloadKey={reloadKey} onChanged={reload} />)}

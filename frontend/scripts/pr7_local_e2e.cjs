@@ -137,7 +137,15 @@ async function loginFromPriority(page, path, email) {
     assert.equal(uploadResponse.status(), 200);
     const { analysis_id: newDoc } = await uploadResponse.json();
     await page.getByTestId("results-workspace-link").click();
-    await page.waitForURL(origin + "/area/documenti/" + newDoc);
+    await page.waitForURL(origin + "/area/panoramica/" + newDoc);
+    await page.getByTestId("risk-dashboard").waitFor();
+    const callout = page.getByTestId("overview-new-analysis");
+    await callout.waitFor();
+    assert((await callout.innerText()).includes("contratto-flusso-area.pdf"));
+    assert.equal(await page.getByTestId("overview-recent-highlight").count(), 1);
+    assert.equal(await page.getByTestId("overview-recent-list").locator("[data-ws-nav-row]").first().getAttribute("data-ws-nav-key"), newDoc);
+    // The analysis is visible in the overview, not automatically forced into risk priorities.
+    await page.getByTestId("overview-new-to-documents").click();
     const documents = page.getByTestId("documents-view");
     const highlighted = documents.getByTestId(`doc-${newDoc}`);
     await highlighted.waitFor();
@@ -199,6 +207,9 @@ async function loginFromPriority(page, path, email) {
     await page.getByTestId("doc-panel").getByText("contratto-flusso-area.pdf", { exact: true }).waitFor();
 
     await page.reload();
+    await page.getByTestId("risk-dashboard").waitFor();
+    await page.getByTestId("overview-new-analysis").waitFor();
+    await page.getByTestId("overview-new-to-documents").click();
     await highlighted.waitFor();
     assert(await highlighted.evaluate(el => el.classList.contains("ws-doc-highlight")));
     await page.goto(origin + "/area");
@@ -218,6 +229,10 @@ async function loginFromPriority(page, path, email) {
     assert(await originalTitle.evaluate(el => el === document.activeElement));
     assert(await documents.getByTestId(`doc-select-${newDoc}`).isChecked());
 
+    // The former document-specific deep link continues to open the archive.
+    await page.goto(origin + "/area/documenti/" + newDoc);
+    await highlighted.waitFor();
+    assert(await highlighted.evaluate(el => el.classList.contains("ws-doc-highlight")));
     const headers = { Authorization: "Bearer " + token };
     const clientResponse = await page.request.post(origin + "/api/workspace/clients", { headers, data: { name: "Zeta test tastiera" } });
     assert.equal(clientResponse.status(), 200);
