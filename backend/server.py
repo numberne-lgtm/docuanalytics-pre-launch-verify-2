@@ -180,16 +180,11 @@ async def _auth_user_id(request: Request, body_user_id: Optional[str]) -> str:
       so nobody can act on a registered account by guessing its UUID."""
     auth = request.headers.get("Authorization", "")
     if auth.startswith("Bearer "):
-        token = auth[7:]
-        try:
-            payload = pyjwt.decode(token, JWT_SECRET, algorithms=[JWT_ALG])
-            return payload["sub"]
-        except pyjwt.PyJWTError:
-            raise HTTPException(401, "Sessione non valida. Effettua di nuovo l'accesso.")
+        return (await get_current_user(request))["user_id"]
     if not body_user_id:
         raise HTTPException(400, "Sessione mancante.")
     u = await db.users.find_one({"user_id": body_user_id}, {"_id": 0})
-    if u and (u.get("email") or u.get("password_hash")):
+    if u and (u.get("email") or u.get("password_hash") or u.get("status") == "deleted"):
         raise HTTPException(401, "Accesso richiesto per questo account.")
     return body_user_id
 
@@ -1296,8 +1291,14 @@ async def get_current_user(request: Request) -> dict:
     except pyjwt.InvalidTokenError:
         raise HTTPException(401, "Token non valido")
     u = await db.users.find_one({"user_id": payload["sub"]}, {"_id": 0})
-    if not u:
+    if not u or u.get("status") == "deleted":
         raise HTTPException(401, "Utente non trovato")
+    today = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0).isoformat()
+    if (u.get("last_activity_at") or "") < today:
+        await db.users.update_one(
+            {"user_id": u["user_id"], "status": {"$ne": "deleted"}},
+            {"$max": {"last_activity_at": today}},
+        )
     return u
 
 

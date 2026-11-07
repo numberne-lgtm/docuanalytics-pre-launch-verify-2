@@ -548,6 +548,23 @@ def build_workspace_router(db, get_current_user, llm_key, default_notify_days, s
         return {**_doc_out(a, clients), "fields": res.get("fields") or [], "audit": res.get("audit") or [],
                 "deadlines": await _deadlines(u["user_id"], {"analysis_id": aid})}
 
+    @r.delete("/documents/{aid}")
+    async def delete_document(aid: str, request: Request):
+        uid = (await _user(request))["user_id"]
+        await _analysis(uid, aid)
+        owner = {"user_id": uid, "analysis_id": aid}
+        automatic = {**owner, "source": {"$ne": "manual"}}
+        priority_keys = [f"document:{aid}"]
+        async for reminder in db.reminders.find(automatic, {"reminder_id": 1}):
+            if reminder.get("reminder_id"):
+                priority_keys.append(f"deadline:{reminder['reminder_id']}")
+        await db.workspace_priority_reads.delete_many({"user_id": uid, "priority_key": {"$in": priority_keys}})
+        await db.multi_document_audits.delete_many({"user_id": uid, "documents.analysis_id": aid})
+        await db.reminders.delete_many(automatic)
+        await db.reminders.update_many({**owner, "source": "manual"}, {"$unset": {"analysis_id": ""}})
+        await db.analyses.delete_one(owner)
+        return {"ok": True}
+
     @r.get("/documents/{aid}/candidates")
     async def candidates(aid: str, request: Request):
         u = await _user(request)

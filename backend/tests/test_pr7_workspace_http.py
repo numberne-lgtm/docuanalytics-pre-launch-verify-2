@@ -12,6 +12,7 @@ from fastapi.testclient import TestClient
 from motor.motor_asyncio import AsyncIOMotorClient
 from pymongo import MongoClient
 from workspace.router import build_workspace_router
+from privacy_admin.router import build_privacy_router
 
 MONGO = os.getenv("PR7_TEST_MONGO_URL", "mongodb://127.0.0.1:27017")
 
@@ -74,6 +75,8 @@ def app_client(request, report_outbox):
         return True
 
     app = FastAPI()
+    app.state.test_db = db
+    app.include_router(build_privacy_router(AsyncIOMotorClient(MONGO)[name], "synthetic-privacy-admin"))
     app.include_router(build_workspace_router(
         AsyncIOMotorClient(MONGO)[name], current_user, getattr(request, "param", None), [30, 7, 1],
         email_sender, "not-production-test-secret", "https://docuanalytics.online"))
@@ -315,3 +318,39 @@ def test_report_pec_address_does_not_become_the_contact_email(app_client, report
     assert sent.status_code == 200, sent.text
     assert report_outbox == [pec, email]
     assert app_client.get(client_path, headers=headers).json()["client"]["email"] == email
+
+
+def test_professional_can_delete_owned_analysis_and_preserve_manual_deadline(app_client):
+    db = app_client.app.state.test_db
+    db.reminders.insert_one({"user_id": "alice", "analysis_id": "doc-alice", "reminder_id": "manual", "source": "manual"})
+    db.multi_document_audits.insert_one({"user_id": "alice", "documents": [{"analysis_id": "doc-alice"}]})
+    db.workspace_priority_reads.insert_one({"user_id": "alice", "priority_key": "document:doc-alice"})
+    url = "/api/workspace/documents/doc-alice"
+    assert app_client.delete(url).status_code == 401
+    assert app_client.delete(url, headers=auth("bob")).status_code == 404
+    assert app_client.delete(url, headers=auth("alice")).status_code == 200
+    assert app_client.get(url, headers=auth("alice")).status_code == 404
+    assert app_client.get("/api/workspace/documents/doc-bob", headers=auth("bob")).status_code == 200
+    assert db.reminders.count_documents({"user_id": "alice", "analysis_id": "doc-alice"}) == 0
+    assert db.reminders.find_one({"reminder_id": "manual"})["source"] == "manual"
+    assert db.clients.find_one({"client_id": "client-alice"})
+    assert not db.multi_document_audits.find_one({"user_id": "alice"})
+    assert not db.workspace_priority_reads.find_one({"user_id": "alice"})
+
+
+def test_retention_simulation_protects_recent_and_unknown_activity(app_client):
+    from datetime import datetime, timezone
+
+    db = app_client.app.state.test_db
+    now = datetime.now(timezone.utc).isoformat()
+    old = "2000-01-01T00:00:00+00:00"
+    db.users.insert_many([
+        {"user_id": "workspace-active", "email": "active@example.invalid", "created_at": old, "last_activity_at": now},
+        {"user_id": "recorded-inactive", "email": "stale@example.invalid", "created_at": old, "last_activity_at": old},
+        {"user_id": "legacy-unknown", "email": "unknown@example.invalid", "created_at": old},
+    ])
+    response = app_client.get("/api/admin/privacy/retention-simulation", headers={"X-Admin-Token": "synthetic-privacy-admin"})
+    assert response.status_code == 200, response.text
+    assert response.json()["registered_accounts_inactive"] == 1
+    assert response.json()["registered_accounts_activity_unknown"] == 1
+    assert db.users.count_documents({}) == 3

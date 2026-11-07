@@ -49,7 +49,7 @@ const SECTIONS = [
     Per i servizi dei fornitori stiamo verificando i Paesi effettivi di trattamento, i subfornitori e le garanzie applicabili agli eventuali trasferimenti fuori dallo Spazio economico europeo. Questa parte dell’informativa resta in revisione.</p>],
   ["Per quanto tempo conserviamo i dati", <>
     <p key="r1">La copia temporanea del file usata dall’applicazione ha lo scopo di consentire l’elaborazione. Il testo estratto, i dati strutturati e i controlli possono restare nello storico per la consultazione e il Copilot.</p>
-    <p key="r2">I dati dell’account, le schede e i risultati servono a mantenere disponibili le funzioni richieste. Puoi chiedere la cancellazione scrivendo a <PrivacyContact />. La procedura di cancellazione e i tempi per dati residui, log, backup e fornitori sono ancora da validare.</p>
+    <p key="r2">I dati dell’account, le schede e i risultati servono a mantenere disponibili le funzioni richieste. Puoi eliminare singole analisi dalla scheda del documento oppure chiedere la cancellazione dell’account scrivendo a <PrivacyContact />. La procedura di cancellazione e i tempi per dati residui, log, backup e fornitori sono ancora da validare.</p>
     <p key="r3">I dati contabili seguono i termini previsti dalla normativa applicabile.</p>
   </>],
   ["I tuoi diritti", <p key="dr">

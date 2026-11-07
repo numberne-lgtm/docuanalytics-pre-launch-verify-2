@@ -18,7 +18,22 @@ const NAV = [["dashboard", "Dashboard", LayoutDashboard], ["clients", "Clienti",
 function DocPanel({ aid, onClose, onOpenClient, reloadKey, onChanged }) {
   const [d, setD] = useState(null);
   const [err, setErr] = useState("");
+  const [deleting, setDeleting] = useState(false);
   useEffect(() => { ws.get(`/documents/${aid}`).then(setD).catch((e) => setErr(errMsg(e))); }, [aid, reloadKey]);
+  const deleteAnalysis = async () => {
+    const label = d.filename || d.doc_type || "questo documento";
+    if (!window.confirm(`Eliminare definitivamente l’analisi di ${label}? Verranno rimossi dati estratti, controlli, scadenze automatiche e confronti salvati che includono il documento. Le scadenze manuali restano senza il collegamento all’analisi.`)) return;
+    setDeleting(true);
+    setErr("");
+    try {
+      await ws.del(`/documents/${aid}`);
+      onClose();
+      onChanged();
+    } catch (e) {
+      setErr(errMsg(e));
+      setDeleting(false);
+    }
+  };
   return (
     <div className="ws-panel" data-testid="doc-panel">
       <div className="ws-panel-in">
@@ -38,6 +53,11 @@ function DocPanel({ aid, onClose, onOpenClient, reloadKey, onChanged }) {
             <h3 className="ws-h3">Scadenze del documento</h3>
             <DeadlineList items={d.deadlines} onChanged={onChanged} />
             <PriorityQrPdf kind="document" itemId={aid} expandedInitially testId="doc-panel-qrpdf" />
+            <div className="ws-dl-actions">
+              <button type="button" className="as-btn" data-testid="doc-delete-analysis" onClick={deleteAnalysis} disabled={deleting}>
+                {deleting ? "Eliminazione…" : "Elimina analisi"}
+              </button>
+            </div>
           </>
         )}
       </div>

@@ -75,7 +75,7 @@ SAFE_WORKSPACE = {
         r"/documents/[A-Za-z0-9-]{1,128}/assign",
     ],
     "PATCH": [r"/deadlines/[A-Za-z0-9-]{1,128}", r"/clients/[A-Za-z0-9-]{1,128}"],
-    "DELETE": [r"/deadlines/[A-Za-z0-9-]{1,128}", r"/clients/[A-Za-z0-9-]{1,128}"],
+    "DELETE": [r"/documents/[A-Za-z0-9-]{1,128}", r"/deadlines/[A-Za-z0-9-]{1,128}", r"/clients/[A-Za-z0-9-]{1,128}"],
 }
 
 

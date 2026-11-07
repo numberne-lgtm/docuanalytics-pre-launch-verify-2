@@ -50,6 +50,9 @@ Script disponibile: `backend/scripts/pr7_provider_probe.py`, **non invocato**.
 5. Lo stato del problema `backend/.env` nel deployment image è cambiato? Separazione preview/prod e segregazione della Universal Key sono ora supportate?
 6. Qual è la procedura raccomandata per test sintetico preview senza toccare LIVE, ruotare chiavi o pubblicare?
 
+7. Per il piano DocuAnalytics, quali sono la frequenza e la durata dei backup di database e object storage? Quando i dati rimossi spariscono dalle copie e come si evita di ripristinarli per errore?
+8. Quale procedura consente di cancellare definitivamente i loghi già rimossi nell’app, comprese versioni, repliche e copie? Come possiamo ottenere conferma dell’avvenuta cancellazione?
+
 ## Stato
 La CI del codice e i test simulati non costituiscono prova contrattuale del trattamento dati.
 **NO-GO** per attivare il nuovo Copilot con dati reali fino alle conferme sul trattamento e a una prova sintetica autorizzata. Nessun merge, deploy o richiesta AI a pagamento.
