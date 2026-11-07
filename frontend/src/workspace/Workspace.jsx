@@ -143,6 +143,9 @@ function WorkspaceView({ documentId }) {
   const go = (v) => { setView(v); setClient(null); setAudit(null); setDoc(null); };
   const showDocumentInArchive = (id) => {
     setSelectedDocument(id);
+    // A saved archive filter must never hide a document explicitly requested from its report.
+    setDocumentQuery("");
+    setDocumentFilter("all");
     setView("documents");
     setClient(null);
     setAudit(null);
