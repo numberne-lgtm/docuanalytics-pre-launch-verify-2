@@ -86,6 +86,13 @@ async function loginFromPriority(page, path, email) {
     const priorityButtons = priorityList.locator("[data-ws-nav-target]");
     const count = await priorityButtons.count();
     assert(count > 0, "At least one synthetic priority should be selectable");
+    const priorityTone = await priorityList.locator("[data-ws-nav-row]").first().evaluate(el => ({
+      className: el.className,
+      border: getComputedStyle(el.querySelector(".ws-priority-open")).borderLeftColor,
+      inset: getComputedStyle(el.querySelector(".ws-priority-open")).boxShadow,
+    }));
+    assert.match(priorityTone.className, /ws-tone-(high|medium|low)/, "Priority must have a semantic risk color");
+    assert(priorityTone.inset.includes("inset"), "Priority color stripe must be visible");
     await priorityButtons.first().dispatchEvent("mousedown");
     await priorityButtons.first().focus();
     assert(await priorityList.locator('[data-ws-selected="true"]').count() >= 1);
