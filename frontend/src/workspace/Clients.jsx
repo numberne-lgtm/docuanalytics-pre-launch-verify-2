@@ -48,7 +48,7 @@ export function ClientList({ onOpen, reloadKey, onChanged, focusClient }) {
       {!list ? <div className="ws-muted">Caricamento…</div> : list.length === 0 ? <p className="ws-muted">Nessun cliente.</p> : (
         <div className="ws-list" data-ws-nav-list ref={navRef} onKeyDown={navigateRows} onFocus={markActiveRow} onMouseDown={markActiveRow} onClick={selectRowWithMouse}>
           {list.map((c) => (
-            <button key={c.client_id} className="ws-row" id={`ws-client-${c.client_id}`} data-ws-nav-row data-ws-nav-key={c.client_id} onClick={() => onOpen(c.client_id)} data-testid={`client-${c.client_id}`}>
+            <button key={c.client_id} className={`ws-row ${["high", "medium", "low"].includes(c.risk_level) ? `ws-tone-${c.risk_level}` : ""}`} id={`ws-client-${c.client_id}`} data-ws-nav-row data-ws-nav-key={c.client_id} onClick={() => onOpen(c.client_id)} data-testid={`client-${c.client_id}`}>
               <Level level={c.risk_level} />
               <span className="ws-row-main"><b>{c.name}</b><span>{c.piva && `P.IVA ${c.piva} · `}{c.cf && `CF ${c.cf} · `}{c.documents} {c.documents === 1 ? "documento" : "documenti"}</span></span>
             </button>
@@ -95,7 +95,7 @@ export function Client360({ cid, onBack, onOpenDoc, reloadKey, onChanged }) {
       )}
       {tab === "docs" && <div data-ws-nav-list onKeyDown={navigateRows} onFocus={markActiveRow} onMouseDown={markActiveRow} onClick={selectRowWithMouse}>{d.documents.map((x) => <DocCard key={x.analysis_id} d={x} onOpen={onOpenDoc} onChanged={onChanged} />)}</div>}
       {tab === "risks" && (d.risks.length ? <div data-ws-nav-list onKeyDown={navigateRows} onFocus={markActiveRow} onMouseDown={markActiveRow} onClick={selectRowWithMouse}>{d.risks.map((r, i) => (
-        <button key={i} className="ws-row" data-ws-nav-row data-ws-nav-key={r.analysis_id} onClick={(event) => onOpenDoc(r.analysis_id, event.currentTarget)} data-testid={`client-risk-${i}`}>
+        <button key={i} className={`ws-row ${r.level === "error" ? "ws-tone-high" : "ws-tone-medium"}`} data-ws-nav-row data-ws-nav-key={r.analysis_id} onClick={(event) => onOpenDoc(r.analysis_id, event.currentTarget)} data-testid={`client-risk-${i}`}>
           <Level level={r.level === "error" ? "high" : "medium"} /><span className="ws-row-main"><b>{r.doc_type || r.filename}</b><span>{r.message}</span></span>
         </button>))}</div> : <p className="ws-muted">Nessuna anomalia rilevata.</p>)}
       {tab === "deadlines" && <>
