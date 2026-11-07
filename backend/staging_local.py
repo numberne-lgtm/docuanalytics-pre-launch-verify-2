@@ -67,7 +67,7 @@ SAFE_WORKSPACE = {
         r"/priorities/(?:document|deadline)/[A-Za-z0-9-]{1,128}/(?:qr|pdf)",
     ],
     "PUT": [
-        r"/priorities/read-state", r"/studio",
+        r"/priorities/read-state", r"/documents/[A-Za-z0-9-]{1,128}/review-state", r"/studio",
         r"/deadlines/[A-Za-z0-9-]{1,128}/operational",
     ],
     "POST": [
