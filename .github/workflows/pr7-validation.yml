@@ -1,0 +1,208 @@
+name: PR7 isolated validation
+on:
+  push:
+    branches:
+      - feature/risk-priority-numbering
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    name: Isolated backend security and PDF tests
+    runs-on: ubuntu-latest
+    services:
+      mongo:
+        image: mongo:7
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --quiet --eval 'db.runCommand({ ping: 1 })'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 8
+    env:
+      PR7_TEST_MONGO_URL: mongodb://127.0.0.1:27017
+      PYTHONPATH: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+      - name: Install isolated test dependencies
+        run: |
+          python -m pip install --disable-pip-version-check \
+            'fastapi==0.110.1' 'starlette==0.37.2' 'httpx==0.28.1' \
+            'motor==3.3.1' 'pymongo==4.6.3' 'pymupdf==1.28.2' \
+            'pytest==9.1.1' 'pytest-xdist==3.8.0' 'segno==1.6.6' 'requests==2.34.2' 'python-dotenv==1.2.1' 'python-multipart==0.0.32' 'uvicorn==0.25.0' 'pillow==12.0.0' 'zxing-cpp==2.3.0'
+      - name: Verify Mac staging helper syntax and fail-closed commands
+        run: |
+          bash -n scripts/pr7_local.sh
+          set +e
+          bash scripts/pr7_local.sh unknown >/tmp/pr7-helper-reject.log 2>&1
+          result=$?
+          set -e
+          test "$result" -eq 2
+          grep -q "check|start|status|stop|clean" /tmp/pr7-helper-reject.log
+      - name: Compile workspace modules and tests
+        run: python -m py_compile backend/server.py backend/runtime_config.py backend/workspace/router.py backend/workspace/core.py backend/tests/test_pr7_priority_pdf.py backend/tests/test_pr7_workspace_http.py backend/tests/test_pr7_runtime_config.py backend/staging_local.py backend/tests/test_pr7_staging_local.py backend/scripts/pr7_provider_probe.py
+      - name: Run isolated regression tests
+        run: python -m pytest -q backend/tests/test_pr7_priority_pdf.py backend/tests/test_pr7_workspace_http.py backend/tests/test_pr7_runtime_config.py backend/tests/test_pr7_staging_local.py
+      - name: Verify provider smoke probe refuses unauthorized execution
+        run: |
+          set +e
+          APP_ENV=production python backend/scripts/pr7_provider_probe.py
+          status=$?
+          set -e
+          test "$status" -eq 2
+          set +e
+          APP_ENV=test PR7_PROVIDER_TEST_APPROVED=NO python backend/scripts/pr7_provider_probe.py
+          status=$?
+          set -e
+          test "$status" -eq 2
+
+  frontend:
+    name: React build, mobile smoke and real local E2E
+    runs-on: ubuntu-24.04
+    services:
+      mongo:
+        image: mongo:7
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --quiet --eval 'db.runCommand({ ping: 1 })'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 8
+    env:
+      CI: 'false' # Existing unrelated App.js hook warning; do not change payment polling here.
+      REACT_APP_BACKEND_URL: ''
+      APP_ENV: test
+      PR7_LOCAL_STAGING: '1'
+      STAGING_MONGO_URI: mongodb://127.0.0.1:27017
+      PYTHONPATH: ../backend
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install yarn classic
+        run: npm install -g yarn@1.22.22
+      - name: Install frontend dependencies (no scripts)
+        run: yarn install --non-interactive --ignore-scripts --network-timeout 120000
+      - name: React build
+        run: yarn build
+      - name: Install isolated Chromium smoke-test dependencies
+        run: npm install --prefix /tmp/pr7-playwright --no-audit --no-fund --no-save playwright@1.58.2 axe-core@4.10.3
+      - name: Run mobile browser smoke with system Chrome
+        env:
+          NODE_PATH: /tmp/pr7-playwright/node_modules
+        run: |
+          export PR7_CHROME_PATH="$(command -v google-chrome || command -v google-chrome-stable)"
+          test -n "$PR7_CHROME_PATH"
+          node scripts/pr7_browser_smoke.cjs
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install isolated staging server dependencies
+        run: |
+          python -m pip install --disable-pip-version-check \
+            'fastapi==0.110.1' 'starlette==0.37.2' 'motor==3.3.1' \
+            'pymongo==4.6.3' 'pydantic==2.13.4' 'uvicorn==0.25.0' \
+            'pymupdf==1.28.2' 'segno==1.6.6' 'python-multipart==0.0.32' \
+            'requests==2.34.2'
+      - name: Start local synthetic staging (frontend + real workspace API)
+        run: |
+          cp -R build ../backend/build
+          python -m uvicorn staging_local:app --app-dir ../backend \
+            --host 127.0.0.1 --port 8765 --no-access-log > /tmp/pr7-staging.log 2>&1 &
+          echo $! > /tmp/pr7-staging.pid
+          for i in $(seq 1 45); do
+            if curl --fail --silent http://127.0.0.1:8765/api/pr7-staging/status >/dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/pr7-staging.log
+          exit 1
+      - name: Run real browser E2E against synthetic local Mongo
+        env:
+          NODE_PATH: /tmp/pr7-playwright/node_modules
+        run: |
+          export PR7_CHROME_PATH="$(command -v google-chrome || command -v google-chrome-stable)"
+          node scripts/pr7_local_e2e.cjs
+      - name: Audit WCAG accessibility on isolated workspace (diagnostic report)
+        env:
+          NODE_PATH: /tmp/pr7-playwright/node_modules
+        run: |
+          export PR7_CHROME_PATH="$(command -v google-chrome || command -v google-chrome-stable)"
+          node scripts/pr7_accessibility_audit.cjs
+      - name: Attach synthetic accessibility audit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr7-accessibility-audit
+          path: /tmp/pr7-accessibility-report.json
+          if-no-files-found: warn
+      - name: Stop local staging
+        if: always()
+        run: |
+          test ! -f /tmp/pr7-staging.pid || kill "$(cat /tmp/pr7-staging.pid)" || true
+          if test -f /tmp/pr7-staging.log; then tail -n 20 /tmp/pr7-staging.log; fi
+      - name: Check Docker Compose network and port isolation
+        working-directory: .
+        run: |
+          docker compose -f compose.pr7.yml config --format json > /tmp/pr7-compose-config.json
+          python - <<'PY'
+          import json
+          with open("/tmp/pr7-compose-config.json") as f:
+              c = json.load(f)
+          assert c["name"] == "docuanalytics-pr7-local", "Unexpected Compose project or volume namespace"
+          staging = c["services"]["staging"]
+          gateway = c["services"]["gateway"]
+          ports = gateway["ports"]
+          assert len(ports) == 1 and ports[0]["host_ip"] == "127.0.0.1", ports
+          assert int(ports[0]["published"]) == 8765, ports
+          assert not staging.get("ports"), "Application must not publish ports directly"
+          assert not c["services"]["mongo"].get("ports"), "MongoDB must not publish ports"
+          assert len(staging["networks"]) == 1, "App must be isolated from the host-facing bridge"
+          private_network = next(iter(staging["networks"]))
+          assert c["networks"][private_network]["internal"] is True
+          assert private_network in gateway["networks"], "Proxy must reach the app network"
+          assert not gateway.get("environment"), "Gateway must not contain secrets"
+          assert staging["environment"]["APP_ENV"] == "test"
+          assert staging["environment"]["PR7_LOCAL_STAGING"] == "1"
+          print("PR7 COMPOSE SECURITY PASS: loopback-only, isolated Mongo, no production keys")
+          PY
+      - name: Build and start REAL Docker Compose staging
+        working-directory: .
+        run: |
+          docker compose -f compose.pr7.yml build staging
+          docker compose -f compose.pr7.yml up -d --wait
+          for i in $(seq 1 45); do
+            if curl --fail --silent http://127.0.0.1:8765/api/pr7-staging/status >/dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          docker compose -f compose.pr7.yml logs --tail=40 staging
+          exit 1
+      - name: Smoke real Docker Compose workspace APIs
+        working-directory: .
+        run: python backend/scripts/pr7_docker_smoke.py
+      - name: Run Chromium E2E through Docker Compose localhost proxy
+        env:
+          NODE_PATH: /tmp/pr7-playwright/node_modules
+        run: |
+          export PR7_CHROME_PATH="$(command -v google-chrome || command -v google-chrome-stable)"
+          test -n "$PR7_CHROME_PATH"
+          node scripts/pr7_local_e2e.cjs
+      - name: Stop and remove Docker Compose test environment
+        if: always()
+        working-directory: .
+        run: |
+          docker compose -f compose.pr7.yml down -v --remove-orphans || true

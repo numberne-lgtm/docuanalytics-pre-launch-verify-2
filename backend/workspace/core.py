@@ -162,13 +162,43 @@ def is_historical_event(label: str) -> bool:
     return bool(re.fullmatch(r"(?:data (?:di |della )?)?decadenza (?:dal |del )?beneficio (?:del )?termine", normalized))
 
 
-def show_operational_deadline(reminder: dict) -> bool:
-    """Keep confirmed/manual reminders; hide known false-positive auto-detections."""
-    return not (
+def is_legacy_historical_auto(reminder: dict) -> bool:
+    """Historic legal-event auto reminder without proof of explicit user confirmation.
+
+    Legacy records missing status may render as 'confirmed' in the UI. Do not
+    mistake this fallback for an actual confirmation action.
+    """
+    return (
         reminder.get("source") == "auto"
-        and reminder.get("status") in ("detected", "to_verify")
         and is_historical_event(reminder.get("label", ""))
+        and not reminder.get("confirmed_at")
     )
+
+
+def needs_legal_date_review(reminder: dict) -> bool:
+    """Flag potentially ambiguous legacy auto legal deadlines for human review.
+
+    Unlike recognized historical events, these remain operational until
+    an authorized user explicitly excludes them.
+    """
+    return (
+        reminder.get("source") == "auto"
+        and not reminder.get("confirmed_at")
+        and bool(re.search(r"\b(?:sollecito|diffida)\b",
+                           str(reminder.get("label") or "").casefold()))
+    )
+
+
+def show_operational_deadline(reminder: dict) -> bool:
+    """Operational feeds skip exclusions and auto-detected historic events.
+
+    A historical event explicitly confirmed with confirmed_at is preserved,
+    unless the owner deliberately excludes it from operational reminders.
+    Manual reminders remain under the owner's control.
+    """
+    if reminder.get("operational_excluded"):
+        return False
+    return not is_legacy_historical_auto(reminder)
 
 
 def deadlines(result: dict) -> list:
@@ -402,6 +432,57 @@ def _fmt(iso) -> str:
     return "/".join(reversed(str(iso)[:10].split("-"))) if iso else "—"
 
 
+def priority_report_pdf(priority: dict) -> bytes:
+    """Export a single priority as an HTML-backed Unicode PDF without unsafe markup."""
+    import io
+    import html
+    import pymupdf as fitz
+
+    def e(value):
+        return html.escape(str(value if value is not None else ""), quote=True)
+
+    rows = [("Tipo", "Documento" if priority.get("type") == "document" else "Scadenza"),
+            ("Livello di attenzione", {"high": "Alto", "medium": "Medio", "low": "Basso"}.get(priority.get("level"), "Da verificare"))]
+    for title, field in (("Documento originale", "filename"), ("Data indicata", "date"), ("Stato", "status")):
+        if priority.get(field):
+            rows.append((title, priority[field]))
+    details = [str(item) for item in (priority.get("details") or [])[:20]]
+    # Use stacked blocks: MuPDF Story can overlap percentage-width table cells.
+    cells = "".join(f'<div class="metadata"><p class="label">{e(label)}</p><p class="value">{e(value)}</p></div>'
+                    for label, value in rows)
+    summary = f"<h2>Riepilogo</h2><p>{e(priority['summary'])}</p>" if priority.get("summary") else ""
+    checks = ("<h2>Controlli e dettagli</h2><ul>" +
+              "".join(f"<li>{e(item)}</li>" for item in details) + "</ul>") if details else ""
+    body = f"""<html><body>
+    <p class="brand">DOCUANALYTICS AI</p>
+    <h1>Scheda priorità</h1><h2>{e(priority.get("title") or "Priorità")}</h2>
+    {cells}{summary}{checks}
+    <p class="notice">Documento informativo generato da DocuAnalytics AI.
+    Verificare sempre i dati sui documenti originali: eventi storici e scadenze
+    confermate non provano, da soli, l'esistenza di obblighi attuali.
+    Non costituisce consulenza legale, fiscale o notarile.</p>
+    </body></html>"""
+    css = """body{font-family:sans-serif;color:#152033;font-size:10pt}
+    .brand{font-weight:bold;color:#315efb}h1{font-size:18pt}
+    h2{font-size:12pt;margin-top:16pt}
+    .metadata{border-bottom:1px solid #ddd;padding:6pt 0}
+    .label{font-weight:bold;color:#475467;margin:0 0 3pt 0}
+    .value{margin:0}p,li{overflow-wrap:break-word}
+    .notice{font-size:8pt;color:#667085;margin-top:18pt}"""
+    buffer = io.BytesIO()
+    story = fitz.Story(html=body, user_css=css)
+    writer = fitz.DocumentWriter(buffer)
+    page = fitz.paper_rect("a4")
+    more = 1
+    while more:
+        dev = writer.begin_page(page)
+        more, _ = story.place(page + (45, 45, -45, -45))
+        story.draw(dev)
+        writer.end_page()
+    writer.close()
+    return buffer.getvalue()
+
+
 def client_report_pdf(client: dict, docs: list, deadlines_: list, prepared_by: str) -> bytes:
     """Client-facing summary (reduced): identifiers, documents with extracted data, confirmed deadlines. No internal notes or risk levels."""
     import io
@@ -422,9 +503,9 @@ def client_report_pdf(client: dict, docs: list, deadlines_: list, prepared_by: s
     dl_rows = "".join(f"<tr><td class='k'>{_fmt(d['due_date'])}</td><td>{e(d['label'])}</td><td>{e(d.get('kind_label'))}</td></tr>" for d in deadlines_)
     today = date.today().strftime("%d/%m/%Y")
     body = f"""
-<p class='brand'>DocuAnalytics AI</p>
+{f"<p class='brand'>{e(prepared_by)}</p>" if prepared_by else ''}
 <h1>Riepilogo documenti e scadenze</h1>
-<p class='m'>Preparato il {today}{(' da ' + e(prepared_by)) if prepared_by else ''}</p>
+<p class='m'>Preparato il {today}</p>
 <h2>{e(client.get('name'))}</h2>
 <table><tr><td class='k'>P.IVA</td><td>{e(client.get('piva')) or '—'}</td></tr>
 <tr><td class='k'>Codice fiscale</td><td>{e(client.get('cf')) or '—'}</td></tr>{reg_rows}</table>
@@ -432,8 +513,7 @@ def client_report_pdf(client: dict, docs: list, deadlines_: list, prepared_by: s
 {f"<table><tr><th>Data</th><th>Scadenza</th><th>Tipo</th></tr>{dl_rows}</table>" if dl_rows else "<p class='m'>Nessuna scadenza confermata.</p>"}
 <h2>Documenti ({len(docs)})</h2>
 {doc_html or "<p class='m'>Nessun documento associato.</p>"}
-<p class='disc'>Documento informativo generato da DocuAnalytics AI sulla base dei dati estratti automaticamente dai documenti.
-I dati possono contenere errori di lettura e vanno verificati sugli originali. Non costituisce consulenza fiscale, legale o notarile.</p>"""
+<p class='disc'>Riepilogo informativo dei documenti e delle scadenze. I dati vanno verificati sui documenti originali. Non costituisce consulenza fiscale, legale o notarile.</p>"""
     css = """* {font-family: sans-serif; color: #152033;} body {font-size: 10pt;}
 .brand {color: #2f6bff; font-weight: bold; font-size: 11pt; margin: 0;} h1 {font-size: 18pt; margin: 2pt 0;}
 h2 {font-size: 13pt; color: #0a1022; margin-top: 16pt; border-bottom: 1px solid #2f6bff; padding-bottom: 2pt;}

@@ -14,9 +14,13 @@ IDENTITY_METHODS = {
     "authenticated_session": "Richiesta inviata dall'utente autenticato nella piattaforma",
     "verified_document": "Identità verificata con documento (conservato fuori dalla piattaforma)",
 }
-CONTENT_COLLECTIONS = {"analyses": "user_id", "reminders": "user_id", "email_verifications": "user_id"}
+CONTENT_COLLECTIONS = dict.fromkeys(
+    ("analyses", "reminders", "email_verifications", "clients", "multi_document_audits",
+     "workspace_priority_reads", "email_log", "files"),
+    "user_id",
+)
 KEPT_COLLECTIONS = {"payment_transactions": "user_id", "subscriptions": "user_id", "crypto_orders": "user_id"}
-ANON_FIELDS = ["email", "password_hash", "name", "picture", "signup_ip", "referral_code"]
+ANON_FIELDS = ["email", "password_hash", "name", "picture", "signup_ip", "referral_code", "studio", "calendar_feed", "last_activity_at"]
 
 
 def _enabled() -> bool:
@@ -138,7 +142,11 @@ def build_privacy_router(db, admin_token: Optional[str]) -> APIRouter:
         uid = r["user_id"]
         counts = await _counts(uid)
         active_sub = await db.subscriptions.count_documents({"user_id": uid, "status": "active"})
-        plan = {"delete": {k: counts[k] for k in [*CONTENT_COLLECTIONS, "referrals"]},
+        owner = await db.users.find_one({"user_id": uid}, {"studio.logo_path": 1}) or {}
+        external_files = await db.files.count_documents({"user_id": uid, "storage_path": {"$exists": True, "$nin": [None, ""]}})
+        if (owner.get("studio") or {}).get("logo_path") and not external_files:
+            external_files = 1
+        plan = {"external_files_pending": external_files, "delete": {k: counts[k] for k in [*CONTENT_COLLECTIONS, "referrals"]},
                 "keep_for_fiscal_obligations": {k: counts[k] for k in KEPT_COLLECTIONS},
                 "anonymize_user_fields": ANON_FIELDS, "active_subscriptions": active_sub}
         if req.dry_run:
@@ -149,6 +157,8 @@ def build_privacy_router(db, admin_token: Optional[str]) -> APIRouter:
             raise HTTPException(403, "Cancellazione reale disabilitata in questo ambiente (ADMIN_DELETION_ENABLED=false).")
         if active_sub:
             raise HTTPException(409, "L'utente ha un abbonamento attivo: annullalo prima di procedere.")
+        if external_files:
+            raise HTTPException(409, "Prima occorre verificare la cancellazione dei file presso il fornitore di archiviazione.")
         for col, key in CONTENT_COLLECTIONS.items():
             await db[col].delete_many({key: uid})
         await db.referrals.delete_many({"$or": [{"inviter": uid}, {"invitee": uid}]})
@@ -179,18 +189,22 @@ def build_privacy_router(db, admin_token: Optional[str]) -> APIRouter:
         total_analyses = await db.analyses.count_documents({})
         last_activity = [{"$group": {"_id": "$user_id", "last": {"$max": "$created_at"}}}]
         last = {d["_id"]: d["last"] async for d in db.analyses.aggregate(last_activity)}
-        inactive_accounts = anon_inactive = total_accounts = 0
+        inactive_accounts = unknown_accounts = anon_inactive = total_accounts = 0
         async for u in db.users.find({"status": {"$ne": "deleted"}}, {"_id": 0, "user_id": 1, "email": 1,
-                                                                       "created_at": 1, "updated_at": 1}):
-            seen = max(filter(None, [u.get("created_at"), u.get("updated_at"), last.get(u["user_id"])]), default="")
+                                                                       "created_at": 1, "updated_at": 1, "last_activity_at": 1}):
+            seen = max(filter(None, [u.get("created_at"), u.get("updated_at"), last.get(u["user_id"]), u.get("last_activity_at")]), default="")
             stale = seen < i_cut
             if u.get("email"):
                 total_accounts += 1
-                inactive_accounts += stale
+                if stale and not u.get("last_activity_at"):
+                    unknown_accounts += 1
+                else:
+                    inactive_accounts += stale
             else:
                 anon_inactive += stale
         res = {"simulation_only": True, "analyses_months": analyses_months, "inactive_months": inactive_months,
                "analyses_older_than_period": old_analyses, "analyses_total": total_analyses,
+               "registered_accounts_activity_unknown": unknown_accounts,
                "registered_accounts_inactive": inactive_accounts, "registered_accounts_total": total_accounts,
                "anonymous_sessions_inactive": anon_inactive}
         await _audit("retention_simulation", admin, params={"analyses_months": analyses_months,

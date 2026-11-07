@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { navigateRows, focusListRow, markActiveRow, selectRowWithMouse } from "./keyboard";
 import { FileDown } from "lucide-react";
 import { ws, errMsg, fmtDate, download } from "./api";
 import CalendarExport from "./CalendarExport";
-import { ClientEmail, SendReport } from "./ClientMail";
+import { ClientContacts, SendReport } from "./ClientMail";
 import StudioSettings from "./StudioSettings";
 import ClientEmails from "./ClientEmails";
 import { Level } from "./RiskDashboard";
@@ -10,7 +11,7 @@ import { DocCard } from "./Documents";
 import { DeadlineList } from "./Deadlines";
 
 const TABS = [["overview", "Panoramica"], ["docs", "Documenti"], ["risks", "Rischi"], ["deadlines", "Scadenze"], ["emails", "Email inviate"], ["activity", "Attività"]];
-const REG = [["rea", "REA"], ["pec", "PEC"], ["registered_office", "Sede"], ["legal_form", "Forma giuridica"], ["share_capital", "Capitale sociale"]];
+const REG = [["rea", "REA"], ["registered_office", "Sede"], ["legal_form", "Forma giuridica"], ["share_capital", "Capitale sociale"]];
 
 function NewClient({ onCreated }) {
   const [f, setF] = useState({ name: "", piva: "", cf: "" });
@@ -18,19 +19,26 @@ function NewClient({ onCreated }) {
   const go = (e) => { e.preventDefault(); setErr(""); ws.post("/clients", f).then((c) => { setF({ name: "", piva: "", cf: "" }); onCreated(c); }).catch((x) => setErr(errMsg(x))); };
   return (
     <form className="ws-dl-edit" onSubmit={go} data-testid="client-new-form">
-      <input className="as-input" placeholder="Nome / ragione sociale" value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} data-testid="client-new-name" />
-      <input className="as-input" placeholder="P.IVA" value={f.piva} onChange={(e) => setF({ ...f, piva: e.target.value })} data-testid="client-new-piva" />
-      <input className="as-input" placeholder="Codice fiscale" value={f.cf} onChange={(e) => setF({ ...f, cf: e.target.value })} data-testid="client-new-cf" />
+      <input className="as-input" aria-label="Nome o ragione sociale del nuovo cliente" placeholder="Nome / ragione sociale" value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} data-testid="client-new-name" />
+      <input className="as-input" aria-label="Partita IVA del nuovo cliente" placeholder="P.IVA" value={f.piva} onChange={(e) => setF({ ...f, piva: e.target.value })} data-testid="client-new-piva" />
+      <input className="as-input" aria-label="Codice fiscale del nuovo cliente" placeholder="Codice fiscale" value={f.cf} onChange={(e) => setF({ ...f, cf: e.target.value })} data-testid="client-new-cf" />
       <button className="as-btn as-btn-primary" data-testid="client-new-btn">Crea cliente</button>
       {err && <div className="ws-error" data-testid="client-new-error">{err}</div>}
     </form>
   );
 }
 
-export function ClientList({ onOpen, reloadKey, onChanged }) {
+export function ClientList({ onOpen, reloadKey, onChanged, focusClient }) {
   const [list, setList] = useState(null);
+  const navRef = useRef(null);
+  const didFocus = useRef(false);
   const [err, setErr] = useState("");
   useEffect(() => { ws.get("/clients").then((d) => setList(d.clients)).catch((e) => setErr(errMsg(e))); }, [reloadKey]);
+  useEffect(() => {
+    if (!list?.length || didFocus.current) return;
+    didFocus.current = true;
+    focusListRow(navRef.current, focusClient);
+  }, [list, focusClient]);
   if (err) return <div className="ws-error">{err}</div>;
   return (
     <div data-testid="clients-view">
@@ -38,11 +46,11 @@ export function ClientList({ onOpen, reloadKey, onChanged }) {
       <p className="ws-muted">I documenti vengono associati automaticamente solo se P.IVA o codice fiscale coincidono con un cliente esistente. Negli altri casi scegli tu da "Documenti".</p>
       <NewClient onCreated={(c) => { onChanged(); onOpen(c.client_id); }} />
       {!list ? <div className="ws-muted">Caricamento…</div> : list.length === 0 ? <p className="ws-muted">Nessun cliente.</p> : (
-        <div className="ws-list">
+        <div className="ws-list" data-ws-nav-list ref={navRef} onKeyDown={navigateRows} onFocus={markActiveRow} onMouseDown={markActiveRow} onClick={selectRowWithMouse}>
           {list.map((c) => (
-            <button key={c.client_id} className="ws-row" onClick={() => onOpen(c.client_id)} data-testid={`client-${c.client_id}`}>
+            <button key={c.client_id} className={`ws-row ${["high", "medium", "low"].includes(c.risk_level) ? `ws-tone-${c.risk_level}` : ""}`} id={`ws-client-${c.client_id}`} data-ws-nav-row data-ws-nav-key={c.client_id} onClick={() => onOpen(c.client_id)} data-testid={`client-${c.client_id}`}>
               <Level level={c.risk_level} />
-              <span className="ws-row-main"><b>{c.name}</b><span>{c.piva && `P.IVA ${c.piva} · `}{c.cf && `CF ${c.cf} · `}{c.documents} documenti</span></span>
+              <span className="ws-row-main"><b>{c.name}</b><span>{c.piva && `P.IVA ${c.piva} · `}{c.cf && `CF ${c.cf} · `}{c.documents} {c.documents === 1 ? "documento" : "documenti"}</span></span>
             </button>
           ))}
         </div>
@@ -71,8 +79,8 @@ export function Client360({ cid, onBack, onOpenDoc, reloadKey, onChanged }) {
         <span className="ws-bar-actions"><button className="as-btn ws-btn-icon" onClick={pdf} disabled={pdfBusy} data-testid="client-report-pdf"><FileDown size={14} /> {pdfBusy ? "Preparazione…" : "Report PDF per il cliente"}</button>
         <button className="as-btn" data-testid="client-delete" onClick={() => window.confirm("Eliminare la scheda cliente? Documenti e scadenze restano, senza associazione.") && ws.del(`/clients/${cid}`).then(() => { onChanged(); onBack(); }).catch((e) => setErr(errMsg(e)))}>Elimina scheda</button></span></div>
       {pdfErr && <div className="ws-error" data-testid="client-report-error">{pdfErr}</div>}
-      <ClientEmail key={c.email || ""} c={c} onChanged={onChanged} />
-      <SendReport key={`s-${c.email || ""}`} c={c} onSent={onChanged} />
+      <ClientContacts key={c.client_id} c={{ ...c, pec: c.pec ?? reg.pec }} onChanged={onChanged} />
+      <SendReport key={`s-${c.client_id}`} c={{ ...c, pec: c.pec ?? reg.pec }} onDownload={pdf} downloading={pdfBusy} />
       <p className="ws-muted">{c.piva ? `P.IVA ${c.piva}` : "P.IVA non disponibile"} · {c.cf ? `CF ${c.cf}` : "CF non disponibile"}</p>
       <div className="ws-tabs">{TABS.map(([k, l]) => <button key={k} className={tab === k ? "on" : ""} onClick={() => setTab(k)} data-testid={`client-tab-${k}`}>{l}</button>)}</div>
       {tab === "overview" && (
@@ -85,11 +93,11 @@ export function Client360({ cid, onBack, onOpenDoc, reloadKey, onChanged }) {
           {(reg.legal_representatives || []).length > 0 && <div className="ws-kpi ws-kpi-text"><span>Amministratori / rappresentanti</span><b>{reg.legal_representatives.map((p) => `${p.name}${p.role ? ` (${p.role})` : ""}`).join(", ")}</b></div>}
         </div>
       )}
-      {tab === "docs" && d.documents.map((x) => <DocCard key={x.analysis_id} d={x} onOpen={onOpenDoc} onChanged={onChanged} />)}
-      {tab === "risks" && (d.risks.length ? d.risks.map((r, i) => (
-        <button key={i} className="ws-row" onClick={() => onOpenDoc(r.analysis_id)} data-testid={`client-risk-${i}`}>
+      {tab === "docs" && <div data-ws-nav-list onKeyDown={navigateRows} onFocus={markActiveRow} onMouseDown={markActiveRow} onClick={selectRowWithMouse}>{d.documents.map((x) => <DocCard key={x.analysis_id} d={x} onOpen={onOpenDoc} onChanged={onChanged} />)}</div>}
+      {tab === "risks" && (d.risks.length ? <div data-ws-nav-list onKeyDown={navigateRows} onFocus={markActiveRow} onMouseDown={markActiveRow} onClick={selectRowWithMouse}>{d.risks.map((r, i) => (
+        <button key={i} className={`ws-row ${r.level === "error" ? "ws-tone-high" : "ws-tone-medium"}`} data-ws-nav-row data-ws-nav-key={r.analysis_id} onClick={(event) => onOpenDoc(r.analysis_id, event.currentTarget)} data-testid={`client-risk-${i}`}>
           <Level level={r.level === "error" ? "high" : "medium"} /><span className="ws-row-main"><b>{r.doc_type || r.filename}</b><span>{r.message}</span></span>
-        </button>)) : <p className="ws-muted">Nessuna anomalia rilevata.</p>)}
+        </button>))}</div> : <p className="ws-muted">Nessuna anomalia rilevata.</p>)}
       {tab === "deadlines" && <>
         <DeadlineList items={d.deadlines} onChanged={onChanged} />
         <CalendarExport path={`/clients/${cid}`} title={`Esporta le scadenze di ${c.name}`} fileName={`scadenze-${slug}.ics`} tid="client-calendar" />

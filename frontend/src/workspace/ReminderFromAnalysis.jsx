@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { BellPlus, X, Check } from "lucide-react";
 import { ws, errMsg, fmtDate } from "./api";
@@ -23,9 +23,9 @@ function Editor({ init, onSave, saving }) {
   return (
     <div className="ws-rem-edit" data-testid={`reminder-editor-${init.key}`}>
       {init.uncertain && <p className="ws-hint" data-testid="reminder-uncertain">{init.date ? "Data da verificare: controllala sul documento prima di salvare." : "Data non rilevata con certezza: inseriscila manualmente."}</p>}
-      <input className="as-input" value={label} onChange={(e) => setLabel(e.target.value)} placeholder="Titolo" maxLength={200} data-testid="reminder-label" />
+      <input className="as-input" aria-label="Titolo del promemoria" value={label} onChange={(e) => setLabel(e.target.value)} placeholder="Titolo" maxLength={200} data-testid="reminder-label" />
       <DateField value={date} onChange={setDate} testid="reminder-date" />
-      <textarea className="as-input" rows={2} maxLength={500} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Descrizione (facoltativa)" data-testid="reminder-note" />
+      <textarea className="as-input" aria-label="Descrizione facoltativa del promemoria" rows={2} maxLength={500} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Descrizione (facoltativa)" data-testid="reminder-note" />
       <button className="as-btn as-btn-primary" disabled={saving || !date || !label.trim()} onClick={save} data-testid="reminder-save">
         {saving ? "Salvataggio…" : "Conferma e salva"}
       </button>
@@ -39,6 +39,27 @@ export default function ReminderFromAnalysis({ analysisId, guess, docType, logge
   const [err, setErr] = useState("");
   const [saving, setSaving] = useState(false);
   const [done, setDone] = useState("");
+  const modalRef = useRef(null);
+  const triggerRef = useRef(null);
+  useEffect(() => { if (open) modalRef.current?.focus({ preventScroll: true }); }, [open]);
+  const close = () => {
+    setOpen(false);
+    window.requestAnimationFrame(() => triggerRef.current?.focus({ preventScroll: true }));
+  };
+  const keyDown = (event) => {
+    event.stopPropagation();
+    if (event.key === "Escape") { event.preventDefault(); close(); return; }
+    if (event.key !== "Tab") return;
+    const controls = [...(modalRef.current?.querySelectorAll(
+      'button:not(:disabled), input:not(:disabled), textarea:not(:disabled), select:not(:disabled), a[href]'
+    ) || [])].filter(el => el.getClientRects().length > 0);
+    if (!controls.length) { event.preventDefault(); return; }
+    if (event.shiftKey && (document.activeElement === controls[0] || document.activeElement === modalRef.current)) {
+      event.preventDefault(); controls[controls.length - 1].focus();
+    } else if (!event.shiftKey && document.activeElement === controls[controls.length - 1]) {
+      event.preventDefault(); controls[0].focus();
+    }
+  };
   const load = () => ws.post("/sync").then(() => ws.get(`/documents/${analysisId}`)).then(setDoc);
   const start = () => {
     if (!loggedIn) { notify("Registrati o accedi per creare promemoria nell'Area di lavoro."); return; }
@@ -54,12 +75,12 @@ export default function ReminderFromAnalysis({ analysisId, guess, docType, logge
   const confirmed = dls.filter((d) => d.status === "confirmed");
   return (
     <>
-      <button className="btn btn-sm btn-ghost" onClick={start} data-testid="create-reminder-btn"><BellPlus size={14} /> Crea promemoria</button>
+      <button className="btn btn-sm btn-ghost" ref={triggerRef} onClick={start} data-testid="create-reminder-btn"><BellPlus size={14} /> Crea promemoria</button>
       {open && createPortal(
-        <div className="ws-panel" onClick={() => setOpen(false)}>
-          <div className="ws-panel-in ws-rem-panel" onClick={(e) => e.stopPropagation()} data-testid="reminder-modal">
+        <div className="ws-panel" onClick={close}>
+          <div className="ws-panel-in ws-rem-panel" ref={modalRef} tabIndex={-1} role="dialog" aria-modal="true" aria-label="Crea promemoria" onKeyDown={keyDown} onClick={(e) => e.stopPropagation()} data-testid="reminder-modal">
             <div className="ws-bar"><h3 className="ws-h3">Crea promemoria</h3>
-              <button className="ws-link" onClick={() => setOpen(false)} aria-label="Chiudi" data-testid="reminder-close"><X size={18} /></button></div>
+              <button className="ws-link" onClick={close} aria-label="Chiudi" data-testid="reminder-close"><X size={18} /></button></div>
             {!doc && !err && <p className="ws-muted">Caricamento…</p>}
             {doc && <>
               <p className="ws-muted">Documento: {doc.doc_type || ""} {doc.filename}{doc.client_name ? ` · ${doc.client_name}` : ""}. Nulla viene salvato senza la tua conferma.</p>

@@ -52,11 +52,11 @@ export default function AuditView({ ids, auditId, onBack, onCredits }) {
       <p className="ws-muted">{a.note} I risultati sono confronti tra dati estratti, non verità accertate.</p>
       <TypeHint docs={a.documents} />
       {SECTIONS.map(([k, label, cls]) => (
-        <section key={k} className="ws-card" data-testid={`audit-${k}`}>
+        <section key={k} className={`ws-card ${k === "consistent" ? "ws-tone-low" : k === "anomalies" ? "ws-tone-high" : "ws-tone-medium"}`} data-testid={`audit-${k}`}>
           <h3 className="ws-h3"><span className={`ws-level ${cls}`}>{label}</span> ({r[k].length})</h3>
           {r[k].length === 0 && <p className="ws-muted">Nessun elemento.</p>}
           {r[k].map((x, i) => (
-            <div key={i} className="ws-finding">
+            <div key={i} className={`ws-finding ${k === "consistent" ? "lvl-info" : k === "anomalies" ? "lvl-error" : "lvl-warning"}`}>
               <b>{x.type || fieldLabel(x.field)}</b>{x.note && <span className="ws-muted"> — {x.note}</span>}
               <Sources values={x.values} />
               {x.missing_in && <p className="ws-muted">Assente in: {x.missing_in.map((m) => m.ref).join(", ")}</p>}
@@ -75,7 +75,7 @@ export default function AuditView({ ids, auditId, onBack, onCredits }) {
           <>
             <p className="ws-muted">{a.deep.disclaimer}{credits != null && ` Crediti residui: ${credits}.`}</p>
             {a.deep.findings.length === 0 && <p className="ws-muted" data-testid="audit-deep-empty">Nessuna contraddizione rilevata dall'AI.</p>}
-            {a.deep.findings.map((f, i) => <div key={i} className="ws-finding" data-testid={`audit-deep-${i}`}><b>{f.level}</b>: {f.description}<Sources values={f.sources} /></div>)}
+            {a.deep.findings.map((f, i) => <div key={i} className={`ws-finding ${f.level === "error" || f.level === "high" ? "lvl-error" : f.level === "warning" || f.level === "medium" ? "lvl-warning" : f.level === "info" || f.level === "low" ? "lvl-info" : ""}`} data-testid={`audit-deep-${i}`}><b>{f.level}</b>: {f.description}<Sources values={f.sources} /></div>)}
           </>
         )}
         {err && <div className="ws-error">{err}</div>}

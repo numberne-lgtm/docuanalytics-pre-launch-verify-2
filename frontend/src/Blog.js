@@ -24,10 +24,66 @@ const BLOG_UI = {
 };
 
 /* Slug order shared across languages */
-export const SLUGS = ["analisi-fatture-elettroniche-ai", "controllo-quadratura-f24", "clausole-vessatorie-contratti-ai", "visure-camerali-antiriciclaggio-kyc-aml"];
+export const SLUGS = ["area-di-lavoro-docuanalytics", "analisi-fatture-elettroniche-ai", "controllo-quadratura-f24", "clausole-vessatorie-contratti-ai", "visure-camerali-antiriciclaggio-kyc-aml"];
 
 export const ARTICLES = {
   it: [
+    {
+      "slug": "area-di-lavoro-docuanalytics",
+      "title": "Area di lavoro DocuAnalytics: guida per gli studi professionali",
+      "desc": "Dopo l’analisi, ritrova il documento, collegalo al cliente e organizza i controlli e le scadenze.",
+      "read": "3 min",
+      "tag": "Area di lavoro",
+      "excerpt": "Dopo l’analisi, ritrova il documento, collegalo al cliente e organizza i controlli e le scadenze.",
+      "workspaceCta": "Vai all’area di lavoro",
+      "reportTitle": "Invia il report via email, all’indirizzo PEC o a entrambi",
+      "reportInstructions": "Dalla scheda cliente premi «Invia report dallo studio». Scegli Email, PEC o entrambe, scarica il PDF intestato allo studio e apri la bozza con i destinatari proposti. Allega il PDF e spedisci dalla casella dello studio.",
+      "reportNote": "Per la spedizione certificata, usa la PEC dello studio come mittente.",
+      "body": [
+        {
+          "h": "1. Parti dai risultati",
+          "p": [
+            "Carica un documento e avvia l’analisi. Dai risultati premi «Vai all’area di lavoro» e apri Documenti. Qui puoi ritrovare le analisi del tuo account e aprire la scheda del documento."
+          ]
+        },
+        {
+          "h": "2. Associa il documento al cliente",
+          "p": [
+            "Nella scheda del documento premi «Scegli cliente», seleziona il nominativo e conferma con «Associa cliente». Lo stato e il nome sulla scheda ti indicano l’esito. Se il cliente manca, crealo nella sezione Clienti. Se il collegamento è già presente, usa «Cambia cliente»."
+          ]
+        },
+        {
+          "h": "3. Completa la scheda cliente",
+          "p": [
+            "Apri Clienti e scegli la scheda. Nella panoramica trovi i documenti e i controlli da seguire. Da «Modifica contatti» puoi aggiungere email, PEC, telefono e referente. Dalla stessa scheda puoi scaricare il report PDF per il cliente."
+          ]
+        },
+        {
+          "h": "4. Parti dai controlli più urgenti",
+          "p": [
+            "La Dashboard raccoglie le priorità in base ai rischi, alle anomalie e alle scadenze disponibili. Apri una voce per capire cosa verificare. Il livello di attenzione serve a orientare il lavoro dello studio. Verifica sempre i dati e le segnalazioni sul documento originale."
+          ]
+        },
+        {
+          "h": "5. Verifica e organizza le scadenze",
+          "p": [
+            "In Scadenze controlla le date rilevate, conferma quelle corrette o aggiungi una scadenza manuale. Puoi consultarle per periodo ed esportare le scadenze confermate e manuali in formato .ics per il tuo calendario."
+          ]
+        },
+        {
+          "h": "Un esempio nello studio",
+          "p": [
+            "Dopo aver analizzato un contratto di locazione, associalo alla scheda del cliente. Controlla sul contratto se la data rilevata è davvero il termine di preavviso. Dopo averla verificata, confermala nelle Scadenze e aggiungila al calendario dello studio."
+          ]
+        },
+        {
+          "h": "Elimina un’analisi in autonomia",
+          "p": [
+            "Puoi eliminare un’analisi direttamente dall’Area di lavoro, senza contattare l’assistenza. Apri Documenti, seleziona il documento e premi «Elimina analisi» nella sua scheda. Leggi il riepilogo e conferma solo se vuoi rimuoverla. Dall’Area di lavoro vengono eliminati testo e dati estratti, controlli, scadenze automatiche e confronti salvati che includono il documento. La scheda cliente resta. Le scadenze inserite a mano restano disponibili e vengono scollegate dall’analisi."
+          ]
+        }
+      ]
+    },
     { slug: "analisi-fatture-elettroniche-ai", title: "Analisi delle fatture elettroniche con l'AI: come estrarre i dati in pochi secondi", desc: "Guida pratica per commercialisti: come usare l'Intelligenza Artificiale per leggere fatture elettroniche, estrarre imponibile, IVA, IBAN e totali ed evitare errori di quadratura.", read: "6 min", tag: "Fatture", excerpt: "Dall'upload del file all'estrazione automatica di imponibile, IVA e IBAN: come l'AI azzera la digitazione manuale e segnala le anomalie prima che diventino un problema.", body: [
       { h: null, p: ["L'inserimento manuale dei dati delle fatture è una delle attività più ripetitive e a rischio errore in uno studio. Un'AI di document intelligence come DocuAnalytics legge il documento (PDF o immagine), lo classifica come fattura ed estrae automaticamente tutti i campi chiave in pochi secondi."] },
       { h: "Quali dati estrae l'AI da una fattura", p: ["Il modello riconosce e struttura i dati indipendentemente dal layout del fornitore:"], li: ["Numero e data della fattura", "Cedente e cessionario con P.IVA e codice fiscale", "Imponibile, aliquota e importo IVA, totale documento", "IBAN e modalità di pagamento", "Scadenze e condizioni di pagamento"] },
@@ -58,6 +114,50 @@ export const ARTICLES = {
     ] },
   ],
   en: [
+    {
+      "slug": "area-di-lavoro-docuanalytics",
+      "title": "DocuAnalytics workspace: a guide for professional firms",
+      "desc": "After analysis, find the document, link it to a client and organise reviews and deadlines.",
+      "read": "2 min",
+      "tag": "Workspace",
+      "excerpt": "After analysis, find the document, link it to a client and organise reviews and deadlines.",
+      "workspaceCta": "Go to workspace",
+      "reportTitle": "Send the report to an email address, a PEC address or both",
+      "reportInstructions": "Open the client record, choose email, PEC or both and download the report with your firm’s name. Open a draft, attach the PDF and send from your firm’s mailbox.",
+      "reportNote": "For certified delivery, send from your firm’s PEC mailbox.",
+      "body": [
+        {
+          "h": "From results to documents",
+          "p": [
+            "After analysing a file, open the workspace from the results. Open Documents to find the analysis and view its details."
+          ]
+        },
+        {
+          "h": "Link the document to a client",
+          "p": [
+            "Choose an existing client and confirm the assignment. Create a client under Clients if needed. The document shows its current association."
+          ]
+        },
+        {
+          "h": "Manage the client record",
+          "p": [
+            "Review linked documents, risks and deadlines. Edit email, certified email address, phone and contact person, and download the client PDF report."
+          ]
+        },
+        {
+          "h": "Review priorities and deadlines",
+          "p": [
+            "Open priorities on the dashboard and verify findings against the original document. In Deadlines, review detected dates or add one manually. Export confirmed and manual dates as an .ics calendar file."
+          ]
+        },
+        {
+          "h": "Delete an analysis yourself",
+          "p": [
+            "You can delete an analysis directly from the workspace without contacting support. Open Documents, select the document, then choose Delete analysis and confirm. This removes the extracted text and data, checks, automatic deadlines and saved comparisons that include the document. The client record and manually entered deadlines remain. Manual deadlines are detached from the analysis."
+          ]
+        }
+      ]
+    },
     { slug: "analisi-fatture-elettroniche-ai", title: "E-invoice analysis with AI: extract the data in seconds", desc: "Practical guide for accountants: how to use Artificial Intelligence to read e-invoices, extract taxable amount, VAT, IBAN and totals and avoid reconciliation errors.", read: "6 min", tag: "Invoices", excerpt: "From uploading the file to automatic extraction of taxable amount, VAT and IBAN: how AI eliminates manual data entry and flags anomalies before they become a problem.", body: [
       { h: null, p: ["Manual data entry from invoices is one of the most repetitive and error-prone tasks in a firm. A document-intelligence AI like DocuAnalytics reads the document (PDF or image), classifies it as an invoice and automatically extracts every key field in seconds."] },
       { h: "Which data the AI extracts from an invoice", p: ["The model recognizes and structures the data regardless of the supplier's layout:"], li: ["Invoice number and date", "Supplier and customer with VAT and tax IDs", "Taxable amount, VAT rate and amount, document total", "IBAN and payment method", "Due dates and payment terms"] },
@@ -88,6 +188,50 @@ export const ARTICLES = {
     ] },
   ],
   es: [
+    {
+      "slug": "area-di-lavoro-docuanalytics",
+      "title": "Área de trabajo de DocuAnalytics: guía para despachos",
+      "desc": "Después del análisis, encuentra el documento, vincúlalo a un cliente y organiza las revisiones y los plazos.",
+      "read": "2 min",
+      "tag": "Área de trabajo",
+      "excerpt": "Después del análisis, encuentra el documento, vincúlalo a un cliente y organiza las revisiones y los plazos.",
+      "workspaceCta": "Ir al área de trabajo",
+      "reportTitle": "Envía el informe por email, a una dirección PEC o a ambas",
+      "reportInstructions": "Abre la ficha, elige email, PEC o ambos y descarga el informe con el nombre de tu despacho. Abre un borrador, adjunta el PDF y envíalo desde el buzón del despacho.",
+      "reportNote": "Para el envío certificado, usa la cuenta PEC del despacho.",
+      "body": [
+        {
+          "h": "De los resultados a Documentos",
+          "p": [
+            "Tras analizar un archivo, abre el área de trabajo desde los resultados y localiza el análisis en Documentos."
+          ]
+        },
+        {
+          "h": "Vincula el documento",
+          "p": [
+            "Elige un cliente existente y confirma la asociación. Si hace falta, crea la ficha en Clientes. El documento muestra su asociación actual."
+          ]
+        },
+        {
+          "h": "Consulta la ficha del cliente",
+          "p": [
+            "Consulta documentos, riesgos y plazos. Puedes editar el correo, la dirección de correo certificado, el teléfono y el contacto, y descargar el informe PDF."
+          ]
+        },
+        {
+          "h": "Revisa prioridades y plazos",
+          "p": [
+            "Consulta las prioridades y comprueba los hallazgos en el original. Revisa las fechas detectadas o añade una manualmente. Exporta las fechas confirmadas y manuales en un archivo .ics."
+          ]
+        },
+        {
+          "h": "Elimina un análisis por tu cuenta",
+          "p": [
+            "Puedes eliminar un análisis desde el área de trabajo sin contactar con soporte. Abre Documentos, selecciona el documento y confirma la opción de eliminar el análisis. Se eliminan el texto y los datos extraídos, los controles, los plazos automáticos y las comparaciones guardadas que incluyen el documento. Se conservan la ficha del cliente y los plazos manuales, que se desvinculan del análisis."
+          ]
+        }
+      ]
+    },
     { slug: "analisi-fatture-elettroniche-ai", title: "Análisis de facturas electrónicas con IA: extrae los datos en segundos", desc: "Guía práctica para contables: cómo usar la Inteligencia Artificial para leer facturas electrónicas, extraer base imponible, IVA, IBAN y totales y evitar errores de cuadre.", read: "6 min", tag: "Facturas", excerpt: "Desde subir el archivo hasta la extracción automática de base, IVA e IBAN: cómo la IA elimina la introducción manual y detecta anomalías antes de que sean un problema.", body: [
       { h: null, p: ["La introducción manual de datos de facturas es una de las tareas más repetitivas y propensas a error en un despacho. Una IA de document intelligence como DocuAnalytics lee el documento (PDF o imagen), lo clasifica como factura y extrae automáticamente todos los campos clave en segundos."] },
       { h: "Qué datos extrae la IA de una factura", p: ["El modelo reconoce y estructura los datos con independencia del diseño del proveedor:"], li: ["Número y fecha de la factura", "Emisor y receptor con NIF/CIF", "Base imponible, tipo e importe de IVA, total del documento", "IBAN y forma de pago", "Vencimientos y condiciones de pago"] },
@@ -118,6 +262,50 @@ export const ARTICLES = {
     ] },
   ],
   de: [
+    {
+      "slug": "area-di-lavoro-docuanalytics",
+      "title": "DocuAnalytics-Arbeitsbereich: Leitfaden für Kanzleien",
+      "desc": "Finden Sie analysierte Dokumente, ordnen Sie sie Mandanten zu und organisieren Sie Prüfungen und Fristen.",
+      "read": "2 min",
+      "tag": "Arbeitsbereich",
+      "excerpt": "Finden Sie analysierte Dokumente, ordnen Sie sie Mandanten zu und organisieren Sie Prüfungen und Fristen.",
+      "workspaceCta": "Zum Arbeitsbereich",
+      "reportTitle": "Bericht an eine E-Mail-Adresse, eine PEC-Adresse oder beide senden",
+      "reportInstructions": "Öffnen Sie die Mandantenakte, wählen Sie E-Mail, PEC oder beides und laden Sie den Bericht mit Kanzleinamen herunter. Öffnen Sie einen Entwurf, hängen Sie das PDF an und senden Sie es aus dem Kanzleipostfach.",
+      "reportNote": "Für den zertifizierten Versand verwenden Sie das PEC-Postfach der Kanzlei.",
+      "body": [
+        {
+          "h": "Von der Analyse zur Dokumentenliste",
+          "p": [
+            "Öffnen Sie den Arbeitsbereich aus den Analyseergebnissen. Unter Dokumente finden Sie die Analyse und ihre Details."
+          ]
+        },
+        {
+          "h": "Dokument einem Mandanten zuordnen",
+          "p": [
+            "Wählen Sie einen vorhandenen Mandanten aus und bestätigen Sie die Zuordnung. Bei Bedarf legen Sie zuerst eine Mandantenakte an."
+          ]
+        },
+        {
+          "h": "Mandantenakte nutzen",
+          "p": [
+            "Sehen Sie Dokumente, Risiken und Fristen ein. Bearbeiten Sie E-Mail, PEC-Adresse, Telefon und Ansprechpartner und laden Sie den PDF-Bericht herunter."
+          ]
+        },
+        {
+          "h": "Prioritäten und Fristen prüfen",
+          "p": [
+            "Öffnen Sie die Prioritäten im Dashboard und prüfen Sie die Hinweise am Original. Bestätigen Sie erkannte Fristen oder ergänzen Sie sie manuell. Exportieren Sie bestätigte und manuelle Termine als .ics-Datei."
+          ]
+        },
+        {
+          "h": "Eine Analyse selbst löschen",
+          "p": [
+            "Sie können eine Analyse direkt im Arbeitsbereich löschen, ohne den Support zu kontaktieren. Öffnen Sie Dokumente, wählen Sie das Dokument aus und bestätigen Sie das Löschen der Analyse. Extrahierte Texte und Daten, Prüfergebnisse, automatische Fristen sowie gespeicherte Vergleiche mit dem Dokument werden entfernt. Die Mandantenakte und manuelle Fristen bleiben erhalten. Manuelle Fristen werden von der Analyse getrennt."
+          ]
+        }
+      ]
+    },
     { slug: "analisi-fatture-elettroniche-ai", title: "E-Rechnungsanalyse mit KI: die Daten in Sekunden extrahieren", desc: "Praxisleitfaden für Steuerberater: wie Sie mit Künstlicher Intelligenz E-Rechnungen lesen, Nettobetrag, USt., IBAN und Summen extrahieren und Abgleichfehler vermeiden.", read: "6 min", tag: "Rechnungen", excerpt: "Vom Hochladen der Datei bis zur automatischen Extraktion von Nettobetrag, USt. und IBAN: wie die KI die manuelle Eingabe ersetzt und Anomalien meldet.", body: [
       { h: null, p: ["Die manuelle Dateneingabe aus Rechnungen ist eine der repetitivsten und fehleranfälligsten Aufgaben in einer Kanzlei. Eine Document-Intelligence-KI wie DocuAnalytics liest das Dokument (PDF oder Bild), klassifiziert es als Rechnung und extrahiert automatisch alle wichtigen Felder in Sekunden."] },
       { h: "Welche Daten die KI aus einer Rechnung extrahiert", p: ["Das Modell erkennt und strukturiert die Daten unabhängig vom Layout des Lieferanten:"], li: ["Rechnungsnummer und -datum", "Lieferant und Kunde mit USt-IdNr. und Steuernummer", "Nettobetrag, USt-Satz und -Betrag, Gesamtbetrag", "IBAN und Zahlungsart", "Fälligkeiten und Zahlungsbedingungen"] },
@@ -148,6 +336,50 @@ export const ARTICLES = {
     ] },
   ],
   fr: [
+    {
+      "slug": "area-di-lavoro-docuanalytics",
+      "title": "Espace de travail DocuAnalytics : guide pour les cabinets",
+      "desc": "Retrouvez le document analysé, associez-le à un client et organisez les vérifications et les échéances.",
+      "read": "2 min",
+      "tag": "Espace de travail",
+      "excerpt": "Retrouvez le document analysé, associez-le à un client et organisez les vérifications et les échéances.",
+      "workspaceCta": "Accéder à l’espace de travail",
+      "reportTitle": "Envoyez le rapport par email, à une adresse PEC ou aux deux",
+      "reportInstructions": "Ouvrez la fiche client, choisissez email, PEC ou les deux et téléchargez le rapport au nom du cabinet. Ouvrez un brouillon, joignez le PDF et envoyez-le depuis la boîte du cabinet.",
+      "reportNote": "Pour un envoi certifié, utilisez la boîte PEC du cabinet.",
+      "body": [
+        {
+          "h": "Des résultats aux documents",
+          "p": [
+            "Après l’analyse, ouvrez l’espace de travail depuis les résultats. Retrouvez l’analyse et ses détails dans Documents."
+          ]
+        },
+        {
+          "h": "Associer le document à un client",
+          "p": [
+            "Choisissez un client existant et confirmez l’association. Si nécessaire, créez d’abord sa fiche dans Clients."
+          ]
+        },
+        {
+          "h": "Consulter la fiche client",
+          "p": [
+            "Consultez les documents, risques et échéances. Modifiez l’email, l’adresse PEC, le téléphone et le contact. Vous pouvez télécharger le rapport PDF."
+          ]
+        },
+        {
+          "h": "Vérifier les priorités et les échéances",
+          "p": [
+            "Ouvrez les priorités du tableau de bord et vérifiez les alertes sur le document original. Confirmez les dates détectées ou ajoutez-en manuellement. Exportez les dates confirmées et manuelles au format .ics."
+          ]
+        },
+        {
+          "h": "Supprimer une analyse en autonomie",
+          "p": [
+            "Vous pouvez supprimer une analyse depuis l’espace de travail sans contacter l’assistance. Ouvrez Documents, sélectionnez le document et confirmez la suppression de l’analyse. Le texte et les données extraits, les contrôles, les échéances automatiques et les comparaisons enregistrées qui incluent ce document sont supprimés. La fiche client et les échéances manuelles sont conservées. Ces dernières sont dissociées de l’analyse."
+          ]
+        }
+      ]
+    },
     { slug: "analisi-fatture-elettroniche-ai", title: "Analyse des factures électroniques par IA : extraire les données en quelques secondes", desc: "Guide pratique pour experts-comptables : comment utiliser l'Intelligence Artificielle pour lire les factures électroniques, extraire base HT, TVA, IBAN et totaux et éviter les erreurs.", read: "6 min", tag: "Factures", excerpt: "De l'import du fichier à l'extraction automatique de la base HT, de la TVA et de l'IBAN : comment l'IA supprime la saisie manuelle et signale les anomalies.", body: [
       { h: null, p: ["La saisie manuelle des données de factures est l'une des tâches les plus répétitives et sujettes aux erreurs dans un cabinet. Une IA de document intelligence comme DocuAnalytics lit le document (PDF ou image), le classe comme facture et extrait automatiquement tous les champs clés en quelques secondes."] },
       { h: "Quelles données l'IA extrait d'une facture", p: ["Le modèle reconnaît et structure les données quelle que soit la mise en page du fournisseur :"], li: ["Numéro et date de la facture", "Fournisseur et client avec n° de TVA et identifiants", "Base HT, taux et montant de TVA, total du document", "IBAN et mode de paiement", "Échéances et conditions de paiement"] },
@@ -301,6 +533,7 @@ export function BlogIndex() {
   const [lang, change] = useBlogLang();
   const ui = BLOG_UI[lang];
   const arts = ARTICLES[lang];
+  const [featured, ...guides] = arts;
   useSeo({
     title: ui.idxTitle, description: ui.idxDesc, path: "/blog", lang,
     jsonLd: { "@context": "https://schema.org", "@type": "Blog", "name": ui.t1, "url": SITE + "/blog", "blogPost": arts.map((a) => ({ "@type": "BlogPosting", "headline": a.title, "url": `${SITE}/blog/${a.slug}`, "description": a.desc })) },
@@ -314,8 +547,19 @@ export function BlogIndex() {
       </section>
       <section className="section" data-testid="blog-list">
         <div className="accent-bar" />
+        <div className="after-cta glass pad mb1" data-testid="blog-workspace-feature">
+          <div>
+            <span className="badge badge-info">{featured.tag}</span>
+            <h2 style={{ margin: ".5rem 0" }}>{featured.title}</h2>
+            <p className="section-sub">{featured.excerpt}</p>
+            <p className="mt1"><strong>{featured.reportTitle}</strong></p>
+          </div>
+          <Link to={`/blog/${featured.slug}`} className="btn btn-primary btn-lg" data-testid={`blog-card-${featured.slug}`}>
+            {ui.readMore} <ArrowRight size={16} />
+          </Link>
+        </div>
         <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(300px,1fr))" }}>
-          {arts.map((a) => (
+          {guides.map((a) => (
             <Link key={a.slug} to={`/blog/${a.slug}`} data-testid={`blog-card-${a.slug}`}
               className="glass pad blog-card" style={{ textDecoration: "none", color: "inherit", display: "block" }}>
               <div className="flex aic gap mb1">
@@ -380,6 +624,14 @@ export function BlogPost() {
         <h1 style={{ fontSize: "clamp(1.7rem, 4vw, 2.6rem)", lineHeight: 1.2 }}>{article.title}</h1>
         <p className="section-sub" style={{ marginTop: ".6rem", marginBottom: "1.5rem" }}>{article.excerpt}</p>
 
+        {article.reportTitle && (
+          <section className="glass pad mb1" data-testid="blog-report-highlight" style={{ border: "1px solid #00d2ff44" }}>
+            <h2 style={{ fontSize: "1.25rem", marginBottom: ".6rem" }}>{article.reportTitle}</h2>
+            <p className="section-sub">{article.reportInstructions}</p>
+            <p className="section-sub" style={{ marginTop: ".6rem" }}>{article.reportNote}</p>
+          </section>
+        )}
+
         {article.body.map((sec, i) => (
           <div key={i} className="mb1">
             {sec.h && <h2 style={{ fontSize: "1.25rem", fontWeight: 800, margin: "1.4rem 0 .6rem" }}>{sec.h}</h2>}
@@ -400,8 +652,9 @@ export function BlogPost() {
         ))}
 
         <div className="glass pad mt2 flex aic gap wrapf" style={{ justifyContent: "space-between", border: "1px solid #00d2ff44" }}>
-          <span className="flex aic gap"><Sparkles size={20} color="var(--accent)" /> {ui.ctaText}</span>
-          <Link to="/" className="btn btn-primary" data-testid="article-cta"><CreditCard size={16} /> {ui.ctaBtn} <ArrowRight size={15} /></Link>
+          <span className="flex aic gap"><Sparkles size={20} color="var(--accent)" /> {article.workspaceCta ? article.excerpt : ui.ctaText}</span>
+          <Link to={article.workspaceCta ? "/area" : "/"} className="btn btn-primary" data-testid="article-cta">
+            {!article.workspaceCta && <CreditCard size={16} />} {article.workspaceCta || ui.ctaBtn} <ArrowRight size={15} /></Link>
         </div>
 
         <div className="mt2">

@@ -119,6 +119,7 @@ function Retention({ call, onRun }) {
       {res && <div className="ad-tags" data-testid="privacy-ret-result">
         <span className="ad-tag">Analisi oltre il periodo: {res.analyses_older_than_period} / {res.analyses_total}</span>
         <span className="ad-tag">Account registrati inattivi: {res.registered_accounts_inactive} / {res.registered_accounts_total}</span>
+        <span className="ad-tag">Account da verificare: {res.registered_accounts_activity_unknown ?? 0}</span>
         <span className="ad-tag">Sessioni anonime inattive: {res.anonymous_sessions_inactive}</span>
       </div>}
     </section>

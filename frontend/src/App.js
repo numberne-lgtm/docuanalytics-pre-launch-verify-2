@@ -6,7 +6,7 @@ import {
   Upload, Zap, CreditCard, FileText, ScrollText, Building2, Landmark, Wallet,
   Bot, ShieldAlert, MessageSquare, Star, CheckCircle2, X, Send, Loader2,
   Download, ChevronRight, Bitcoin, LogIn, LogOut, User, Gift, BookOpen,
-  Sparkles, Copy, Play, Lock, Facebook, Linkedin, Youtube, Globe,
+  Sparkles, Copy, Play, Lock, Facebook, Linkedin, Instagram, Globe,
   ShieldCheck, Trash2, BadgeCheck, Ban, ChevronDown,
   Clock, AlertTriangle, Search, Rocket, Scale, FileSignature, TrendingUp,
   Users, Briefcase, Files, Server, ArrowRight, Mail, History, Cpu, UserCheck, FileDown, FileCode, Pencil, Bell, CalendarClock
@@ -20,7 +20,10 @@ import { AssistantPromo, AssistantNudge } from "./assistant/AssistantPromo";
 import { reportAssistantSignup } from "./assistant/signupTracking";
 import AdminPrivacy from "./AdminPrivacy";
 import PrivacyPage from "./PrivacyPage";
+import { LegalPage, TermsPage, PurchasesPage, CookiesPage, AccessibilityPage } from "./LegalPages";
+import CookiePreferences from "./CookiePreferences";
 import Workspace from "./workspace/Workspace";
+import PriorityShare from "./workspace/PriorityShare";
 import ReminderFromAnalysis from "./workspace/ReminderFromAnalysis";
 import { MT, MARK, SECTORS, DEMO, validatePiva, validateCF } from "./content";
 import { jsPDF } from "jspdf";
@@ -95,7 +98,9 @@ const T = {
     up_title: "Carica Documento", up_sub: "Trascina un file o scegli il tipo di documento per l'analisi immediata",
     up_drop: "Trascina qui il tuo documento", up_hint: "PDF, JPG, PNG — Max 10MB",
     analyze: "Analizza Documento", analyzing: "Analisi in corso...",
+    up_selected: "File selezionato", up_change: "Clicca per cambiare file",
     results_title: "Risultati Analisi",
+    results_workspace: "Vai all’area di lavoro", results_workspace_desc: "Associa il documento a un cliente e tieni sotto controllo rischi e scadenze.",
     feat_title: "Nuove Funzionalità Avanzate", feat_sub: "Non solo estrazione dati: intelligenza che protegge il tuo studio",
     serv_title: "Servizi AI Specialistici per il Tuo Settore", serv_sub: "Algoritmi addestrati per Commercialisti, Avvocati, Notai e CFO",
     guide_btn: "Guida Completa ai Servizi Enterprise",
@@ -131,7 +136,9 @@ const T = {
     up_title: "Upload Document", up_sub: "Drag a file or pick a document type for instant analysis",
     up_drop: "Drag your document here", up_hint: "PDF, JPG, PNG — Max 10MB",
     analyze: "Analyze Document", analyzing: "Analyzing...",
+    up_selected: "File selected", up_change: "Click to change file",
     results_title: "Analysis Results",
+    results_workspace: "Go to workspace", results_workspace_desc: "Link the document to a client and keep track of risks and deadlines.",
     feat_title: "Advanced New Features", feat_sub: "Beyond data extraction: intelligence that protects your practice",
     serv_title: "Specialized AI Services for Your Sector", serv_sub: "Algorithms trained for Accountants, Lawyers, Notaries and CFOs",
     guide_btn: "Full Guide to Enterprise Services",
@@ -167,7 +174,9 @@ const T = {
     up_title: "Subir Documento", up_sub: "Arrastra un archivo o elige el tipo de documento para un análisis inmediato",
     up_drop: "Arrastra aquí tu documento", up_hint: "PDF, JPG, PNG — Máx 10MB",
     analyze: "Analizar Documento", analyzing: "Analizando...",
+    up_selected: "Archivo seleccionado", up_change: "Haz clic para cambiar el archivo",
     results_title: "Resultados del Análisis",
+    results_workspace: "Ir al área de trabajo", results_workspace_desc: "Asocia el documento a un cliente y consulta los riesgos y plazos.",
     feat_title: "Nuevas Funciones Avanzadas", feat_sub: "Más que extracción de datos: inteligencia que protege tu despacho",
     serv_title: "Servicios de IA Especializados para tu Sector", serv_sub: "Algoritmos entrenados para Contables, Abogados, Notarios y directores financieros",
     guide_btn: "Guía Completa de Servicios Enterprise",
@@ -203,7 +212,9 @@ const T = {
     up_title: "Dokument hochladen", up_sub: "Datei ziehen oder Dokumenttyp für die sofortige Analyse wählen",
     up_drop: "Dokument hierher ziehen", up_hint: "PDF, JPG, PNG — max. 10 MB",
     analyze: "Dokument analysieren", analyzing: "Analyse läuft...",
+    up_selected: "Datei ausgewählt", up_change: "Klicken, um die Datei zu ändern",
     results_title: "Analyseergebnisse",
+    results_workspace: "Zum Arbeitsbereich", results_workspace_desc: "Ordne das Dokument einem Mandanten zu und behalte Risiken und Fristen im Blick.",
     feat_title: "Neue erweiterte Funktionen", feat_sub: "Mehr als Datenextraktion: Intelligenz, die Ihre Kanzlei schützt",
     serv_title: "Spezialisierte KI-Dienste für Ihre Branche", serv_sub: "Algorithmen für Steuerberater, Anwälte, Notare und CFOs",
     guide_btn: "Vollständiger Leitfaden zu Enterprise-Diensten",
@@ -239,7 +250,9 @@ const T = {
     up_title: "Importer un document", up_sub: "Glissez un fichier ou choisissez le type de document pour une analyse immédiate",
     up_drop: "Glissez votre document ici", up_hint: "PDF, JPG, PNG — Max 10 Mo",
     analyze: "Analyser le document", analyzing: "Analyse en cours...",
+    up_selected: "Fichier sélectionné", up_change: "Cliquez pour changer de fichier",
     results_title: "Résultats de l'analyse",
+    results_workspace: "Accéder à l’espace de travail", results_workspace_desc: "Associez le document à un client et suivez les risques et les échéances.",
     feat_title: "Nouvelles fonctionnalités avancées", feat_sub: "Au-delà de l'extraction : une intelligence qui protège votre cabinet",
     serv_title: "Services IA spécialisés pour votre secteur", serv_sub: "Algorithmes entraînés pour experts-comptables, avocats, notaires et directeurs financiers",
     guide_btn: "Guide complet des services Enterprise",
@@ -481,12 +494,11 @@ function LanguageSwitcher() {
   );
 }
 
-// Social links reali dell'utente. Instagram/X rimossi finché non forniti (niente link morti).
 const SOCIALS = [
-  { name: "Facebook", Icon: Facebook, url: "https://www.facebook.com/FrancescoEllee" },
-  { name: "LinkedIn", Icon: Linkedin, url: "https://www.linkedin.com/in/francesco-e-l-l-e-20058920b/" },
-  { name: "YouTube", Icon: Youtube, url: "https://www.youtube.com/@MisteriSvelatix" },
-];
+  { name: "Facebook", Icon: Facebook, url: process.env.REACT_APP_DOCUANALYTICS_FACEBOOK_URL },
+  { name: "Instagram", Icon: Instagram, url: process.env.REACT_APP_DOCUANALYTICS_INSTAGRAM_URL },
+  { name: "LinkedIn", Icon: Linkedin, url: process.env.REACT_APP_DOCUANALYTICS_LINKEDIN_URL },
+].filter(({ url }) => url?.trim());
 
 const DOC_TYPES = [
   { id: "fattura", Icon: FileText },
@@ -498,6 +510,17 @@ const DOC_TYPES = [
 
 const SECTOR_SLUGS = ["commercialisti", "avvocati", "notai", "cfo", "hr"];
 const PUBLIC_ORIGIN = "https://docuanalytics.online";
+// After login, return only to a known workspace detail path.
+const PRIORITY_RETURN_RE = /^\/area\/(?:priorita\/(?:document|deadline)\/|documenti\/)[A-Za-z0-9-]{1,128}$/;
+const PRIORITY_RETURN_KEY = "da_priority_return";
+function returnToPriorityAfterLogin() {
+  const destination = sessionStorage.getItem(PRIORITY_RETURN_KEY);
+  sessionStorage.removeItem(PRIORITY_RETURN_KEY);
+  if (destination && PRIORITY_RETURN_RE.test(destination)) {
+    window.location.replace(destination);
+  }
+}
+
 const provLabel = (p) => ({ claude: "Claude Sonnet 5", openai: "ChatGPT", "openai-fast": "ChatGPT mini", gemini: "Gemini" }[p] || "Gemini");
 const provBadge = (p) => ({ claude: "mb-claude", openai: "mb-openai", "openai-fast": "mb-openai", gemini: "mb-gemini" }[p] || "mb-gemini");
 
@@ -535,6 +558,7 @@ function useUser() {
         localStorage.removeItem("da_ref");
         axios.defaults.headers.common["Authorization"] = `Bearer ${data.token}`;
         setUser(data.user); setAuthed(true);
+        returnToPriorityAfterLogin();
       }).catch(() => {
         window.history.replaceState(null, "", window.location.pathname + window.location.search);
         initAnon();
@@ -568,6 +592,7 @@ function useUser() {
     axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
     setUser(userObj); setAuthed(true);
     reportAssistantSignup(token);
+    returnToPriorityAfterLogin();
   }, []);
 
   const logout = useCallback(() => {
@@ -618,7 +643,12 @@ function Home() {
   useEffect(() => {
     const h = window.location.hash;
     if (h && h.length > 1) setTimeout(() => scrollToId(h.slice(1)), 450);
-    if (new URLSearchParams(window.location.search).get("auth") === "register") setAuthOpen(true);
+    const params = new URLSearchParams(window.location.search);
+    const destination = params.get("return_to");
+    if (destination && PRIORITY_RETURN_RE.test(destination)) {
+      sessionStorage.setItem(PRIORITY_RETURN_KEY, destination);
+    }
+    if (["register", "login"].includes(params.get("auth"))) setAuthOpen(true);
   }, []);
 
   useEffect(() => {
@@ -669,12 +699,17 @@ function Home() {
 
   const analyze = async () => {
     if (!file) return;
-    if (user.credits <= 0) { notify(t("n_credits_out")); openPricing("credits_out"); return; }
+    if (user.credits <= 0) {
+      if (user.synthetic_analysis) notify("Crediti di prova esauriti.");
+      else { notify(t("n_credits_out")); openPricing("credits_out"); }
+      return;
+    }
     setAnalyzing(true); setResult(null); setCompare(null); setStage(0);
     const timers = [0, 1, 2, 3].map((i) => setTimeout(() => setStage(i), i * 700));
     try {
       const b64 = await toBase64(file);
-      const { data } = await axios.post(`${API}/analyze`, {
+      const path = user.synthetic_analysis ? "pr7-staging/analyze" : "analyze";
+      const { data } = await axios.post(`${API}/${path}`, {
         user_id: user.user_id, doc_type: docType, filename: file.name,
         mime_type: file.type || "application/octet-stream", file_base64: b64, model: aiModel,
       });
@@ -686,7 +721,7 @@ function Home() {
     } catch (e) {
       const msg = e?.response?.data?.detail || t("n_analyze_fail");
       notify(msg);
-      if (e?.response?.status === 402) setPricingOpen(true);
+      if (e?.response?.status === 402 && !user.synthetic_analysis) setPricingOpen(true);
     } finally {
       timers.forEach(clearTimeout); setAnalyzing(false);
     }
@@ -774,7 +809,9 @@ function Home() {
         <section className="section" id="upload">
           <div className="accent-bar" />
           <h2 className="section-title">{t("up_title")}</h2>
-          <p className="section-sub mb1">{t("up_sub")}</p>
+          <p className="section-sub mb1">{user.synthetic_analysis
+            ? "Staging locale: usa un contratto fittizio in PDF (max 10 MB). Ogni prova usa un credito e restituisce un risultato simulato."
+            : t("up_sub")}</p>
 
           <div className="chips mb1">
             {DOC_TYPES.map(({ id, Icon }) => (
@@ -785,14 +822,23 @@ function Home() {
             ))}
           </div>
 
-          <div className={`upload ${drag ? "drag" : ""}`} data-testid="upload-zone"
+          <div className={`upload${file ? " upload-selected" : ""}${drag ? " drag" : ""}`} data-testid="upload-zone"
             onClick={() => inputRef.current?.click()}
             onDragOver={(e) => { e.preventDefault(); setDrag(true); }}
             onDragLeave={() => setDrag(false)}
             onDrop={(e) => { e.preventDefault(); setDrag(false); onFile(e.dataTransfer.files[0]); }}>
-            <Upload className="ic" />
-            <p style={{ fontWeight: 700, fontSize: "1.05rem" }}>{file ? file.name : t("up_drop")}</p>
-            <p style={{ color: "var(--text-muted)", fontSize: ".85rem", marginTop: ".3rem" }}>{t("up_hint")}</p>
+            {file ? (
+              <div role="status" data-testid="selected-file">
+                <CheckCircle2 className="ic" aria-hidden="true" />
+                <p className="upload-status">{t("up_selected")}</p>
+                <p className="upload-filename">{file.name}</p>
+                <p className="upload-change">{t("up_change")}</p>
+              </div>
+            ) : <>
+              <Upload className="ic" aria-hidden="true" />
+              <p style={{ fontWeight: 700, fontSize: "1.05rem" }}>{t("up_drop")}</p>
+              <p style={{ color: "var(--text-muted)", fontSize: ".85rem", marginTop: ".3rem" }}>{t("up_hint")}</p>
+            </>}
             <input ref={inputRef} type="file" hidden accept=".pdf,.jpg,.jpeg,.png"
               data-testid="file-input" onChange={(e) => onFile(e.target.files[0])} />
           </div>
@@ -835,7 +881,7 @@ function Home() {
         </section>
 
         {result && <Results key={analysisId} result={result} analysisId={analysisId} notify={notify} aiModel={aiModel} provider={usedProvider}
-          compare={compare} comparing={comparing} onCompare={compareWithOther} canCompare={!!file}
+          compare={compare} comparing={comparing} onCompare={compareWithOther} canCompare={!!file && !user.synthetic_analysis}
           userEmail={user.email}
           credits={user.credits} onTopup={() => openPricing("after_analysis")}
           onAgain={() => { setFile(null); setResult(null); setStage(-1); scrollToId("upload"); }} />}
@@ -882,9 +928,9 @@ function Header({ credits, authed, user, onTopup, onAuth, onReferral, onLogout, 
         <nav className="nav">
           <button className="btn btn-sm btn-ghost nav-anchor" data-testid="nav-how" onClick={() => scrollToId("come-funziona")}>{t("nav_how")}</button>
           <button className="btn btn-sm btn-ghost nav-anchor" data-testid="nav-price" onClick={() => scrollToId("prezzi")}>{t("nav_price")}</button>
+          <Link to="/area" className="btn btn-sm btn-ghost" data-testid="nav-workspace"><Briefcase size={15} /> {t("nav_workspace")}</Link>
           <Link to="/blog" className="btn btn-sm btn-ghost" data-testid="nav-blog"><BookOpen size={15} /> {t("blog_link")}</Link>
           <button className="btn btn-sm btn-ghost nav-anchor" data-testid="nav-history" onClick={onHistory}><History size={15} /> {t("nav_history")}</button>
-          {authed && <Link to="/area" className="btn btn-sm btn-ghost" data-testid="nav-workspace"><Briefcase size={15} /> {t("nav_workspace")}</Link>}
           <LanguageSwitcher />
           <span className="credits-badge" data-testid="credits-badge"><Zap size={15} /> {credits} {t("credits")}</span>
           <button className="btn btn-primary btn-sm" data-testid="topup-btn" onClick={onTopup}><CreditCard size={15} /> {t("topup")}</button>
@@ -901,6 +947,27 @@ function Header({ credits, authed, user, onTopup, onAuth, onReferral, onLogout, 
       </div>
     </header>
   );
+}
+
+function saveAnalysisPdf(result) {
+  const doc = new jsPDF();
+  doc.setFontSize(16); doc.text("Executive Summary — DocuAnalytics AI", 14, 16);
+  doc.setFontSize(10); doc.setTextColor(90); doc.text(String(result.doc_type || ""), 14, 23);
+  const sum = doc.splitTextToSize(result.summary || "", 180); doc.text(sum, 14, 30);
+  let y = 30 + sum.length * 5 + 4;
+  autoTable(doc, { head: [["Campo", "Valore"]], body: (result.fields || []).map((f) => [f.label, String(f.value)]), startY: y, styles: { fontSize: 9 }, headStyles: { fillColor: [107, 92, 231] } });
+  y = doc.lastAutoTable.finalY + 6;
+  if ((result.audit || []).length) {
+    autoTable(doc, { head: [["Livello", "Controllo / Red-Flag"]], body: result.audit.map((a) => [a.level, a.message]), startY: y, styles: { fontSize: 9 }, headStyles: { fillColor: [220, 90, 60] } });
+    y = doc.lastAutoTable.finalY + 6;
+  }
+  if (result.full_text) {
+    if (y > 250) { doc.addPage(); y = 16; }
+    doc.setFontSize(11); doc.setTextColor(20); doc.text("Testo estratto (verifica OCR)", 14, y); y += 6;
+    doc.setFontSize(8); doc.setTextColor(90);
+    doc.text(doc.splitTextToSize(String(result.full_text).slice(0, 3000), 180), 14, y);
+  }
+  doc.save("executive-summary.pdf");
 }
 
 function Results({ result, analysisId, notify, credits, onTopup, onAgain, aiModel, provider, compare, comparing, onCompare, canCompare, userEmail }) {
@@ -931,6 +998,11 @@ function Results({ result, analysisId, notify, credits, onTopup, onAgain, aiMode
   };
 
   const exportData = (fmt) => {
+    if (fmt === "pdf") {
+      saveAnalysisPdf(result);
+      notify(`${t("exported")} PDF`);
+      return;
+    }
     let content, mime, name;
     if (fmt === "json") { content = JSON.stringify(result, null, 2); mime = "application/json"; name = "docuanalytics.json"; }
     else { // csv
@@ -989,6 +1061,13 @@ function Results({ result, analysisId, notify, credits, onTopup, onAgain, aiMode
         )}
       </div>
 
+      <div className="after-cta glass pad mb1" data-testid="results-workspace-cta">
+        <p className="section-sub">{t("results_workspace_desc")}</p>
+        <Link to={analysisId ? `/area/panoramica/${encodeURIComponent(analysisId)}` : "/area"} className="btn btn-primary btn-lg" data-testid="results-workspace-link">
+          <Briefcase size={20} aria-hidden="true" /> {t("results_workspace")} <ArrowRight size={18} aria-hidden="true" />
+        </Link>
+      </div>
+
       <div className="results-grid">
         <div className="glass pad">
           <div className="flex between aic mb1" style={{ flexWrap: "wrap", gap: ".6rem" }}>
@@ -996,6 +1075,7 @@ function Results({ result, analysisId, notify, credits, onTopup, onAgain, aiMode
             <div className="flex gap" style={{ flexWrap: "wrap" }}>
               <button className="btn btn-sm btn-primary" data-testid="export-sync-btn" onClick={() => setExportOpen(true)}><FileDown size={14} /> {t("export_sync")}</button>
               <ReminderFromAnalysis analysisId={analysisId} guess={deadline} docType={result.doc_type} loggedIn={!!userEmail} notify={notify} />
+              <button className="btn btn-sm" data-testid="export-pdf" onClick={() => exportData("pdf")}><Download size={14} /> PDF</button>
               <button className="btn btn-sm" data-testid="export-csv" onClick={() => exportData("csv")}><Download size={14} /> CSV</button>
               <button className="btn btn-sm" data-testid="export-json" onClick={() => exportData("json")}><Download size={14} /> JSON</button>
             </div>
@@ -1140,24 +1220,7 @@ function ExportDrawer({ result, notify, onClose }) {
   };
 
   const exportExecPDF = () => {
-    const doc = new jsPDF();
-    doc.setFontSize(16); doc.text("Executive Summary — DocuAnalytics AI", 14, 16);
-    doc.setFontSize(10); doc.setTextColor(90); doc.text(String(result.doc_type || ""), 14, 23);
-    const sum = doc.splitTextToSize(result.summary || "", 180); doc.text(sum, 14, 30);
-    let y = 30 + sum.length * 5 + 4;
-    autoTable(doc, { head: [["Campo", "Valore"]], body: (result.fields || []).map((f) => [f.label, String(f.value)]), startY: y, styles: { fontSize: 9 }, headStyles: { fillColor: [107, 92, 231] } });
-    y = doc.lastAutoTable.finalY + 6;
-    if ((result.audit || []).length) {
-      autoTable(doc, { head: [["Livello", "Controllo / Red-Flag"]], body: result.audit.map((a) => [a.level, a.message]), startY: y, styles: { fontSize: 9 }, headStyles: { fillColor: [220, 90, 60] } });
-      y = doc.lastAutoTable.finalY + 6;
-    }
-    if (result.full_text) {
-      if (y > 250) { doc.addPage(); y = 16; }
-      doc.setFontSize(11); doc.setTextColor(20); doc.text("Testo estratto (verifica OCR)", 14, y); y += 6;
-      doc.setFontSize(8); doc.setTextColor(90);
-      doc.text(doc.splitTextToSize(String(result.full_text).slice(0, 3000), 180), 14, y);
-    }
-    doc.save("executive-summary.pdf");
+    saveAnalysisPdf(result);
     notify(`${t("exported")} PDF`);
   };
 
@@ -1975,20 +2038,26 @@ function Footer({ onTopup, onGuide }) {
         </div>
         <p style={{ color: "var(--text-muted)", fontSize: ".82rem", marginTop: ".3rem" }}>{t("foot_desc")}</p>
 
-        <div className="socials" data-testid="social-links">
+        {SOCIALS.length > 0 && <div className="socials" data-testid="social-links">
           {SOCIALS.map(({ name, Icon, url }) => (
-            <a key={name} className="social-btn" href={url} target="_blank" rel="noreferrer"
+            <a key={name} className="social-btn" href={url.trim()} target="_blank" rel="noreferrer"
               aria-label={name} title={name} data-testid={`social-${name.toLowerCase().split(" ")[0]}`}>
               <Icon size={18} />
             </a>
           ))}
-        </div>
+        </div>}
 
         <div className="flex gap wrapf aic" style={{ justifyContent: "center", marginTop: "1rem" }}>
           <Link to="/blog" className="btn btn-sm btn-ghost" data-testid="footer-blog"><BookOpen size={14} /> {t("blog_link")}</Link>
           <button className="btn btn-sm btn-ghost" onClick={onGuide}><BookOpen size={14} /> {t("foot_guide")}</button>
           <a className="btn btn-sm btn-ghost" href="/assistant?utm_source=site&utm_medium=footer" data-testid="footer-assistant-link"><Bot size={14} /> {t("assistant_cta")}</a>
           <Link to="/privacy" className="btn btn-sm btn-ghost" data-testid="footer-privacy-link"><ShieldCheck size={14} /> Privacy</Link>
+          <Link to="/dati-legali" className="btn btn-sm btn-ghost">Dati legali</Link>
+          <Link to="/termini" className="btn btn-sm btn-ghost">Condizioni di servizio</Link>
+          <Link to="/acquisti-rimborsi" className="btn btn-sm btn-ghost">Acquisti e rimborsi</Link>
+          <Link to="/cookie-policy" className="btn btn-sm btn-ghost">Cookie</Link>
+          <Link to="/accessibilita" className="btn btn-sm btn-ghost">Accessibilità</Link>
+          <Link to="/privacy#preferenze-cookie" className="btn btn-sm btn-ghost">Preferenze cookie</Link>
           <a className="btn btn-sm btn-ghost" href="mailto:docuanalyticsai@docuanalytics.online" data-testid="footer-contact"><Mail size={14} /> {t("contact")}</a>
           <button className="btn btn-primary btn-sm" onClick={onTopup}><CreditCard size={14} /> {t("foot_topup")}</button>
         </div>
@@ -2340,10 +2409,19 @@ function App() {
           <Route path="/assistant" element={<AssistantPage />} />
           <Route path="/admin/assistant" element={<AdminAssistant />} />
           <Route path="/privacy" element={<PrivacyPage />} />
+          <Route path="/dati-legali" element={<LegalPage />} />
+          <Route path="/termini" element={<TermsPage />} />
+          <Route path="/acquisti-rimborsi" element={<PurchasesPage />} />
+          <Route path="/cookie-policy" element={<CookiesPage />} />
+          <Route path="/accessibilita" element={<AccessibilityPage />} />
+          <Route path="/area/priorita/:kind/:itemId" element={<PriorityShare />} />
           <Route path="/area" element={<Workspace />} />
+          <Route path="/area/documenti/:analysisId" element={<Workspace />} />
+          <Route path="/area/panoramica/:analysisId" element={<Workspace />} />
           <Route path="/admin/privacy" element={<AdminPrivacy />} />
           <Route path="*" element={<Home />} />
         </Routes>
+        <CookiePreferences />
       </BrowserRouter>
     </I18nProvider>
   );

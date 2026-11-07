@@ -138,4 +138,14 @@
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
+  <url>
+    <loc>https://docuanalytics.online/blog/area-di-lavoro-docuanalytics</loc>
+    <changefreq>monthly</changefreq>
+    <xhtml:link rel="alternate" hreflang="it" href="https://docuanalytics.online/blog/area-di-lavoro-docuanalytics"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://docuanalytics.online/blog/area-di-lavoro-docuanalytics?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://docuanalytics.online/blog/area-di-lavoro-docuanalytics?lang=es"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://docuanalytics.online/blog/area-di-lavoro-docuanalytics?lang=de"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://docuanalytics.online/blog/area-di-lavoro-docuanalytics?lang=fr"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://docuanalytics.online/blog/area-di-lavoro-docuanalytics"/>
+  </url>
 </urlset>

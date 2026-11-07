@@ -1,0 +1,45 @@
+# Local machine ONLY. Synthetic data, no paid external services, no public ports.
+# Fixed project name isolates volumes and containers from any production Compose stack.
+name: docuanalytics-pr7-local
+services:
+  mongo:
+    image: mongo:7
+    restart: "no"
+    networks: [pr7_local]
+    volumes: [pr7_mongo_data:/data/db]
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.runCommand({ ping: 1 })"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+  staging:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile.pr7
+    restart: "no"
+    environment:
+      APP_ENV: test
+      PR7_LOCAL_STAGING: "1"
+      STAGING_MONGO_URI: mongodb://mongo:27017
+    depends_on:
+      mongo:
+        condition: service_healthy
+    networks: [pr7_local]
+  # This proxy alone spans the private app network and Docker's host-facing bridge.
+  # It has NO credentials and ONLY proxies HTTP to the private staging application.
+  gateway:
+    image: nginx:1.27-alpine
+    restart: "no"
+    volumes:
+      - ./backend/pr7-proxy.conf:/etc/nginx/conf.d/default.conf:ro
+    ports:
+      - "127.0.0.1:8765:8080"
+    depends_on:
+      - staging
+    networks: [pr7_local, pr7_gateway]
+networks:
+  pr7_local:
+    internal: true
+  pr7_gateway: {}
+volumes:
+  pr7_mongo_data:

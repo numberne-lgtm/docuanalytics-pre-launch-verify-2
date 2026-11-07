@@ -10,13 +10,13 @@ const LOG_KEY = "da_assistant_log";
 const UTM_KEYS = ["utm_source", "utm_medium", "utm_campaign"];
 
 const PROFILES = [
-  { id: "avvocato", label: "Avvocato", icon: Scale, qs: ["Come mi aiuta ad analizzare un contratto?", "Segnala le clausole vessatorie?", "Quanto costa per uno studio legale?"] },
-  { id: "commercialista", label: "Commercialista", icon: Calculator, qs: ["Posso esportare i dati verso il mio gestionale?", "Controlla F24 e fatture?", "Quale piano conviene a uno studio?"] },
-  { id: "imprenditore", label: "Imprenditore", icon: Briefcase, qs: ["Come controllo le fatture dei fornitori?", "Come funzionano i crediti?", "Posso provarlo gratis?"] },
-  { id: "altro professionista", label: "Altro professionista", icon: Users, qs: ["Cosa fa DocuAnalytics?", "Quali documenti posso analizzare?", "I miei documenti sono al sicuro?"] },
+  { id: "avvocato", label: "Avvocato", icon: Scale, qs: ["Come mi aiuta ad analizzare un contratto?", "Come funziona la nuova Area di lavoro?", "Quanto costa per uno studio legale?"] },
+  { id: "commercialista", label: "Commercialista", icon: Calculator, qs: ["Come funziona la Panoramica dello studio?", "Come si verificano documenti e scadenze?", "Posso esportare i dati verso il mio gestionale?"] },
+  { id: "imprenditore", label: "Imprenditore", icon: Briefcase, qs: ["Come controllo le fatture dei fornitori?", "Come funzionano documenti e promemoria?", "Posso provarlo gratis?"] },
+  { id: "altro professionista", label: "Altro professionista", icon: Users, qs: ["Cosa fa DocuAnalytics?", "Quali novità ci sono nell'Area di lavoro?", "Cosa posso provare senza registrarmi?"] },
 ];
 
-const WELCOME = "Ciao! Sono l'assistente di DocuAnalytics AI. Ti aiuto a capire se e come la piattaforma può semplificare il tuo lavoro con i documenti. Di cosa ti occupi?";
+const WELCOME = "Ciao! Sono l'assistente pubblico di DocuAnalytics AI: posso spiegarti le funzioni della piattaforma e le novità dell'Area di lavoro, precisando se sono in test o pubblicate. Non vedo documenti né dati degli utenti. Di cosa ti occupi?";
 
 const getSid = () => {
   let s = localStorage.getItem(SID_KEY);
@@ -178,7 +178,7 @@ export default function AssistantPage() {
       <footer className="as-footer">
         {(msgs.length > 0 || blocked) && <CtaBar utm={utm} freeCredits={cfg?.free_credits} />}
         <Composer onSend={ask} disabled={loading || blocked} maxLen={cfg?.max_message_chars || 500} />
-        <p className="as-disclaimer">Risposte generate da AI su informazioni ufficiali DocuAnalytics. Non inserire dati personali.</p>
+        <p className="as-disclaimer">Assistente pubblico: spiega il servizio senza accedere ai documenti degli utenti. Le novità sono spiegate indicando se sono già disponibili o ancora in test. Non inserire dati personali.</p>
       </footer>
     </div>
   );
