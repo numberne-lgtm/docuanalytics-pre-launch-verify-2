@@ -4,6 +4,7 @@ import axios from "axios";
 import { LayoutDashboard, Users, FileText, CalendarClock, X, Zap } from "lucide-react";
 import { ws, errMsg, hasToken } from "./api";
 import RiskDashboard, { Level } from "./RiskDashboard";
+import { focusListRow } from "./keyboard";
 import WorkspaceCopilot from "./WorkspaceCopilot";
 import PriorityQrPdf from "./PriorityQrPdf";
 import Documents from "./Documents";
@@ -86,6 +87,8 @@ function WorkspaceView({ documentId }) {
   const [doc, setDoc] = useState(null);
   const [audit, setAudit] = useState(null);
   const documentListRef = useRef(null);
+  const priorityListRef = useRef(null);
+  const priorityTrigger = useRef(null);
   const documentTrigger = useRef(null);
   const [focusClient, setFocusClient] = useState(null);
   const [reloadKey, setReloadKey] = useState(0);
@@ -111,12 +114,19 @@ function WorkspaceView({ documentId }) {
   const titles = () => [...(documentListRef.current?.querySelectorAll("[data-document-title]") || [])];
   const openDocument = (id, trigger) => {
     documentTrigger.current = trigger || null;
+    priorityTrigger.current = view === "dashboard" ? trigger || null : null;
     setDoc(id);
   };
   const closeDocument = () => {
     const title = titles().find((button) => button.dataset.documentTitle === doc);
-    (title || documentTrigger.current)?.focus();
+    const trigger = view === "dashboard" ? priorityTrigger.current : (title || documentTrigger.current);
     setDoc(null);
+    // The trigger must be restored after the panel has been removed, not before.
+    window.requestAnimationFrame(() => {
+      if (trigger?.isConnected) trigger.focus({ preventScroll: true });
+      else if (view === "dashboard") focusListRow(priorityListRef.current);
+      else focusListRow(documentListRef.current, doc);
+    });
   };
   const stepDocument = (direction) => {
     const buttons = titles();
@@ -137,7 +147,7 @@ function WorkspaceView({ documentId }) {
         <nav className="ws-nav" data-testid="workspace-nav">
           {NAV.map(([k, l, Icon]) => <button key={k} className={view === k ? "on" : ""} onClick={() => go(k)} data-testid={`ws-nav-${k}`}><Icon size={15} /> {l}</button>)}
         </nav>
-        {view === "dashboard" && <RiskDashboard onOpenDoc={openDocument} onOpenClient={openClient} reloadKey={reloadKey} />}
+        {view === "dashboard" && <RiskDashboard onOpenDoc={openDocument} onOpenClient={openClient} reloadKey={reloadKey} listRef={priorityListRef} />}
         {view === "clients" && (client ? <Client360 cid={client} onBack={() => { setFocusClient(client); setClient(null); }} onOpenDoc={openDocument} reloadKey={reloadKey} onChanged={reload} />
           : <ClientList focusClient={focusClient} onOpen={setClient} reloadKey={reloadKey} onChanged={reload} />)}
         {view === "documents" && (audit ? <AuditView ids={audit} onBack={() => setAudit(null)} onCredits={setCredits} />
