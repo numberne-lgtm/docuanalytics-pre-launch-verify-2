@@ -55,3 +55,16 @@ def test_public_and_account_assistant_guides_are_separated():
     assert "documenti" in WORKSPACE_GUIDE.lower()
     assert "non" in PUBLIC_RELEASE_NOTE.lower() and "produzione" in PUBLIC_RELEASE_NOTE.lower()
     assert "non" in WORKSPACE_GUIDE.lower() and "scadenze" in WORKSPACE_GUIDE.lower()
+
+
+def test_assistant_release_note_switches_only_in_production(monkeypatch):
+    from assistant.workspace_guide import current_release_note, PUBLIC_LIVE_NOTE, PUBLIC_RELEASE_NOTE
+    from assistant.router import _system_prompt
+    monkeypatch.setenv("APP_ENV", "test")
+    assert current_release_note() == PUBLIC_RELEASE_NOTE
+    assert PUBLIC_RELEASE_NOTE in _system_prompt("", None)
+    monkeypatch.setenv("APP_ENV", "production")
+    assert current_release_note() == PUBLIC_LIVE_NOTE
+    assert PUBLIC_LIVE_NOTE in _system_prompt("", None)
+    monkeypatch.delenv("APP_ENV", raising=False)
+    assert current_release_note() == PUBLIC_RELEASE_NOTE
