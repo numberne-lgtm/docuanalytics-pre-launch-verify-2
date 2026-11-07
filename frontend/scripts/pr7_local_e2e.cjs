@@ -101,7 +101,7 @@ async function loginFromPriority(page, path, email) {
       assert.equal(await dialog.getAttribute("aria-modal"), "true");
       await page.keyboard.press("Escape");
       await page.getByTestId("doc-panel").waitFor({ state: "detached" });
-      assert(await priorityButtons.first().evaluate(el => el === document.activeElement));
+      await page.waitForFunction(() => document.activeElement?.getAttribute("data-testid") === "priority-0");
     }
 
     const token = await page.evaluate(() => localStorage.getItem("da_token"));
