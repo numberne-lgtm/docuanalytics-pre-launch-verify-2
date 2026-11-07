@@ -77,9 +77,9 @@ export const ARTICLES = {
           ]
         },
         {
-          "h": "Elimina un’analisi dall’Area di lavoro",
+          "h": "Elimina un’analisi in autonomia",
           "p": [
-            "Apri Documenti, seleziona il documento e premi «Elimina analisi» nella sua scheda. Leggi il riepilogo e conferma solo se vuoi rimuoverla. Dall’Area di lavoro vengono eliminati testo e dati estratti, controlli, scadenze automatiche e confronti salvati che includono il documento. La scheda cliente resta. Le scadenze inserite a mano restano disponibili e vengono scollegate dall’analisi."
+            "Puoi eliminare un’analisi direttamente dall’Area di lavoro, senza contattare l’assistenza. Apri Documenti, seleziona il documento e premi «Elimina analisi» nella sua scheda. Leggi il riepilogo e conferma solo se vuoi rimuoverla. Dall’Area di lavoro vengono eliminati testo e dati estratti, controlli, scadenze automatiche e confronti salvati che includono il documento. La scheda cliente resta. Le scadenze inserite a mano restano disponibili e vengono scollegate dall’analisi."
           ]
         }
       ]
@@ -151,9 +151,9 @@ export const ARTICLES = {
           ]
         },
         {
-          "h": "Delete an analysis from the workspace",
+          "h": "Delete an analysis yourself",
           "p": [
-            "Open Documents, select the document, then choose Delete analysis and confirm. This removes the extracted text and data, checks, automatic deadlines and saved comparisons that include the document. The client record and manually entered deadlines remain. Manual deadlines are detached from the analysis."
+            "You can delete an analysis directly from the workspace without contacting support. Open Documents, select the document, then choose Delete analysis and confirm. This removes the extracted text and data, checks, automatic deadlines and saved comparisons that include the document. The client record and manually entered deadlines remain. Manual deadlines are detached from the analysis."
           ]
         }
       ]
@@ -225,9 +225,9 @@ export const ARTICLES = {
           ]
         },
         {
-          "h": "Elimina un análisis del área de trabajo",
+          "h": "Elimina un análisis por tu cuenta",
           "p": [
-            "Abre Documentos, selecciona el documento y confirma la opción de eliminar el análisis. Se eliminan el texto y los datos extraídos, los controles, los plazos automáticos y las comparaciones guardadas que incluyen el documento. Se conservan la ficha del cliente y los plazos manuales, que se desvinculan del análisis."
+            "Puedes eliminar un análisis desde el área de trabajo sin contactar con soporte. Abre Documentos, selecciona el documento y confirma la opción de eliminar el análisis. Se eliminan el texto y los datos extraídos, los controles, los plazos automáticos y las comparaciones guardadas que incluyen el documento. Se conservan la ficha del cliente y los plazos manuales, que se desvinculan del análisis."
           ]
         }
       ]
@@ -299,9 +299,9 @@ export const ARTICLES = {
           ]
         },
         {
-          "h": "Eine Analyse im Arbeitsbereich löschen",
+          "h": "Eine Analyse selbst löschen",
           "p": [
-            "Öffnen Sie Dokumente, wählen Sie das Dokument aus und bestätigen Sie das Löschen der Analyse. Extrahierte Texte und Daten, Prüfergebnisse, automatische Fristen sowie gespeicherte Vergleiche mit dem Dokument werden entfernt. Die Mandantenakte und manuelle Fristen bleiben erhalten. Manuelle Fristen werden von der Analyse getrennt."
+            "Sie können eine Analyse direkt im Arbeitsbereich löschen, ohne den Support zu kontaktieren. Öffnen Sie Dokumente, wählen Sie das Dokument aus und bestätigen Sie das Löschen der Analyse. Extrahierte Texte und Daten, Prüfergebnisse, automatische Fristen sowie gespeicherte Vergleiche mit dem Dokument werden entfernt. Die Mandantenakte und manuelle Fristen bleiben erhalten. Manuelle Fristen werden von der Analyse getrennt."
           ]
         }
       ]
@@ -373,9 +373,9 @@ export const ARTICLES = {
           ]
         },
         {
-          "h": "Supprimer une analyse de l’espace de travail",
+          "h": "Supprimer une analyse en autonomie",
           "p": [
-            "Ouvrez Documents, sélectionnez le document et confirmez la suppression de l’analyse. Le texte et les données extraits, les contrôles, les échéances automatiques et les comparaisons enregistrées qui incluent ce document sont supprimés. La fiche client et les échéances manuelles sont conservées. Ces dernières sont dissociées de l’analyse."
+            "Vous pouvez supprimer une analyse depuis l’espace de travail sans contacter l’assistance. Ouvrez Documents, sélectionnez le document et confirmez la suppression de l’analyse. Le texte et les données extraits, les contrôles, les échéances automatiques et les comparaisons enregistrées qui incluent ce document sont supprimés. La fiche client et les échéances manuelles sont conservées. Ces dernières sont dissociées de l’analyse."
           ]
         }
       ]
