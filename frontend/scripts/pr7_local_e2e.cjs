@@ -111,6 +111,12 @@ async function loginFromPriority(page, path, email) {
       await page.waitForFunction(() => document.activeElement?.getAttribute("data-testid") === "priority-0");
     }
 
+    const globalSearch = page.getByTestId("workspace-global-search");
+    await globalSearch.fill("contratto-fittizio-a");
+    await page.getByTestId("workspace-search-results").getByRole("button").first().waitFor();
+    assert(await globalSearch.evaluate(el => el === document.activeElement));
+    await globalSearch.fill("");
+
     const token = await page.evaluate(() => localStorage.getItem("da_token"));
     const blocked = await page.request.post(origin + "/api/workspace/copilot/ask", {
       headers: { Authorization: "Bearer " + token },
@@ -158,6 +164,7 @@ async function loginFromPriority(page, path, email) {
     await documents.getByTestId("documents-filter").selectOption("all");
     await documents.getByTestId("documents-search").fill("contratto-flusso-area.pdf");
     await highlighted.waitFor();
+    assert(await documents.getByTestId("documents-search").evaluate(el => el === document.activeElement), "Filtering must not steal search input focus");
     await documents.getByTestId("documents-search").fill("");
     const [resetReview] = await Promise.all([
       page.waitForResponse(resp => resp.url() === origin + "/api/workspace/documents/" + newDoc + "/review-state" && resp.request().method() === "PUT"),
@@ -248,6 +255,11 @@ async function loginFromPriority(page, path, email) {
         headers: { Authorization: "Bearer " + btoken }
       });
       assert.equal(cross.status(), 404, "Cross-account access must be denied");
+      const crossReview = await other.request.put(origin + "/api/workspace/documents/pr7-analysis-a/review-state", {
+        headers: { Authorization: "Bearer " + btoken },
+        data: { status: "verified" }
+      });
+      assert.equal(crossReview.status(), 404, "Cross-account human review writes must be denied");
       await other.goto(origin + priorityPath);
       await other.getByText("Contratto sintetico").first().waitFor({ state:"detached", timeout: 10000 }).catch(() => {});
       await other.getByRole("alert").waitFor({ timeout: 10000 });
