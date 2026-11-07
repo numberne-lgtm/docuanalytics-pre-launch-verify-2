@@ -307,7 +307,8 @@ def build_workspace_router(db, get_current_user, llm_key, default_notify_days, s
                 if req.client_id:
                     aq["client_id"] = req.client_id
                 projection = {"_id": 0, "analysis_id": 1, "client_id": 1, "filename": 1,
-                              "result.summary": 1, "result.audit": 1, "risk_level": 1, "created_at": 1}
+                              "result.summary": 1, "result.audit": 1, "risk_level": 1, "created_at": 1,
+                              "workspace_review.status": 1, "workspace_review_details.outcome": 1}
                 if req.include_document_details and req.analysis_id:
                     projection.update({"result.fields": 1, "result.full_text": 1})
                 async for a in db.analyses.find(aq, projection).sort("created_at", -1).limit(41):
@@ -320,6 +321,8 @@ def build_workspace_router(db, get_current_user, llm_key, default_notify_days, s
                     ctx.append({"ref": source, "filename": str(a.get("filename") or "")[:120],
                                 "client_ref": ("cliente:" + a["client_id"]) if a.get("client_id") else "",
                                 "risk": a.get("risk_level") or core.doc_risk(res),
+                                "human_review_status": (a.get("workspace_review") or {}).get("status") or "to_review",
+                                "human_review_outcome": (a.get("workspace_review_details") or {}).get("outcome") or "pending",
                                 "summary": str(res.get("summary") or "")[:700],
                                 "warnings": [str(x.get("message") or "")[:170] for x in res.get("audit") or []
                                              if x.get("level") in ("error", "warning")][:4],
@@ -354,6 +357,19 @@ def build_workspace_router(db, get_current_user, llm_key, default_notify_days, s
                                 "client_ref": ("cliente:" + d["client_id"]) if d.get("client_id") else "",
                                 "document_ref": ("documento:" + d["analysis_id"]) if d.get("analysis_id") else ""})
             if not ctx:
+                # Product help can be answered without account data or an LLM call.
+                question = req.question.casefold()
+                help_terms = ("come funziona", "come posso", "cosa posso", "panoramica", "area di lavoro",
+                              "verifica", "da verificare", "scadenz", "document", "cliente", "utilizz",
+                              "navig", "filtro", "copilot", "report")
+                if any(term in question for term in help_terms):
+                    return {"answer": (
+                        "Nell'Area di lavoro puoi usare Panoramica per vedere gli ultimi documenti e le attività da gestire; "
+                        "Documenti per cercare, aprire report e registrare la verifica professionale separatamente dal rischio AI; "
+                        "Clienti per consultare i documenti associati; Scadenze per controllare date, confermarle e configurare gli avvisi. "
+                        "Il Copilot fornisce indicazioni, ma non modifica dati o completa adempimenti. "
+                        "Nessun documento o scadenza risulta disponibile nel contesto selezionato."
+                    ), "sources": [], "partial": False}
                 return {"answer": "Non risultano dati disponibili per questa selezione. Verifica documenti, clienti e scadenze presenti nell'Area di lavoro.",
                         "sources": [], "partial": False}
             # The LLM receives bounded, user-owned metadata; citations are source IDs.
