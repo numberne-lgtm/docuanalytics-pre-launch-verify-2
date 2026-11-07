@@ -85,23 +85,3 @@ export default function PrivacyPage() {
   );
 }
 
-
-export function LegalPage() {
-  useEffect(() => { document.title = "Dati legali · DocuAnalytics AI"; window.scrollTo(0, 0); }, []);
-  return (
-    <main className="wrap pv-page">
-      <Link to="/" className="pv-back">← DocuAnalytics AI</Link>
-      <h1>Dati legali</h1>
-      <section className="pv-sec">
-        <h2>Gestore del servizio</h2>
-        {(!LEGAL.name || !LEGAL.vat || !LEGAL.address) && <p>Dati dell’attività in verifica.</p>}
-        {LEGAL.name && <p>{LEGAL.name}</p>}
-        {LEGAL.vat && <p>Partita IVA {LEGAL.vat}</p>}
-        {LEGAL.address && <p>{LEGAL.address}</p>}
-        {LEGAL.registration && <p>{LEGAL.registration}</p>}
-        <p>Contatto <PrivacyContact /></p>
-        <p><Link to="/privacy">Informativa privacy e cookie</Link></p>
-      </section>
-    </main>
-  );
-}
