@@ -34,3 +34,19 @@ PUBLIC_RELEASE_NOTE = (
     "«in anteprima», «previsto nel prossimo aggiornamento» oppure "
     "«attualmente in test»; non promettere una data di pubblicazione."
 )
+
+
+PUBLIC_LIVE_NOTE = (
+    "STATO DI DISPONIBILITÀ: le funzioni di Panoramica operativa, verifica "
+    "professionale tracciata, nuove schede Documenti e agenda Scadenze "
+    "sono state incluse nella versione pubblicata di DocuAnalytics. "
+    "Spiega come usarle soltanto nei limiti delle funzionalità documentate; "
+    "non affermare mai che un'operazione sia stata eseguita dal Copilot. "
+    "Gli utenti devono accedere per utilizzare gli strumenti riservati."
+)
+
+
+def current_release_note() -> str:
+    """Preview is the safe default. Production uses the live statement only."""
+    import os
+    return PUBLIC_LIVE_NOTE if os.environ.get("APP_ENV") == "production" else PUBLIC_RELEASE_NOTE
