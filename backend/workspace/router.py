@@ -80,6 +80,11 @@ class ExcludeOperationalReq(BaseModel):
 
 
 
+class DocumentReviewReq(BaseModel):
+    # This status is assigned by a human, independently of the AI risk level.
+    status: Literal["to_review", "in_progress", "verified"]
+
+
 class PriorityReadReq(BaseModel):
     type: Literal["document", "deadline"]
     item_id: str = Field(..., min_length=1, max_length=128)
@@ -200,7 +205,10 @@ def build_workspace_router(db, get_current_user, llm_key, default_notify_days, s
                 "risk_level": a.get("risk_level") or core.doc_risk(res),
                 "flags": [x for x in res.get("audit") or [] if x.get("level") in ("warning", "error")],
                 "client_id": a.get("client_id"), "client_name": (clients_by_id.get(a.get("client_id")) or {}).get("name"),
-                "client_link": (a.get("client_link") or {}).get("status")}
+                "client_link": (a.get("client_link") or {}).get("status"),
+                "review_status": (a.get("workspace_review") or {}).get("status") or "to_review",
+                "reviewed_at": (a.get("workspace_review") or {}).get("verified_at"),
+                "review_updated_at": (a.get("workspace_review") or {}).get("updated_at")}
 
     def _dl_out(rm):
         dl = core.days_left(rm.get("due_date"))
@@ -416,7 +424,7 @@ def build_workspace_router(db, get_current_user, llm_key, default_notify_days, s
         for d in docs:
             if d["risk_level"] != "low":
                 prio.append({"type": "document", "level": d["risk_level"], "analysis_id": d["analysis_id"], "client_id": d["client_id"],
-                             "client_name": d["client_name"], "title": d["doc_type"] or d["filename"],
+                             "client_name": d["client_name"], "review_status": d["review_status"], "title": d["doc_type"] or d["filename"],
                              "detail": (d["flags"][0]["message"] if d["flags"] else "Da verificare")[:160], "days_left": None})
         for x in b["overdue"] + b["today"] + b["next7"] + b["next30"] + b["to_verify"]:
             lvl = "high" if (x["days_left"] is not None and x["days_left"] <= 7 and x["status"] != "to_verify") else "medium"
@@ -438,7 +446,9 @@ def build_workspace_router(db, get_current_user, llm_key, default_notify_days, s
                            "high": sum(d["risk_level"] == "high" for d in docs),
                            "upcoming": len(b["today"]) + len(b["next7"]) + len(b["next30"]), "overdue": len(b["overdue"]),
                            "deadlines_to_verify": len(b["to_verify"]), "clients": len(clients),
-                           "unassigned": sum(not d["client_id"] for d in docs)},
+                           "unassigned": sum(not d["client_id"] for d in docs),
+                           "review_pending": sum(d["review_status"] != "verified" for d in docs)},
+                "recent_documents": docs[:6],
                 "priorities": prio}
 
     @r.put("/priorities/read-state")
@@ -564,6 +574,26 @@ def build_workspace_router(db, get_current_user, llm_key, default_notify_days, s
         await db.reminders.update_many({**owner, "source": "manual"}, {"$unset": {"analysis_id": ""}})
         await db.analyses.delete_one(owner)
         return {"ok": True}
+
+    @r.put("/documents/{aid}/review-state")
+    async def set_document_review(aid: str, req: DocumentReviewReq, request: Request):
+        u = await _user(request)
+        uid = u["user_id"]
+        now = _now()
+        status = req.status
+        # Never change AI findings or the risk_level through a manual review.
+        review = {"status": status, "updated_at": now, "updated_by": uid,
+                  "verified_at": now if status == "verified" else None}
+        result = await db.analyses.update_one(
+            {"user_id": uid, "analysis_id": aid},
+            {"$set": {"workspace_review": review},
+             "$push": {"workspace_review_history": {
+                 "$each": [{"status": status, "at": now, "by": uid}],
+                 "$slice": -50}}})
+        if not result.matched_count:
+            raise HTTPException(404, "Documento non trovato")
+        return {"ok": True, "review_status": status,
+                "reviewed_at": review["verified_at"], "review_updated_at": now}
 
     @r.get("/documents/{aid}/candidates")
     async def candidates(aid: str, request: Request):
