@@ -53,7 +53,8 @@ SAFE_WORKSPACE = {
     "GET": [
         r"/overview", r"/documents", r"/documents/[A-Za-z0-9-]{1,128}",
         r"/clients", r"/clients/[A-Za-z0-9-]{1,128}", r"/deadlines",
-        r"/deadlines/review", r"/calendar\.ics", r"/settings",
+        r"/deadlines/review", r"/calendar\.ics", r"/settings", r"/studio",
+        r"/calendar/feed", r"/clients/[A-Za-z0-9-]{1,128}/calendar(?:\.ics|/feed)",
         r"/priorities/(?:document|deadline)/[A-Za-z0-9-]{1,128}",
         r"/priorities/(?:document|deadline)/[A-Za-z0-9-]{1,128}/(?:qr|pdf)",
     ],
@@ -61,7 +62,12 @@ SAFE_WORKSPACE = {
         r"/priorities/read-state",
         r"/deadlines/[A-Za-z0-9-]{1,128}/operational",
     ],
-    "POST": [r"/deadlines/[A-Za-z0-9-]{1,128}/confirm"],
+    "POST": [
+        r"/deadlines/[A-Za-z0-9-]{1,128}/confirm", r"/deadlines", r"/clients",
+        r"/documents/[A-Za-z0-9-]{1,128}/assign",
+    ],
+    "PATCH": [r"/deadlines/[A-Za-z0-9-]{1,128}", r"/clients/[A-Za-z0-9-]{1,128}"],
+    "DELETE": [r"/deadlines/[A-Za-z0-9-]{1,128}", r"/clients/[A-Za-z0-9-]{1,128}"],
 }
 
 

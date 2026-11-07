@@ -67,3 +67,25 @@ def test_historical_events_remain_non_operational():
     assert not core.show_operational_deadline({**confirmed, "operational_excluded": True})
     assert core.show_operational_deadline({**historical, "source": "manual"})
     assert not core.show_operational_deadline({**historical, "source": "manual", "operational_excluded": True})
+
+
+def test_priority_pdf_metadata_does_not_overlap():
+    """Regression for the overlapping labels observed in the Mac PDF export."""
+    pdf = core.priority_report_pdf({
+        "type": "document", "title": "Contratto sintetico", "level": "medium",
+        "filename": "contratto-fittizio-a.pdf", "summary": "Documento inventato per Studio A.",
+    })
+    with pymupdf.open(stream=pdf, filetype="pdf") as document:
+        page = document[0]
+        text = normalized_pdf_text(document)
+        assert "Medio" in text and "MEDIUM" not in text
+        spans = [s for b in page.get_text("dict")["blocks"] for line in b.get("lines", []) for s in line["spans"]]
+        for label, value in (("Tipo", "Documento"), ("Livello di attenzione", "Medio"),
+                             ("Documento originale", "contratto-fittizio-a.pdf")):
+            label_rect = page.search_for(label)[0]
+            # A value follows its label vertically, with no intersecting text.
+            values = [pymupdf.Rect(s["bbox"]) for s in spans
+                      if unicodedata.normalize("NFKC", s["text"]) == value]
+            value_rect = next(r for r in values if r.y0 >= label_rect.y1)
+            assert value_rect.y0 - label_rect.y1 >= 0
+            assert (label_rect & value_rect).is_empty

@@ -88,3 +88,57 @@ def test_synthetic_deadline_exclusion_is_reversible(staged):
     restored = staged.put("/api/workspace/deadlines/pr7-deadline-a/operational",
                           headers=a, json={"excluded": False})
     assert restored.status_code == 200
+
+
+def test_local_deadline_edit_persists_and_rejects_other_accounts(staged):
+    a, b = _login(staged, "a"), _login(staged, "b")
+    path = "/api/workspace/deadlines/pr7-deadline-a"
+    change = {"label": "Scadenza sintetica A prova", "due_date": "2027-01-15", "notify_days": []}
+    assert staged.patch(path, headers=b, json=change).status_code == 404
+    assert staged.patch(path, json=change).status_code == 401
+    edited = staged.patch(path, headers=a, json=change)
+    assert edited.status_code == 200, edited.text
+    assert edited.json()["label"] == change["label"]
+    buckets = staged.get("/api/workspace/deadlines", headers=a).json()["buckets"]
+    assert any(d["label"] == change["label"] for bucket in buckets.values() for d in bucket)
+    assert change["label"] in staged.get("/api/workspace/calendar.ics", headers=a).text
+    assert staged.patch(path, headers=a, json={"label": "Scadenza sintetica A"}).status_code == 200
+
+
+def test_local_client_and_manual_deadline_lifecycle(staged):
+    a, b = _login(staged, "a"), _login(staged, "b")
+    c = staged.post("/api/workspace/clients", headers=a, json={"name": "Cliente test locale"})
+    assert c.status_code == 200, c.text
+    cid = c.json()["client_id"]
+    cp = f"/api/workspace/clients/{cid}"
+    assert staged.patch(cp, headers=b, json={"name": "Intruso"}).status_code == 404
+    assert staged.delete(cp, headers=b).status_code == 404
+    assert staged.patch(cp, headers=a, json={"name": "Cliente aggiornato"}).status_code == 200
+    assert staged.get(cp, headers=a).json()["client"]["name"] == "Cliente aggiornato"
+    assign = "/api/workspace/documents/pr7-analysis-a/assign"
+    assert staged.post(assign, headers=b, json={"client_id": cid}).status_code == 404
+    assert staged.post(assign, headers=a, json={"client_id": "pr7-client-b"}).status_code == 404
+    assert staged.post(assign, headers=a, json={"client_id": cid}).status_code == 200
+    assert staged.get("/api/workspace/documents/pr7-analysis-a", headers=a).json()["client_id"] == cid
+    assert staged.post(assign, headers=a, json={"client_id": "pr7-client-a"}).status_code == 200
+    d = staged.post("/api/workspace/deadlines", headers=a, json={
+        "label": "Scadenza manuale di prova", "due_date": "2027-02-01",
+        "client_id": cid, "notify_days": [], "notify_client": False})
+    assert d.status_code == 200, d.text
+    dp = f'/api/workspace/deadlines/{d.json()["reminder_id"]}'
+    assert staged.delete(dp, headers=b).status_code == 404
+    assert staged.delete(dp, headers=a).status_code == 200
+    assert staged.patch(dp, headers=a, json={"label": "Rimossa"}).status_code == 404
+    assert staged.delete(cp, headers=a).status_code == 200
+    assert staged.get(cp, headers=a).status_code == 404
+
+
+def test_local_metadata_reads_and_calendar_tokens_stay_blocked(staged):
+    a = _login(staged, "a")
+    for path in ("/studio", "/calendar/feed", "/clients/pr7-client-a/calendar/feed"):
+        assert staged.get("/api/workspace" + path, headers=a).status_code == 200
+        assert staged.get("/api/workspace" + path).status_code == 401
+    for method, path in (("POST", "/calendar/feed"), ("DELETE", "/calendar/feed"),
+                         ("POST", "/clients/pr7-client-a/calendar/feed"),
+                         ("GET", "/feed/fake-token.ics"), ("POST", "/studio/logo")):
+        assert staged.request(method, "/api/workspace" + path, headers=a).status_code == 503

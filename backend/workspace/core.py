@@ -442,19 +442,21 @@ def priority_report_pdf(priority: dict) -> bytes:
         return html.escape(str(value if value is not None else ""), quote=True)
 
     rows = [("Tipo", "Documento" if priority.get("type") == "document" else "Scadenza"),
-            ("Livello di attenzione", str(priority.get("level") or "").upper())]
+            ("Livello di attenzione", {"high": "Alto", "medium": "Medio", "low": "Basso"}.get(priority.get("level"), "Da verificare"))]
     for title, field in (("Documento originale", "filename"), ("Data indicata", "date"), ("Stato", "status")):
         if priority.get(field):
             rows.append((title, priority[field]))
     details = [str(item) for item in (priority.get("details") or [])[:20]]
-    cells = "".join(f"<tr><th>{e(label)}</th><td>{e(value)}</td></tr>" for label, value in rows)
+    # Use stacked blocks: MuPDF Story can overlap percentage-width table cells.
+    cells = "".join(f'<div class="metadata"><p class="label">{e(label)}</p><p class="value">{e(value)}</p></div>'
+                    for label, value in rows)
     summary = f"<h2>Riepilogo</h2><p>{e(priority['summary'])}</p>" if priority.get("summary") else ""
     checks = ("<h2>Controlli e dettagli</h2><ul>" +
               "".join(f"<li>{e(item)}</li>" for item in details) + "</ul>") if details else ""
     body = f"""<html><body>
     <p class="brand">DOCUANALYTICS AI</p>
     <h1>Scheda priorità</h1><h2>{e(priority.get("title") or "Priorità")}</h2>
-    <table>{cells}</table>{summary}{checks}
+    {cells}{summary}{checks}
     <p class="notice">Documento informativo generato da DocuAnalytics AI.
     Verificare sempre i dati sui documenti originali: eventi storici e scadenze
     confermate non provano, da soli, l'esistenza di obblighi attuali.
@@ -463,9 +465,9 @@ def priority_report_pdf(priority: dict) -> bytes:
     css = """body{font-family:sans-serif;color:#152033;font-size:10pt}
     .brand{font-weight:bold;color:#315efb}h1{font-size:18pt}
     h2{font-size:12pt;margin-top:16pt}
-    table{width:100%;border-collapse:collapse;margin-top:9pt}
-    th,td{border-bottom:1px solid #ddd;padding:6pt;text-align:left;vertical-align:top}
-    th{width:31%;color:#475467}p,li,td{overflow-wrap:break-word}
+    .metadata{border-bottom:1px solid #ddd;padding:6pt 0}
+    .label{font-weight:bold;color:#475467;margin:0 0 3pt 0}
+    .value{margin:0}p,li{overflow-wrap:break-word}
     .notice{font-size:8pt;color:#667085;margin-top:18pt}"""
     buffer = io.BytesIO()
     story = fitz.Story(html=body, user_css=css)

@@ -81,3 +81,21 @@ La CI GitHub esegue automaticamente test d'integrazione tramite `backend/tests/t
 ## Prossimo gate
 
 La PR può restare in bozza fino alla verifica delle condizioni DPA/subprocessori/retention con Emergent e alla disponibilità di un ambiente staging vero con credenziali di prova. Nessun merge né deploy è necessario per utilizzare lo staging locale.
+
+## Collaudo manuale e correzioni del 7 novembre 2026
+
+Sul Mac sono stati osservati login sintetico, dashboard, dettaglio priorità, QR, download PDF e calendario ICS. Il PDF presentava etichette sovrapposte: i metadati ora usano blocchi verticali e livelli in italiano.
+
+Lo staging consente ora creazione, modifica ed eliminazione di clienti e scadenze sintetiche e associazione dei documenti, sempre tramite il router reale con isolamento per account. È consentita anche la lettura della firma studio e dello stato dell'abbonamento calendario. La generazione di link calendario, gli upload e gli invii email restano bloccati; i giorni di avviso possono essere salvati ma nessuno scheduler email è attivo.
+
+Il precedente errore HTTP 503 sul salvataggio delle scadenze proveniva dalla allowlist locale, non dimostrava un difetto dell'endpoint di produzione. Il collaudo manuale dei salvataggi va ripetuto dopo l'aggiornamento.
+
+Per aggiornare una copia pulita sul Mac, dalla radice del repository:
+
+```bash
+bash scripts/pr7_local.sh stop
+git pull --ff-only origin feature/risk-priority-numbering
+bash scripts/pr7_local.sh start
+```
+
+Lo stop conserva il volume sintetico. Non usare `clean` per aggiornare.

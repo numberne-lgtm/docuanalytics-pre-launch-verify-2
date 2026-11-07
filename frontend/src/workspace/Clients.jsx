@@ -42,7 +42,7 @@ export function ClientList({ onOpen, reloadKey, onChanged }) {
           {list.map((c) => (
             <button key={c.client_id} className="ws-row" onClick={() => onOpen(c.client_id)} data-testid={`client-${c.client_id}`}>
               <Level level={c.risk_level} />
-              <span className="ws-row-main"><b>{c.name}</b><span>{c.piva && `P.IVA ${c.piva} · `}{c.cf && `CF ${c.cf} · `}{c.documents} documenti</span></span>
+              <span className="ws-row-main"><b>{c.name}</b><span>{c.piva && `P.IVA ${c.piva} · `}{c.cf && `CF ${c.cf} · `}{c.documents} {c.documents === 1 ? "documento" : "documenti"}</span></span>
             </button>
           ))}
         </div>
