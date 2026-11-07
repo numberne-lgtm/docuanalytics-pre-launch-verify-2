@@ -4,7 +4,7 @@ import PriorityQrPdf from "./PriorityQrPdf";
 import DocumentReviewControl, { reviewLabel } from "./DocumentReviewControl";
 import { ws, errMsg, LEVEL, dueText } from "./api";
 
-const KPIS = [["documents", "Documenti analizzati"], ["no_issues", "Senza criticità"], ["to_verify", "Da verificare"],
+const KPIS = [["documents", "Documenti analizzati"], ["no_issues", "Senza criticità AI"], ["to_verify", "Da verificare (AI)"], ["review_pending", "Verifiche da completare"],
   ["high", "Criticità elevate"], ["upcoming", "Scadenze prossime (30 gg)"], ["overdue", "Scadenze superate"]];
 
 export const Level = ({ level }) => {
