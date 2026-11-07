@@ -31,7 +31,7 @@ export default function WorkspaceSearch({ onDocument, onClient, onDeadlines, rel
   return (
     <div className="ws-global-search" role="search" aria-label="Ricerca globale nell'Area di lavoro">
       <input ref={inputRef} type="search" className="as-input" value={query}
-        aria-label="Cerca documenti, clienti e scadenze" aria-controls="ws-global-search-results"
+        aria-label="Cerca documenti, clienti e scadenze" aria-controls={q ? "ws-global-search-results" : undefined}
         placeholder="Cerca documenti, clienti, scadenze…" data-testid="workspace-global-search"
         onChange={e => setQuery(e.target.value)} onKeyDown={e => {
           if (e.key === "Escape") { setQuery(""); inputRef.current?.blur(); }
