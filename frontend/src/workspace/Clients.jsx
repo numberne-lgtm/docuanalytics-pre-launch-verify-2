@@ -19,9 +19,9 @@ function NewClient({ onCreated }) {
   const go = (e) => { e.preventDefault(); setErr(""); ws.post("/clients", f).then((c) => { setF({ name: "", piva: "", cf: "" }); onCreated(c); }).catch((x) => setErr(errMsg(x))); };
   return (
     <form className="ws-dl-edit" onSubmit={go} data-testid="client-new-form">
-      <input className="as-input" placeholder="Nome / ragione sociale" value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} data-testid="client-new-name" />
-      <input className="as-input" placeholder="P.IVA" value={f.piva} onChange={(e) => setF({ ...f, piva: e.target.value })} data-testid="client-new-piva" />
-      <input className="as-input" placeholder="Codice fiscale" value={f.cf} onChange={(e) => setF({ ...f, cf: e.target.value })} data-testid="client-new-cf" />
+      <input className="as-input" aria-label="Nome o ragione sociale del nuovo cliente" placeholder="Nome / ragione sociale" value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} data-testid="client-new-name" />
+      <input className="as-input" aria-label="Partita IVA del nuovo cliente" placeholder="P.IVA" value={f.piva} onChange={(e) => setF({ ...f, piva: e.target.value })} data-testid="client-new-piva" />
+      <input className="as-input" aria-label="Codice fiscale del nuovo cliente" placeholder="Codice fiscale" value={f.cf} onChange={(e) => setF({ ...f, cf: e.target.value })} data-testid="client-new-cf" />
       <button className="as-btn as-btn-primary" data-testid="client-new-btn">Crea cliente</button>
       {err && <div className="ws-error" data-testid="client-new-error">{err}</div>}
     </form>
