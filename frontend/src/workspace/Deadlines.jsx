@@ -34,7 +34,7 @@ function Row({ d, onChanged }) {
   const [err, setErr] = useState("");
   const run = (p) => { setErr(""); return p.then(() => { setEdit(false); onChanged(); }).catch((e) => setErr(errMsg(e))); };
   return (
-    <div className="ws-dl" data-ws-nav-row data-ws-nav-key={d.reminder_id} tabIndex={0} role="group" aria-label={`Scadenza: ${d.label}`} data-testid={`deadline-${d.reminder_id}`}>
+    <div className={`ws-dl ${d.status === "to_verify" ? "ws-tone-medium" : d.status === "confirmed" && d.days_left < 0 ? "ws-tone-high" : ["high", "medium", "low"].includes(d.priority) ? `ws-tone-${d.priority}` : ""}`} data-ws-nav-row data-ws-nav-key={d.reminder_id} tabIndex={0} role="group" aria-label={`Scadenza: ${d.label}`} data-testid={`deadline-${d.reminder_id}`}>
       <div className="ws-dl-main">
         <Level level={d.priority} />
         <span><b>{d.label}</b> <span className="ws-muted">· {d.kind_label !== d.label && `${d.kind_label} · `} {d.due_date ? fmtDate(d.due_date) : `"${d.raw_date}"`} · {dueText(d.status === "to_verify" ? null : d.days_left)}</span>
