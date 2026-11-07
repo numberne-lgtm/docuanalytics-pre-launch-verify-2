@@ -88,6 +88,10 @@ export default function WorkspaceCopilot({ analysisId = null, clientId = null })
               Includi anche campi estratti e testo del documento aperto, che possono contenere dati personali o riservati.
             </label>}
           </div>
+          <div className="ws-copilot-help">
+            <strong>Posso anche spiegarti come usare l'Area di lavoro</strong>
+            <p className="ws-muted">Per esempio: «Come verifico un documento?», «Come confermo una scadenza?» oppure «Che differenza c'è fra rischio AI e verifica professionale?». Le risposte sui tuoi dati richiedono il consenso qui sopra.</p>
+          </div>
           <div ref={bodyRef} className="ws-copilot-messages" role="log" aria-live="polite">
             {!messages.length && <p className="ws-muted">Chiedimi informazioni sui tuoi documenti, clienti o sulle scadenze. Le risposte indicano i riferimenti dei dati disponibili. Non modifico nulla.</p>}
             {messages.map((msg, i) => (
