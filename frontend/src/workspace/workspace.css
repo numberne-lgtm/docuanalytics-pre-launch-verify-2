@@ -162,3 +162,9 @@
 .ws-priority-item:has(.ws-qrpdf-content){flex-wrap:wrap}
 .ws-priority-item .ws-qrpdf-content{max-width:100%;min-width:210px}
 @media(max-width:680px){.ws-priority-item .ws-qrpdf-compact{align-self:flex-start}}
+
+/* Shared visible selection and focus: keyboard, mouse and high contrast. */
+[data-ws-nav-row][data-ws-selected="true"]{outline:2px solid var(--accent);outline-offset:2px}
+[data-ws-nav-row]:focus-visible,[data-ws-nav-target]:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+[data-ws-nav-row]:focus-within{border-color:var(--accent)}
+@media (forced-colors:active){[data-ws-nav-row][data-ws-selected="true"],[data-ws-nav-row]:focus-visible,[data-ws-nav-target]:focus-visible{outline:3px solid Highlight}}
