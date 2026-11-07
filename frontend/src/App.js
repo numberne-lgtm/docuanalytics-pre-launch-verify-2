@@ -19,7 +19,8 @@ import { AssistantFab } from "./assistant/AssistantFab";
 import { AssistantPromo, AssistantNudge } from "./assistant/AssistantPromo";
 import { reportAssistantSignup } from "./assistant/signupTracking";
 import AdminPrivacy from "./AdminPrivacy";
-import PrivacyPage, { LegalPage } from "./PrivacyPage";
+import PrivacyPage from "./PrivacyPage";
+import { LegalPage, TermsPage, PurchasesPage, CookiesPage, AccessibilityPage } from "./LegalPages";
 import CookiePreferences from "./CookiePreferences";
 import Workspace from "./workspace/Workspace";
 import PriorityShare from "./workspace/PriorityShare";
@@ -2052,6 +2053,10 @@ function Footer({ onTopup, onGuide }) {
           <a className="btn btn-sm btn-ghost" href="/assistant?utm_source=site&utm_medium=footer" data-testid="footer-assistant-link"><Bot size={14} /> {t("assistant_cta")}</a>
           <Link to="/privacy" className="btn btn-sm btn-ghost" data-testid="footer-privacy-link"><ShieldCheck size={14} /> Privacy</Link>
           <Link to="/dati-legali" className="btn btn-sm btn-ghost">Dati legali</Link>
+          <Link to="/termini" className="btn btn-sm btn-ghost">Condizioni di servizio</Link>
+          <Link to="/acquisti-rimborsi" className="btn btn-sm btn-ghost">Acquisti e rimborsi</Link>
+          <Link to="/cookie-policy" className="btn btn-sm btn-ghost">Cookie</Link>
+          <Link to="/accessibilita" className="btn btn-sm btn-ghost">Accessibilità</Link>
           <Link to="/privacy#preferenze-cookie" className="btn btn-sm btn-ghost">Preferenze cookie</Link>
           <a className="btn btn-sm btn-ghost" href="mailto:docuanalyticsai@docuanalytics.online" data-testid="footer-contact"><Mail size={14} /> {t("contact")}</a>
           <button className="btn btn-primary btn-sm" onClick={onTopup}><CreditCard size={14} /> {t("foot_topup")}</button>
@@ -2405,6 +2410,10 @@ function App() {
           <Route path="/admin/assistant" element={<AdminAssistant />} />
           <Route path="/privacy" element={<PrivacyPage />} />
           <Route path="/dati-legali" element={<LegalPage />} />
+          <Route path="/termini" element={<TermsPage />} />
+          <Route path="/acquisti-rimborsi" element={<PurchasesPage />} />
+          <Route path="/cookie-policy" element={<CookiesPage />} />
+          <Route path="/accessibilita" element={<AccessibilityPage />} />
           <Route path="/area/priorita/:kind/:itemId" element={<PriorityShare />} />
           <Route path="/area" element={<Workspace />} />
           <Route path="/area/documenti/:analysisId" element={<Workspace />} />
