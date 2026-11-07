@@ -72,7 +72,7 @@ export function Client360({ cid, onBack, onOpenDoc, reloadKey, onChanged }) {
         <button className="as-btn" data-testid="client-delete" onClick={() => window.confirm("Eliminare la scheda cliente? Documenti e scadenze restano, senza associazione.") && ws.del(`/clients/${cid}`).then(() => { onChanged(); onBack(); }).catch((e) => setErr(errMsg(e)))}>Elimina scheda</button></span></div>
       {pdfErr && <div className="ws-error" data-testid="client-report-error">{pdfErr}</div>}
       <ClientContacts key={c.client_id} c={{ ...c, pec: c.pec ?? reg.pec }} onChanged={onChanged} />
-      <SendReport key={`s-${c.email || ""}`} c={c} onSent={onChanged} />
+      <SendReport key={`s-${c.client_id}`} c={{ ...c, pec: c.pec ?? reg.pec }} onSent={onChanged} />
       <p className="ws-muted">{c.piva ? `P.IVA ${c.piva}` : "P.IVA non disponibile"} · {c.cf ? `CF ${c.cf}` : "CF non disponibile"}</p>
       <div className="ws-tabs">{TABS.map(([k, l]) => <button key={k} className={tab === k ? "on" : ""} onClick={() => setTab(k)} data-testid={`client-tab-${k}`}>{l}</button>)}</div>
       {tab === "overview" && (

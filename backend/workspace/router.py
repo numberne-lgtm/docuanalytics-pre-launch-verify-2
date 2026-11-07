@@ -116,6 +116,7 @@ def _email(v, label="email"):
 
 
 class ReportSendReq(BaseModel):
+    channel: Literal["email", "pec"] = "email"
     to: Optional[str] = None
     message: Optional[str] = Field(None, max_length=1500)
 
@@ -983,9 +984,14 @@ def build_workspace_router(db, get_current_user, llm_key, default_notify_days, s
         u = await _user(request)
         uid = u["user_id"]
         c = await _client(uid, cid)
-        to = _email(req.to) or c.get("email")
-        if not to:
-            raise HTTPException(400, "Inserisci l'email del cliente.")
+        if req.channel == "pec":
+            to = _email(req.to, "PEC")
+            if not to:
+                raise HTTPException(400, "Inserisci la PEC del cliente.")
+        else:
+            to = _email(req.to) or c.get("email")
+            if not to:
+                raise HTTPException(400, "Inserisci l'email del cliente.")
         if await _sent_today(uid, "client_report") >= 20:
             raise HTTPException(429, "Limite giornaliero di invii raggiunto (20). Riprova domani.")
         docs = [a async for a in db.analyses.find({"user_id": uid, "client_id": cid}, {"_id": 0}).sort("created_at", -1)]
@@ -1008,7 +1014,7 @@ def build_workspace_router(db, get_current_user, llm_key, default_notify_days, s
             last = await db.email_log.find_one({"user_id": uid, "kind": "client_report", "client_id": cid}, sort=[("at", -1)])
             raise HTTPException(400, "Indirizzo non consentito per l'invio." if (last or {}).get("status") == "skipped_reserved_domain"
                                 else "Invio non riuscito. Riprova tra poco.")
-        if not c.get("email"):
+        if req.channel == "email" and not c.get("email"):
             await db.clients.update_one({"client_id": cid, "user_id": uid}, {"$set": {"email": to}})
         await db.clients.update_one({"client_id": cid, "user_id": uid}, {"$set": {"last_report_sent": {"to": to, "at": _now()}}})
         return {"ok": True, "to": to}

@@ -17,7 +17,12 @@ MONGO = os.getenv("PR7_TEST_MONGO_URL", "mongodb://127.0.0.1:27017")
 
 
 @pytest.fixture()
-def app_client(request):
+def report_outbox():
+    return []
+
+
+@pytest.fixture()
+def app_client(request, report_outbox):
     name = "pr7_test_" + uuid.uuid4().hex
     sync = MongoClient(MONGO, serverSelectionTimeoutMS=2000)
     sync.admin.command("ping")
@@ -64,8 +69,9 @@ def app_client(request):
             raise HTTPException(401, "Autenticazione richiesta")
         return {"user_id": token, "email": token + "@example.invalid"}
 
-    async def email_sender(*args, **kwargs):
-        raise AssertionError("No email should be sent during read-only HTTP tests")
+    async def email_sender(to, subject, html, **kwargs):
+        report_outbox.append(to)
+        return True
 
     app = FastAPI()
     app.include_router(build_workspace_router(
@@ -288,3 +294,24 @@ def test_legal_demand_date_is_reviewable_but_not_silently_suppressed(app_client)
     assert response.status_code == 200
     after = app_client.get("/api/workspace/priorities/deadline/deadline-legal", headers=headers)
     assert after.json()["operational"] is False
+
+
+def test_report_pec_address_does_not_become_the_contact_email(app_client, report_outbox):
+    client_path = "/api/workspace/clients/client-alice"
+    headers = auth("alice")
+    missing = app_client.post(f"{client_path}/report/send", headers=headers, json={"channel": "pec"})
+    assert missing.status_code == 400
+    assert report_outbox == []
+
+    pec = "report@pec.example.invalid"
+    sent = app_client.post(f"{client_path}/report/send", headers=headers, json={"channel": "pec", "to": pec})
+    assert sent.status_code == 200, sent.text
+    assert report_outbox == [pec]
+    profile = app_client.get(client_path, headers=headers)
+    assert profile.json()["client"]["email"] == ""
+
+    email = "client@example.invalid"
+    sent = app_client.post(f"{client_path}/report/send", headers=headers, json={"to": email})
+    assert sent.status_code == 200, sent.text
+    assert report_outbox == [pec, email]
+    assert app_client.get(client_path, headers=headers).json()["client"]["email"] == email
