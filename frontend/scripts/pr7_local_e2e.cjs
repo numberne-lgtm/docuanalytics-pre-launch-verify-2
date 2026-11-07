@@ -81,6 +81,28 @@ async function loginFromPriority(page, path, email) {
     await page.reload();
     await page.getByTestId("priority-read-0").getByText("Già letta").waitFor();
 
+    // Keyboard/pointer accessibility smoke on the Risk Dashboard.
+    const priorityList = page.getByTestId("priorities-list");
+    const priorityButtons = priorityList.locator("[data-ws-nav-target]");
+    const count = await priorityButtons.count();
+    assert(count > 0, "At least one synthetic priority should be selectable");
+    await priorityButtons.first().click();
+    await page.waitForFunction(() => !!document.activeElement?.closest("[data-ws-nav-row]"));
+    assert(await priorityList.locator('[data-ws-selected="true"]').count() >= 1);
+    if (count > 1) {
+      await page.keyboard.press("ArrowDown");
+      assert(await priorityButtons.nth(1).evaluate(el => el === document.activeElement));
+      await page.keyboard.press("ArrowUp");
+      assert(await priorityButtons.first().evaluate(el => el === document.activeElement));
+    }
+    if (await page.getByTestId("doc-panel").count()) {
+      const dialog = page.getByRole("dialog");
+      assert.equal(await dialog.getAttribute("aria-modal"), "true");
+      await page.keyboard.press("Escape");
+      await page.getByTestId("doc-panel").waitFor({ state: "detached" });
+      assert(await priorityButtons.first().evaluate(el => el === document.activeElement));
+    }
+
     const token = await page.evaluate(() => localStorage.getItem("da_token"));
     const blocked = await page.request.post(origin + "/api/workspace/copilot/ask", {
       headers: { Authorization: "Bearer " + token },
