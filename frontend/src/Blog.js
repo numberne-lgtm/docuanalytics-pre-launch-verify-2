@@ -75,6 +75,12 @@ export const ARTICLES = {
           "p": [
             "Dopo aver analizzato un contratto di locazione, associalo alla scheda del cliente. Controlla sul contratto se la data rilevata è davvero il termine di preavviso. Dopo averla verificata, confermala nelle Scadenze e aggiungila al calendario dello studio."
           ]
+        },
+        {
+          "h": "Elimina un’analisi dall’Area di lavoro",
+          "p": [
+            "Apri Documenti, seleziona il documento e premi «Elimina analisi» nella sua scheda. Leggi il riepilogo e conferma solo se vuoi rimuoverla. Dall’Area di lavoro vengono eliminati testo e dati estratti, controlli, scadenze automatiche e confronti salvati che includono il documento. La scheda cliente resta. Le scadenze inserite a mano restano disponibili e vengono scollegate dall’analisi."
+          ]
         }
       ]
     },
@@ -142,6 +148,12 @@ export const ARTICLES = {
           "h": "Review priorities and deadlines",
           "p": [
             "Open priorities on the dashboard and verify findings against the original document. In Deadlines, review detected dates or add one manually. Export confirmed and manual dates as an .ics calendar file."
+          ]
+        },
+        {
+          "h": "Delete an analysis from the workspace",
+          "p": [
+            "Open Documents, select the document, then choose Delete analysis and confirm. This removes the extracted text and data, checks, automatic deadlines and saved comparisons that include the document. The client record and manually entered deadlines remain. Manual deadlines are detached from the analysis."
           ]
         }
       ]
@@ -211,6 +223,12 @@ export const ARTICLES = {
           "p": [
             "Consulta las prioridades y comprueba los hallazgos en el original. Revisa las fechas detectadas o añade una manualmente. Exporta las fechas confirmadas y manuales en un archivo .ics."
           ]
+        },
+        {
+          "h": "Elimina un análisis del área de trabajo",
+          "p": [
+            "Abre Documentos, selecciona el documento y confirma la opción de eliminar el análisis. Se eliminan el texto y los datos extraídos, los controles, los plazos automáticos y las comparaciones guardadas que incluyen el documento. Se conservan la ficha del cliente y los plazos manuales, que se desvinculan del análisis."
+          ]
         }
       ]
     },
@@ -279,6 +297,12 @@ export const ARTICLES = {
           "p": [
             "Öffnen Sie die Prioritäten im Dashboard und prüfen Sie die Hinweise am Original. Bestätigen Sie erkannte Fristen oder ergänzen Sie sie manuell. Exportieren Sie bestätigte und manuelle Termine als .ics-Datei."
           ]
+        },
+        {
+          "h": "Eine Analyse im Arbeitsbereich löschen",
+          "p": [
+            "Öffnen Sie Dokumente, wählen Sie das Dokument aus und bestätigen Sie das Löschen der Analyse. Extrahierte Texte und Daten, Prüfergebnisse, automatische Fristen sowie gespeicherte Vergleiche mit dem Dokument werden entfernt. Die Mandantenakte und manuelle Fristen bleiben erhalten. Manuelle Fristen werden von der Analyse getrennt."
+          ]
         }
       ]
     },
@@ -346,6 +370,12 @@ export const ARTICLES = {
           "h": "Vérifier les priorités et les échéances",
           "p": [
             "Ouvrez les priorités du tableau de bord et vérifiez les alertes sur le document original. Confirmez les dates détectées ou ajoutez-en manuellement. Exportez les dates confirmées et manuelles au format .ics."
+          ]
+        },
+        {
+          "h": "Supprimer une analyse de l’espace de travail",
+          "p": [
+            "Ouvrez Documents, sélectionnez le document et confirmez la suppression de l’analyse. Le texte et les données extraits, les contrôles, les échéances automatiques et les comparaisons enregistrées qui incluent ce document sont supprimés. La fiche client et les échéances manuelles sont conservées. Ces dernières sont dissociées de l’analyse."
           ]
         }
       ]
