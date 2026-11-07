@@ -53,7 +53,7 @@ function Row({ d, onChanged }) {
       </div>
       {edit && (
         <div className="ws-dl-edit">
-          <input className="as-input" value={label} onChange={(e) => setLabel(e.target.value)} data-testid="deadline-edit-label" />
+          <input className="as-input" aria-label="Descrizione della scadenza" value={label} onChange={(e) => setLabel(e.target.value)} data-testid="deadline-edit-label" />
           <DateField value={date} onChange={setDate} testid="deadline-edit-date" />
           <NotifyPicker value={days} onChange={setDays} testid="deadline-edit-notify" />
           {d.client_id && (
@@ -63,7 +63,7 @@ function Row({ d, onChanged }) {
             </label>
           )}
           {d.client_id && toClient && (
-            <textarea className="as-input ws-cmsg" rows={3} maxLength={500} value={cmsg} onChange={(e) => setCmsg(e.target.value)}
+            <textarea className="as-input ws-cmsg" aria-label="Messaggio personalizzato per il cliente" rows={3} maxLength={500} value={cmsg} onChange={(e) => setCmsg(e.target.value)}
               placeholder="Messaggio personale per il cliente (facoltativo)" data-testid="deadline-edit-client-message" />
           )}
           {d.client_id && toClient && <span className="ws-muted ws-count" data-testid="deadline-edit-client-message-count">{cmsg.length}/500</span>}
@@ -137,7 +137,7 @@ function AddDeadline({ onChanged }) {
   const add = (e) => { e.preventDefault(); setErr(""); ws.post("/deadlines", f).then(() => { setF({ label: "", due_date: "", notify_days: DEFAULT_DAYS }); onChanged(); }).catch((x) => setErr(errMsg(x))); };
   return (
     <form className="ws-dl-edit" onSubmit={add} data-testid="deadline-add-form">
-      <input className="as-input" placeholder="Nuova scadenza manuale" value={f.label} onChange={(e) => setF({ ...f, label: e.target.value })} data-testid="deadline-add-label" />
+      <input className="as-input" aria-label="Descrizione della nuova scadenza" placeholder="Nuova scadenza manuale" value={f.label} onChange={(e) => setF({ ...f, label: e.target.value })} data-testid="deadline-add-label" />
       <DateField value={f.due_date} onChange={(v) => setF({ ...f, due_date: v })} testid="deadline-add-date" />
       <NotifyPicker value={f.notify_days} onChange={(v) => setF({ ...f, notify_days: v })} testid="deadline-add-notify" />
       <button className="as-btn as-btn-primary" data-testid="deadline-add-btn">Aggiungi</button>
