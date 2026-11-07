@@ -74,7 +74,7 @@ export function DocCard({ d, selectable, selected, highlighted, onToggle, onOpen
   const [open, setOpen] = useState(false);
   const associated = Boolean(d.client_id);
   return (
-    <div className={`ws-doc ${selected ? "sel" : ""}${highlighted ? " ws-doc-highlight" : ""}`} data-testid={`doc-${d.analysis_id}`} data-ws-nav-row data-ws-nav-key={d.analysis_id}>
+    <div className={`ws-doc ${["high", "medium", "low"].includes(d.risk_level) ? `ws-tone-${d.risk_level}` : ""} ${selected ? "sel" : ""}${highlighted ? " ws-doc-highlight" : ""}`} data-testid={`doc-${d.analysis_id}`} data-ws-nav-row data-ws-nav-key={d.analysis_id}>
       <div className="ws-doc-head">
         {selectable && <input type="checkbox" checked={selected} onChange={onToggle} data-testid={`doc-select-${d.analysis_id}`} aria-label="Seleziona" />}
         <button className="ws-link" onClick={(event) => onOpen(d.analysis_id, event.currentTarget)} data-testid={`doc-open-${d.analysis_id}`} aria-current={highlighted ? "true" : undefined} data-document-title={d.analysis_id} data-ws-nav-target><b>{d.doc_type || d.filename}</b> <span className="ws-muted">{d.filename} · {fmtDate(d.created_at)}</span></button>
