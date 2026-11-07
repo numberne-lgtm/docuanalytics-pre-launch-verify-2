@@ -69,6 +69,7 @@ async function loginFromPriority(page, path, email) {
     await page.getByTestId("workspace-page").waitFor();
     await page.getByTestId("risk-dashboard").waitFor();
     assert(await page.getByTestId("priorities-list").getByTestId("priority-0").count() > 0);
+    await page.getByTestId("overview-recent-list").getByTestId("recent-doc-pr7-analysis-a").waitFor();
     const priorityReadButton = page.getByTestId("priority-read-0");
     // The test may run after an API smoke with shared synthetic fixtures.
     // Guarantee a known state before testing the UI transition.
@@ -201,6 +202,7 @@ async function loginFromPriority(page, path, email) {
     await highlighted.waitFor();
     assert(await highlighted.evaluate(el => el.classList.contains("ws-doc-highlight")));
     await page.goto(origin + "/area");
+    await page.getByTestId("overview-recent-list").getByTestId(`recent-doc-${newDoc}`).waitFor();
     await page.getByTestId("ws-nav-documents").click();
     await highlightedTitle.click();
     const panel = page.getByTestId("doc-panel");
