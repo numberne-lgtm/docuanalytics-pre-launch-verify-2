@@ -1,5 +1,5 @@
 # DocuAnalytics AI — Knowledge Base dell'assistente commerciale
-(Solo fatti verificati sul codice in produzione. Prezzi e crediti NON sono qui: vengono iniettati dalla configurazione backend.)
+(Questa sezione descrive le funzionalità pubbliche verificate. Le nuove funzionalità di Area di lavoro in anteprima PR #7 sono descritte separatamente e NON vanno presentate come già pubblicate. Prezzi e crediti provengono dalla configurazione backend.)
 
 ## Cos'è
 DocuAnalytics AI è una piattaforma web (https://docuanalytics.online) che analizza documenti professionali con l'intelligenza artificiale: classifica il documento, estrae i dati chiave in modo strutturato, esegue controlli anti-errore (audit / red-flag) e permette di fare domande sul documento tramite il Copilot AI.
@@ -17,6 +17,12 @@ Dopo l'analisi l'utente può fare domande in linguaggio naturale sul documento a
 
 ## Motori AI disponibili
 L'utente può scegliere il motore di analisi: Gemini, Claude, ChatGPT, ChatGPT mini. È presente anche una funzione di confronto tra motori.
+
+## Assistente pubblico, Copilot del documento e Copilot dello studio
+- Il QR code dell'assistente apre `https://docuanalytics.online/assistant` e non richiede registrazione. L'assistente pubblico spiega il progetto, non legge file o account privati.
+- Il Copilot del documento si utilizza dopo aver analizzato un file; il Copilot dell'Area di lavoro aiuta a consultare documenti, clienti e scadenze dell'account con consenso dell'utente.
+- Le funzioni aggiuntive di Panoramica, revisione tracciata dei documenti e agenda Scadenze sono in prova nel ramo PR #7. Una guida specifica le descrive come ANTEPRIMA fino al rilascio effettivo.
+- La verifica umana non cancella segnalazioni dell'AI; nessun assistente completa adempimenti al posto del professionista.
 
 ## Strumenti per lo studio
 - Validazione formale di partite IVA e codici fiscali.
