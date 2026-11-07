@@ -503,9 +503,9 @@ def client_report_pdf(client: dict, docs: list, deadlines_: list, prepared_by: s
     dl_rows = "".join(f"<tr><td class='k'>{_fmt(d['due_date'])}</td><td>{e(d['label'])}</td><td>{e(d.get('kind_label'))}</td></tr>" for d in deadlines_)
     today = date.today().strftime("%d/%m/%Y")
     body = f"""
-<p class='brand'>DocuAnalytics AI</p>
+{f"<p class='brand'>{e(prepared_by)}</p>" if prepared_by else ''}
 <h1>Riepilogo documenti e scadenze</h1>
-<p class='m'>Preparato il {today}{(' da ' + e(prepared_by)) if prepared_by else ''}</p>
+<p class='m'>Preparato il {today}</p>
 <h2>{e(client.get('name'))}</h2>
 <table><tr><td class='k'>P.IVA</td><td>{e(client.get('piva')) or '—'}</td></tr>
 <tr><td class='k'>Codice fiscale</td><td>{e(client.get('cf')) or '—'}</td></tr>{reg_rows}</table>
@@ -513,8 +513,7 @@ def client_report_pdf(client: dict, docs: list, deadlines_: list, prepared_by: s
 {f"<table><tr><th>Data</th><th>Scadenza</th><th>Tipo</th></tr>{dl_rows}</table>" if dl_rows else "<p class='m'>Nessuna scadenza confermata.</p>"}
 <h2>Documenti ({len(docs)})</h2>
 {doc_html or "<p class='m'>Nessun documento associato.</p>"}
-<p class='disc'>Documento informativo generato da DocuAnalytics AI sulla base dei dati estratti automaticamente dai documenti.
-I dati possono contenere errori di lettura e vanno verificati sugli originali. Non costituisce consulenza fiscale, legale o notarile.</p>"""
+<p class='disc'>Riepilogo informativo dei documenti e delle scadenze. I dati vanno verificati sui documenti originali. Non costituisce consulenza fiscale, legale o notarile.</p>"""
     css = """* {font-family: sans-serif; color: #152033;} body {font-size: 10pt;}
 .brand {color: #2f6bff; font-weight: bold; font-size: 11pt; margin: 0;} h1 {font-size: 18pt; margin: 2pt 0;}
 h2 {font-size: 13pt; color: #0a1022; margin-top: 16pt; border-bottom: 1px solid #2f6bff; padding-bottom: 2pt;}

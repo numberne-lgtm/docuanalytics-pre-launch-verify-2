@@ -180,3 +180,20 @@ def test_pdf_simulation_spends_only_the_signed_in_demo_accounts_credit(staged):
     detail = f'/api/workspace/documents/{body["analysis_id"]}'
     assert staged.get(detail, headers=a).json()["filename"] == payload["filename"]
     assert staged.get(detail, headers=b).status_code == 404
+
+
+def test_local_client_report_is_intestated_to_the_studio(staged):
+    import pymupdf
+
+    a, b = _login(staged, "a"), _login(staged, "b")
+    path = "/api/workspace/clients/pr7-client-a/report.pdf"
+    assert staged.get(path).status_code == 401
+    assert staged.get(path, headers=b).status_code == 404
+    settings = staged.put("/api/workspace/studio", headers=a, json={"name": "Studio Rossi Demo"})
+    assert settings.status_code == 200, settings.text
+    report = staged.get(path, headers=a)
+    assert report.status_code == 200, report.text
+    with pymupdf.open(stream=report.content, filetype="pdf") as pdf:
+        text = " ".join(page.get_text() for page in pdf)
+    assert "Studio Rossi Demo" in text
+    assert "DocuAnalytics" not in text

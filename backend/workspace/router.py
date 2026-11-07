@@ -970,7 +970,8 @@ def build_workspace_router(db, get_current_user, llm_key, default_notify_days, s
         c = await _client(uid, cid)
         docs = [a async for a in db.analyses.find({"user_id": uid, "client_id": cid}, {"_id": 0}).sort("created_at", -1)]
         dls = [d for d in await _deadlines(uid, {"client_id": cid}) if d["status"] == "confirmed" and d["due_date"]]
-        pdf = core.client_report_pdf(c, docs, dls, u.get("name") or u.get("email") or "")
+        prepared_by = (u.get("studio") or {}).get("name") or u.get("name") or u.get("email") or ""
+        pdf = core.client_report_pdf(c, docs, dls, prepared_by)
         return Response(pdf, media_type="application/pdf",
                         headers={"Content-Disposition": f'attachment; filename="report-{core.slug(c["name"])}.pdf"', "Cache-Control": "no-store"})
 

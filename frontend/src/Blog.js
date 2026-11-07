@@ -37,8 +37,8 @@ export const ARTICLES = {
       "excerpt": "Dopo l’analisi, ritrova il documento, collegalo al cliente e organizza i controlli e le scadenze.",
       "workspaceCta": "Vai all’area di lavoro",
       "reportTitle": "Invia il report via email, all’indirizzo PEC o a entrambi",
-      "reportInstructions": "Apri Clienti, entra nella scheda del cliente e premi «Invia report». Scegli la destinazione, controlla gli indirizzi proposti dai Contatti e aggiungi un messaggio se serve. DocuAnalytics allega il report PDF e mostra l’esito dell’invio.",
-      "reportNote": "L’invio all’indirizzo PEC parte da email ordinaria. La casella può rifiutarlo e l’invio è privo di ricevuta PEC.",
+      "reportInstructions": "Dalla scheda cliente premi «Invia report dallo studio». Scegli Email, PEC o entrambe, scarica il PDF intestato allo studio e apri la bozza con i destinatari proposti. Allega il PDF e spedisci dalla casella dello studio.",
+      "reportNote": "Per la spedizione certificata, usa la PEC dello studio come mittente.",
       "body": [
         {
           "h": "1. Parti dai risultati",
@@ -117,8 +117,8 @@ export const ARTICLES = {
       "excerpt": "After analysis, find the document, link it to a client and organise reviews and deadlines.",
       "workspaceCta": "Go to workspace",
       "reportTitle": "Send the report to an email address, a PEC address or both",
-      "reportInstructions": "Open the client record and select Send report. Choose a destination, check the addresses from Contacts and add an optional message. DocuAnalytics attaches the PDF and shows the send status.",
-      "reportNote": "Messages to PEC addresses are sent from ordinary email. The recipient may reject them and no PEC receipt is issued.",
+      "reportInstructions": "Open the client record, choose email, PEC or both and download the report with your firm’s name. Open a draft, attach the PDF and send from your firm’s mailbox.",
+      "reportNote": "For certified delivery, send from your firm’s PEC mailbox.",
       "body": [
         {
           "h": "From results to documents",
@@ -185,8 +185,8 @@ export const ARTICLES = {
       "excerpt": "Después del análisis, encuentra el documento, vincúlalo a un cliente y organiza las revisiones y los plazos.",
       "workspaceCta": "Ir al área de trabajo",
       "reportTitle": "Envía el informe por email, a una dirección PEC o a ambas",
-      "reportInstructions": "Abre la ficha del cliente y pulsa Enviar informe. Elige el destino, revisa las direcciones de Contactos y añade un mensaje si lo necesitas. DocuAnalytics adjunta el PDF y muestra el resultado del envío.",
-      "reportNote": "Los mensajes a direcciones PEC salen desde un correo ordinario. El destinatario puede rechazarlos y no se genera un recibo PEC.",
+      "reportInstructions": "Abre la ficha, elige email, PEC o ambos y descarga el informe con el nombre de tu despacho. Abre un borrador, adjunta el PDF y envíalo desde el buzón del despacho.",
+      "reportNote": "Para el envío certificado, usa la cuenta PEC del despacho.",
       "body": [
         {
           "h": "De los resultados a Documentos",
@@ -253,8 +253,8 @@ export const ARTICLES = {
       "excerpt": "Finden Sie analysierte Dokumente, ordnen Sie sie Mandanten zu und organisieren Sie Prüfungen und Fristen.",
       "workspaceCta": "Zum Arbeitsbereich",
       "reportTitle": "Bericht an eine E-Mail-Adresse, eine PEC-Adresse oder beide senden",
-      "reportInstructions": "Öffnen Sie die Mandantenakte und wählen Sie Bericht senden. Wählen Sie das Ziel, prüfen Sie die Kontaktdaten und ergänzen Sie bei Bedarf eine Nachricht. DocuAnalytics hängt den PDF-Bericht an und zeigt den Sendestatus an.",
-      "reportNote": "Der Versand an PEC-Adressen erfolgt per gewöhnlicher E-Mail. Die Empfängeradresse kann die Nachricht ablehnen und es wird keine PEC-Quittung ausgestellt.",
+      "reportInstructions": "Öffnen Sie die Mandantenakte, wählen Sie E-Mail, PEC oder beides und laden Sie den Bericht mit Kanzleinamen herunter. Öffnen Sie einen Entwurf, hängen Sie das PDF an und senden Sie es aus dem Kanzleipostfach.",
+      "reportNote": "Für den zertifizierten Versand verwenden Sie das PEC-Postfach der Kanzlei.",
       "body": [
         {
           "h": "Von der Analyse zur Dokumentenliste",
@@ -321,8 +321,8 @@ export const ARTICLES = {
       "excerpt": "Retrouvez le document analysé, associez-le à un client et organisez les vérifications et les échéances.",
       "workspaceCta": "Accéder à l’espace de travail",
       "reportTitle": "Envoyez le rapport par email, à une adresse PEC ou aux deux",
-      "reportInstructions": "Ouvrez la fiche client et cliquez sur Envoyer le rapport. Sélectionnez la destination, vérifiez les adresses proposées et ajoutez un message si besoin. DocuAnalytics joint le PDF et indique le résultat de l’envoi.",
-      "reportNote": "Les messages vers une adresse PEC sont envoyés par email ordinaire. Le destinataire peut les refuser et aucun reçu PEC n’est émis.",
+      "reportInstructions": "Ouvrez la fiche client, choisissez email, PEC ou les deux et téléchargez le rapport au nom du cabinet. Ouvrez un brouillon, joignez le PDF et envoyez-le depuis la boîte du cabinet.",
+      "reportNote": "Pour un envoi certifié, utilisez la boîte PEC du cabinet.",
       "body": [
         {
           "h": "Des résultats aux documents",

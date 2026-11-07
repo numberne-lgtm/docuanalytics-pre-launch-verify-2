@@ -61,12 +61,13 @@ SAFE_WORKSPACE = {
         r"/documents/[A-Za-z0-9-]{1,128}/candidates",
         r"/clients", r"/clients/[A-Za-z0-9-]{1,128}", r"/deadlines",
         r"/deadlines/review", r"/calendar\.ics", r"/settings", r"/studio",
+        r"/clients/[A-Za-z0-9-]{1,128}/report\.pdf",
         r"/calendar/feed", r"/clients/[A-Za-z0-9-]{1,128}/calendar(?:\.ics|/feed)",
         r"/priorities/(?:document|deadline)/[A-Za-z0-9-]{1,128}",
         r"/priorities/(?:document|deadline)/[A-Za-z0-9-]{1,128}/(?:qr|pdf)",
     ],
     "PUT": [
-        r"/priorities/read-state",
+        r"/priorities/read-state", r"/studio",
         r"/deadlines/[A-Za-z0-9-]{1,128}/operational",
     ],
     "POST": [
@@ -112,7 +113,8 @@ async def authenticated_user(request: Request):
     uid = sessions.get(token)
     if not uid:
         raise HTTPException(401, "Accesso richiesto allo staging locale")
-    return await _user_details(uid)
+    profile = await db.users.find_one({"user_id": uid}, {"studio": 1}) or {}
+    return {**await _user_details(uid), "studio": profile.get("studio") or {}}
 
 
 async def disabled_email(*args, **kwargs):
