@@ -13,9 +13,22 @@ Obiettivo: **più conversioni** (iscrizioni con 3 crediti gratis → clienti pag
 - Multi-Document Audit: confronta da 2 a 10 documenti (contratto e fattura, visura e contratto).
 - Scadenze: rilevate dai documenti, stato "da verificare" o "confermata", avvisi email a 30, 15, 7, 3 e 1 giorno prima o il giorno stesso, export .ics verso Google Calendar, Outlook e Apple.
 - Report PDF con logo e firma dello studio, da controllare prima di condividerlo. Export CSV e JSON.
-- Prezzo a crediti, senza abbonamento fisso. **3 crediti gratis, nessuna carta richiesta.**
+- Prezzo a crediti (pacchetti) oppure abbonamento studio mensile. **3 crediti gratis, nessuna carta richiesta.**
 - Messaggio chiave: "L'AI fa la ricerca. La valutazione resta del professionista."
 - Esempi di clausole e documenti: sempre segnalati come "dati di fantasia". Mai testimonianze, numeri di clienti o statistiche inventate.
+
+### Novità verificate sul sito (9/11)
+- **Scelta del motore AI**: Gemini, Claude, ChatGPT o ChatGPT mini (fornitori Google, Anthropic, OpenAI).
+- **Privacy**: il file caricato viene cancellato dopo l'analisi; nello storico restano solo i dati estratti, visibili solo dall'account; HTTPS.
+- **Red-Flag AI specifiche**: quadratura automatica di F24, fatture e buste paga (Debito/Credito/Saldo, Lordo/INPS/IRPEF/Netto); clausole vessatorie (Art. 1341 c.c.); IBAN esteri e anomalie AML; avviso visto di conformità IVA per crediti sopra € 5.000.
+- **Visure**: REA, soci, amministratori, verifiche KYC/AML. **Buste paga**: TFR maturato.
+- **Export** CSV/JSON pronto per gestionali (Zucchetti, TeamSystem), Prima Nota.
+- **Area di lavoro**: invio del report dalla scheda cliente via **Email, PEC o entrambe**; eliminazione di un'analisi in autonomia.
+- **Assistente AI pubblico** (/assistant), gratuito e senza registrazione, con QR code da condividere.
+- **Invita un collega**: +5 crediti a testa per ogni collega registrato, senza limiti.
+- **Prezzi**: pacchetti € 19 (50 crediti), € 49 (200), € 149 (1000); abbonamenti studio € 29/mese (100), € 99/mese (500), € 299/mese (illimitati). Si inizia con 3 crediti gratis.
+- Blog e Guide (/blog): area di lavoro, fatture, F24, clausole vessatorie, visure KYC/AML.
+- ⚠️ NON citare nei contenuti le recensioni della home ("99%", "12 ore a settimana", nomi degli studi) finché Francesco non conferma che sono reali.
 
 ## Target
 Commercialisti, consulenti del lavoro, avvocati, studi professionali, PMI e partite IVA in Italia.
