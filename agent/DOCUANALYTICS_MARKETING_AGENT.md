@@ -30,6 +30,12 @@ Obiettivo: **più conversioni** (iscrizioni con 3 crediti gratis → clienti pag
 - Blog e Guide (/blog): area di lavoro, fatture, F24, clausole vessatorie, visure KYC/AML.
 - ⚠️ NON citare nei contenuti le recensioni della home ("99%", "12 ore a settimana", nomi degli studi) finché Francesco non conferma che sono reali.
 
+### Stato delle funzioni (fonte: guida completa di Francesco del 9/11)
+- **Pubblicate, si possono promuovere:** analisi AI (fatture, contratti, F24, visure, buste paga), report strutturato con segnalazioni "da verificare", Copilot, Area di lavoro (Documenti, Clienti, Scadenze con conferma ed export .ics, Risk Dashboard di base), associazione documento-cliente su identificativi esatti, export PDF/CSV/JSON, eliminazione di un'analisi, assistente pubblico con QR, crediti con Stripe e PayPal, Blog e Guide, invita un collega.
+- **In anteprima, NON promuovere finché Francesco non conferma che sono online:** Cliente 360, Risk Dashboard avanzata, approfondimento AI del Multi-Document Audit (1 credito), navigazione da tastiera, firma nell'interfaccia, invio PEC/email automatico (oggi c'è la bozza da spedire dalla casella dello studio), condivisione protetta con QR, nuove opzioni privacy, tutte le opzioni di promemoria.
+- Regole di linguaggio: le segnalazioni sono "da verificare", non "errori"; la Risk Dashboard "aiuta a dare priorità", non "certifica il rischio"; la firma è "grafica", non firma digitale; i report al cliente includono solo dati validati dal professionista.
+- Payoff ufficiale: **"Diamo valore ai documenti, tempo ai professionisti."**
+
 ## Target
 Commercialisti, consulenti del lavoro, avvocati, studi professionali, PMI e partite IVA in Italia.
 
