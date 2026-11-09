@@ -68,3 +68,43 @@ Commenta PROVA e ti mando il link per iniziare.
 | n5_pec.jpg | Report via PEC | utm_campaign=novita_pec |
 | n6_invita.jpg | Invita un collega (+5 crediti) | utm_campaign=referral |
 | n7_assistente.jpg | Assistente AI gratuito | link: https://docuanalytics.online/assistant?utm_source=instagram&utm_medium=story |
+
+---
+
+# Reel sulle funzioni confermate online (9/11)
+
+## R7. Cliente 360
+**HOOK:** Dove sono i documenti di questo cliente?
+**VOCE:**
+Dove sono i documenti di questo cliente? Email, cartelle, chiavette…
+Con Cliente 360 di DocuAnalytics AI apri la scheda del cliente e trovi tutto: documenti, risultati delle analisi, criticità da verificare e scadenze collegate.
+Un cliente, una scheda.
+Commenta PROVA e ti mando il link con tre crediti gratis.
+
+## R8. Multi-Document Audit
+**HOOK:** Dieci documenti. Una sola verifica.
+**VOCE:**
+Dieci documenti della stessa pratica. Una sola verifica.
+Con il Multi-Document Audit carichi da due a dieci file, per esempio contratto, fatture e visura, e vedi subito dove i dati non tornano.
+Se serve, l'approfondimento AI costa un credito.
+Non è una certificazione: è il punto da cui partire con la tua verifica.
+Commenta PROVA e provalo gratis.
+
+## R9. Due report, due pubblici
+**HOOK:** Il report interno non va al cliente.
+**VOCE:**
+Il report interno dello studio non è quello che deve leggere il cliente.
+DocuAnalytics AI separa le due cose: un report di lavoro per lo studio, con note e anomalie da verificare, e un report essenziale per il cliente, solo con dati e scadenze confermate da te.
+Con l'intestazione e la firma del tuo studio, e l'invio via email o PEC.
+Commenta PROVA e ti mando il link.
+
+## R10. Condivisione protetta
+**HOOK:** Mai più allegati sensibili in chat.
+**VOCE:**
+Mai più documenti sensibili mandati come allegato in chat.
+Con DocuAnalytics AI condividi un contenuto tramite QR code e pagina protetta, con accesso controllato.
+Le informazioni riservate restano riservate.
+Commenta PROVA e provalo gratis.
+
+## Storie aggiuntive (marketing-media/stories/novita/)
+n8_cliente360, n9_audit, n10_firma, n11_condividi, n12_promemoria, n13_duereport.

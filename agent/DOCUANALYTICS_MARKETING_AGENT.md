@@ -32,7 +32,7 @@ Obiettivo: **più conversioni** (iscrizioni con 3 crediti gratis → clienti pag
 
 ### Stato delle funzioni (fonte: guida completa di Francesco del 9/11)
 - **Pubblicate, si possono promuovere:** analisi AI (fatture, contratti, F24, visure, buste paga), report strutturato con segnalazioni "da verificare", Copilot, Area di lavoro (Documenti, Clienti, Scadenze con conferma ed export .ics, Risk Dashboard di base), associazione documento-cliente su identificativi esatti, export PDF/CSV/JSON, eliminazione di un'analisi, assistente pubblico con QR, crediti con Stripe e PayPal, Blog e Guide, invita un collega.
-- **In anteprima, NON promuovere finché Francesco non conferma che sono online:** Cliente 360, Risk Dashboard avanzata, approfondimento AI del Multi-Document Audit (1 credito), navigazione da tastiera, firma nell'interfaccia, invio PEC/email automatico (oggi c'è la bozza da spedire dalla casella dello studio), condivisione protetta con QR, nuove opzioni privacy, tutte le opzioni di promemoria.
+- **Confermate online da Francesco il 9/11 (si possono promuovere):** Cliente 360, Risk Dashboard avanzata, Multi-Document Audit da 2 a 10 documenti (controllo di base + approfondimento AI a 1 credito), navigazione da tastiera, firma grafica nell'interfaccia, invio del report via email e PEC dallo studio, condivisione protetta con QR, opzioni privacy, promemoria a 30/15/7/3/1 giorni e il giorno stesso.
 - Regole di linguaggio: le segnalazioni sono "da verificare", non "errori"; la Risk Dashboard "aiuta a dare priorità", non "certifica il rischio"; la firma è "grafica", non firma digitale; i report al cliente includono solo dati validati dal professionista.
 - Payoff ufficiale: **"Diamo valore ai documenti, tempo ai professionisti."**
 
