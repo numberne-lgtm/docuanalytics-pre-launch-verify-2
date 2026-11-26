@@ -1814,7 +1814,7 @@ function PaypalCheckout({ user, packs, subs, notify, onClose }) {
       if (closed) return;
       btn = window.paypalSub.Buttons({
         style: { color: "blue", shape: "pill", label: "subscribe", height: 45 },
-        createSubscription: (d, actions) => actions.subscription.create({ plan_id: planId }),
+        createSubscription: (d, actions) => { track("begin_checkout", {method:"paypal_sub", plan:selSub}); return actions.subscription.create({ plan_id: planId }); },
         onApprove: async (d) => { try { const { data: res } = await axios.post(`${API}/paypal/subscription/activate`, { user_id: user.user_id, package_id: selSub, subscription_id: d.subscriptionID }); if (res.status === "active") { /* Subscription activation is not proof of a captured payment. */ notify(`${t("n_sub_ok")} +${res.credits_added}. ${t("n_renew")}`); refresh(); onClose(); } else notify(t("n_pay_fail")); } catch { notify(t("n_pay_fail")); } },
         onError: () => notify(t("n_pay_start_err")),
       });
