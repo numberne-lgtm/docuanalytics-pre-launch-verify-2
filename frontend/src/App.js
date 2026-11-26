@@ -14,7 +14,7 @@ import {
 import { createPortal } from "react-dom";
 import { BlogIndex, BlogPost } from "./Blog";
 import { adsConsentChosen, initAdsPixel, setAdsMeasurementConsent, trackAdsRegistration } from "./openaiAds";
-import { analyticsChoice, setAnalyticsConsent, trackAnalyticsPage, trackAnalytics } from "./analyticsMeasurement";
+import { analyticsChoice, setAnalyticsConsent, trackAnalyticsPage, trackAnalytics, trackVerifiedSignup } from "./analyticsMeasurement";
 import { MT, MARK, SECTORS, DEMO, validatePiva, validateCF } from "./content";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -642,7 +642,7 @@ function Home() {
       const { data } = await axios.get(`${API}/payments/status/${sid}`);
       if (data.payment_status === "paid") {
         refresh();
-        track("purchase", { method: "stripe", credits: data.credits_added, subscription: !!data.is_subscription });
+        if (data.analytics_purchase) track("purchase", data.analytics_purchase);
         notify(data.is_subscription
           ? `${t("n_sub_ok")} +${data.credits_added}. ${t("n_renew")}`
           : `${t("n_pay_ok")} +${data.credits_added}`);
@@ -1794,7 +1794,7 @@ function PaypalCheckout({ user, packs, subs, notify, onClose }) {
     const b = window.paypal.Buttons({
       style: { color: "gold", shape: "pill", label: "paypal", height: 45 },
       createOrder: async () => { track("begin_checkout", { method: "paypal", plan: selPackRef.current }); const { data } = await axios.post(`${API}/paypal/order`, { user_id: user.user_id, package_id: selPackRef.current }); return data.order_id; },
-      onApprove: async (d) => { try { const { data: res } = await axios.post(`${API}/paypal/capture`, { order_id: d.orderID }); if (res.status === "paid") { track("purchase", { method: "paypal", credits: res.credits_added }); notify(`${t("n_pay_ok")} +${res.credits_added}`); refresh(); onClose(); } else notify(t("n_pay_fail")); } catch { notify(t("n_pay_fail")); } },
+      onApprove: async (d) => { try { const { data: res } = await axios.post(`${API}/paypal/capture`, { order_id: d.orderID }); if (res.status === "paid") { if (res.analytics_purchase) track("purchase", res.analytics_purchase); notify(`${t("n_pay_ok")} +${res.credits_added}`); refresh(); onClose(); } else notify(t("n_pay_fail")); } catch { notify(t("n_pay_fail")); } },
       onError: () => notify(t("n_pay_start_err")),
     });
     if (b.isEligible && !b.isEligible()) return;
@@ -1814,7 +1814,7 @@ function PaypalCheckout({ user, packs, subs, notify, onClose }) {
       btn = window.paypalSub.Buttons({
         style: { color: "blue", shape: "pill", label: "subscribe", height: 45 },
         createSubscription: (d, actions) => actions.subscription.create({ plan_id: planId }),
-        onApprove: async (d) => { try { const { data: res } = await axios.post(`${API}/paypal/subscription/activate`, { user_id: user.user_id, package_id: selSub, subscription_id: d.subscriptionID }); if (res.status === "active") { track("purchase", { method: "paypal_sub", credits: res.credits_added }); notify(`${t("n_sub_ok")} +${res.credits_added}. ${t("n_renew")}`); refresh(); onClose(); } else notify(t("n_pay_fail")); } catch { notify(t("n_pay_fail")); } },
+        onApprove: async (d) => { try { const { data: res } = await axios.post(`${API}/paypal/subscription/activate`, { user_id: user.user_id, package_id: selSub, subscription_id: d.subscriptionID }); if (res.status === "active") { /* Subscription activation is not proof of a captured payment. */ notify(`${t("n_sub_ok")} +${res.credits_added}. ${t("n_renew")}`); refresh(); onClose(); } else notify(t("n_pay_fail")); } catch { notify(t("n_pay_fail")); } },
         onError: () => notify(t("n_pay_start_err")),
       });
       if (btn.isEligible && !btn.isEligible()) return;
@@ -2066,13 +2066,14 @@ function AuthModal({ user, onClose, onAuthed, notify }) {
           return;
         }
         onAuthed(data.token, data.user); notify(`${t("n_welcome")}, ${data.user.name}! 🎉`); onClose();
-        track("sign_up", { method: "email", hero_variant: localStorage.getItem("da_hero_ab") || "A" });
+        track("registration_created", { method: "email" });
         trackAdsRegistration(data.user?.user_id);
       } else {
         const { data } = await axios.post(`${API}/auth/login`, { email, password });
         onAuthed(data.token, data.user); notify(t("n_login_ok")); onClose();
         track("login", { method: "email" });
         if (data.recently_verified_registration) trackAdsRegistration(data.user?.user_id);
+        if (data.recently_verified_registration) trackVerifiedSignup(data.user?.user_id);
       }
     } catch (e) {
       setErr(fmtErr(e?.response?.data?.detail) || t("auth_err"));
