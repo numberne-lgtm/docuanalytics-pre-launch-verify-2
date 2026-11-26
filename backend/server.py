@@ -10,6 +10,7 @@ from pathlib import Path
 from datetime import datetime, timezone, timedelta
 from registration_tracking import recently_verified_registration
 from analytics_purchase import stripe_purchase, paypal_purchase
+from analytics_activation import first_analysis_candidate, claim_first_analysis
 from typing import Optional
 
 from fastapi import FastAPI, APIRouter, HTTPException, Request, Header
@@ -363,12 +364,23 @@ Nella sezione audit, esegui controlli di quadratura (es. saldo F24, netto busta 
     u2 = await db.users.find_one({"user_id": uid}, {"_id": 0})
 
     analysis_id = str(uuid.uuid4())
+    first_candidate = False
+    try:
+        first_candidate = await first_analysis_candidate(db, u2)
+    except Exception:
+        logger.warning("first analysis eligibility unavailable")
     await db.analyses.insert_one({
         "analysis_id": analysis_id, "user_id": uid, "doc_type": req.doc_type,
         "filename": req.filename, "result": data, "ai_provider": used_provider,
         "created_at": datetime.now(timezone.utc).isoformat(),
     })
-    return {"analysis_id": analysis_id, "result": data, "credits": u2["credits"], "ai_provider": used_provider}
+    first_analysis = False
+    if first_candidate:
+        try:
+            first_analysis = await claim_first_analysis(db, uid, datetime.now(timezone.utc).isoformat())
+        except Exception:
+            logger.warning("first analysis milestone unavailable")
+    return {"analysis_id": analysis_id, "result": data, "credits": u2["credits"], "ai_provider": used_provider, "first_document_analyzed": first_analysis}
 
 
 @api.post("/chat")
