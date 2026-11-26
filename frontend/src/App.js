@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef, useCallback, createContext, useContext } from "react";
 import "@/App.css";
-import { BrowserRouter, Routes, Route, Link, useNavigate, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Link, useNavigate, Navigate, useLocation } from "react-router-dom";
 import axios from "axios";
 import {
   Upload, Zap, CreditCard, FileText, ScrollText, Building2, Landmark, Wallet,
@@ -14,6 +14,7 @@ import {
 import { createPortal } from "react-dom";
 import { BlogIndex, BlogPost } from "./Blog";
 import { adsConsentChosen, initAdsPixel, setAdsMeasurementConsent, trackAdsRegistration } from "./openaiAds";
+import { analyticsChoice, setAnalyticsConsent, trackAnalyticsPage, trackAnalytics } from "./analyticsMeasurement";
 import { MT, MARK, SECTORS, DEMO, validatePiva, validateCF } from "./content";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -56,7 +57,17 @@ const scrollToId = (id) => {
   if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
 };
 /* lightweight GA4 event helper (no-op if gtag not present) */
-const track = (event, params = {}) => { try { if (window.gtag) window.gtag("event", event, params); } catch (e) { /* noop */ } };
+const track = trackAnalytics;
+
+function AnalyticsPreferences() {
+  const location = useLocation();
+  const [choice, setChoice] = useState(analyticsChoice);
+  const [editing, setEditing] = useState(false);
+  useEffect(() => { if (choice === "yes") trackAnalyticsPage(location.key); }, [choice, location.key]);
+  const choose = (granted) => { if (setAnalyticsConsent(granted)) { setChoice(granted ? "yes" : "no"); setEditing(false); } };
+  if (choice !== null && !editing) return <div className="privacy-banner"><span>Statistiche di utilizzo: {choice === "yes" ? "attive" : "disattivate"}.</span><button type="button" onClick={() => setEditing(true)}>Preferenze statistiche</button></div>;
+  return <div className="privacy-banner" role="group" aria-label="Consenso statistiche"><span>Con il tuo consenso usiamo Google Analytics per misurare visite e utilizzo. Puoi rifiutare o revocare senza perdere funzionalità.</span><button type="button" onClick={() => choose(false)}>Rifiuta statistiche</button><button type="button" onClick={() => choose(true)}>Accetta statistiche</button></div>;
+}
 
 initAdsPixel();
 
@@ -2360,6 +2371,7 @@ function App() {
   return (
     <I18nProvider>
       <BrowserRouter>
+        <AnalyticsPreferences />
         <Routes>
           <Route path="/blog" element={<BlogIndex />} />
           <Route path="/blog/:slug" element={<BlogPost />} />
