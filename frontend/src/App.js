@@ -675,6 +675,7 @@ function Home() {
       });
       setResult(data.result); setAnalysisId(data.analysis_id); setUsedProvider(data.ai_provider);
       track("document_analyzed", { doc_type: data.result?.doc_type || docType });
+      if (data.first_document_analyzed === true) track("first_document_analyzed");
       setUser((u) => ({ ...u, credits: data.credits }));
       setStage(3);
       setTimeout(() => document.getElementById("results")?.scrollIntoView({ behavior: "smooth" }), 200);
