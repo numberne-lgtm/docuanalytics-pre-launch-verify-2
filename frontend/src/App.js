@@ -519,7 +519,7 @@ const DOC_TYPES = [
 ];
 
 const SECTOR_SLUGS = ["commercialisti", "avvocati", "notai", "cfo", "hr"];
-const PUBLIC_ORIGIN = "https://docuanalytics.it";
+const PUBLIC_ORIGIN = "https://docuanalytics.online";
 
 function useUser() {
   const [user, setUser] = useState({ user_id: null, credits: 0, email: null });
@@ -620,8 +620,8 @@ function Home() {
     const langs = ["it", "en", "es", "de", "fr"];
     const links = [];
     const add = (hl, href) => { const l = document.createElement("link"); l.rel = "alternate"; l.hreflang = hl; l.href = href; l.setAttribute("data-hl", "1"); document.head.appendChild(l); links.push(l); };
-    langs.forEach((l) => add(l, l === "it" ? "https://docuanalytics.it/" : `https://docuanalytics.it/?lang=${l}`));
-    add("x-default", "https://docuanalytics.it/");
+    langs.forEach((l) => add(l, l === "it" ? "https://docuanalytics.online/" : `https://docuanalytics.online/?lang=${l}`));
+    add("x-default", "https://docuanalytics.online/");
     return () => links.forEach((l) => l.remove());
   }, []);
 
@@ -1290,7 +1290,7 @@ function HeroDemo() {
   );
   return (
     <div className="hero-demo" data-testid="hero-demo" aria-hidden="true">
-      <div className="hd-bar"><span className="hd-dot" /><span className="hd-dot" /><span className="hd-dot" /><span className="hd-addr">app.docuanalytics.it</span></div>
+      <div className="hd-bar"><span className="hd-dot" /><span className="hd-dot" /><span className="hd-dot" /><span className="hd-addr">docuanalytics.online</span></div>
       <div className="hd-app">
         <aside className="hd-side">
           <div className="hd-brand">Docu<span className="grad">Analytics</span></div>
@@ -1670,7 +1670,7 @@ function DemoPlayer() {
     <div className="glass demo-player" data-testid="tutorial-video">
       <div className="demo-chrome">
         <span className="dotc r" /><span className="dotc y" /><span className="dotc g" />
-        <span className="demo-url">docuanalytics.it — Demo</span>
+        <span className="demo-url">docuanalytics.online — Demo</span>
         <button className="demo-play" data-testid="demo-playpause" onClick={() => setPlaying((p) => !p)}>
           {playing ? "❚❚" : <Play size={14} />}
         </button>
