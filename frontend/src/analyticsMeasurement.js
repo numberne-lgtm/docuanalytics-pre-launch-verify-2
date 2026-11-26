@@ -88,6 +88,7 @@ export function setAnalyticsConsent(granted) {
 }
 
 export function trackAnalyticsPage(key) {
+  try {
   if (!setup() || lastPageKey === key) return false;
   const page = safeAnalyticsLocation(window.location.href);
   if (!page) return false;
@@ -97,20 +98,35 @@ export function trackAnalyticsPage(key) {
   lastPage = page;
   lastPageKey = key;
   return true;
+  } catch { return false; }
 }
 
+const SECTORS = ["commercialisti","avvocati","notai","cfo","hr"];
+const PLANS = ["starter","pro","enterprise","sub_single","sub_pro","sub_unlimited"];
+const VARIANTS = ["A","B"];
 const PARAMS = {
-  view_pricing:["src"], experiment_impression:["experiment","variant"],
-  document_analyzed:["doc_type"], first_document_analyzed:[], model_compared:["model"],
-  cta_click:["location","hero_variant","sector"], copilot_used:[],
-  begin_checkout:["method","plan"], sign_up:["method","hero_variant"],
-  registration_created:["method"], login:["method"], view_item:["item_category","sector"]
+  view_pricing:{src:["unknown","credits_out","header","after_analysis","pricing_section","footer",...SECTORS]},
+  experiment_impression:{experiment:["hero_title"],variant:VARIANTS},
+  document_analyzed:{}, first_document_analyzed:{}, model_compared:{model:["claude","gemini"]},
+  cta_click:{location:["hero","final","sector_hero"],hero_variant:VARIANTS,sector:SECTORS},
+  copilot_used:{}, begin_checkout:{method:["stripe","paypal","paypal_sub"],plan:PLANS},
+  sign_up:{method:["email"],hero_variant:VARIANTS}, registration_created:{method:["email"]},
+  login:{method:["email"]}, view_item:{item_category:["sector"],sector:SECTORS}
 };
+
+export function safeEventParams(event, params = {}) {
+  const safe = {};
+  if (!params || !Object.prototype.hasOwnProperty.call(PARAMS,event)) return safe;
+  for (const [key, allowed] of Object.entries(PARAMS[event])) {
+    if (allowed.includes(params[key])) safe[key] = params[key];
+  }
+  return safe;
+}
 
 export function validPurchase(p) {
   return !!p && typeof p.transaction_id === "string" && /^da_[a-f0-9]{64}$/.test(p.transaction_id)
     && Number.isFinite(p.value) && p.value > 0 && p.currency === "EUR"
-    && Array.isArray(p.items) && p.items.length === 1 && SAFE_VALUE.test(p.items[0].item_id || "")
+    && Array.isArray(p.items) && p.items.length === 1 && !!p.items[0] && PLANS.includes(p.items[0].item_id)
     && p.items[0].quantity === 1 && p.items[0].price === p.value;
 }
 
@@ -120,19 +136,12 @@ export function trackAnalytics(event, params = {}) {
       if (!validPurchase(params) || sent.has(params.transaction_id)) return false;
     } else if (!Object.prototype.hasOwnProperty.call(PARAMS, event)) return false;
     if (!setup()) return false;
-    const safe = {};
+    const safe = event === "purchase" ? {} : safeEventParams(event, params);
     if (event === "purchase") {
       safe.transaction_id = params.transaction_id;
       safe.value = params.value;
       safe.currency = params.currency;
       safe.items = [{item_id:params.items[0].item_id, price:params.value, quantity:1}];
-    } else {
-      for (const key of PARAMS[event]) {
-        const value = params[key];
-        // No arbitrary text, identifiers, document names, email or file contents.
-        if (key === "doc_type") continue;
-        if (typeof value === "string" && SAFE_VALUE.test(value)) safe[key] = value;
-      }
     }
     const page = safeAnalyticsLocation(window.location.href);
     window.gtag("event", event, {...safe, page_location:page, page_referrer:lastPage || safeReferrer(document.referrer), page_title:"DocuAnalytics", send_to:ID});
