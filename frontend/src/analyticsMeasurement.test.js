@@ -21,3 +21,9 @@ test("purchase contract rejects missing IDs and zero values", () => {
   expect(validPurchase({...p,transaction_id:"raw_secret"})).toBe(false);
   expect(validPurchase({...p,currency:"USD"})).toBe(false);
 });
+
+test("public sector routes retain their own analytics path", () => {
+  for (const path of ["commercialisti", "avvocati", "notai", "cfo", "hr"]) {
+    expect(safeAnalyticsLocation("https://docuanalytics.online/" + path)).toBe("https://docuanalytics.online/" + path);
+  }
+});
