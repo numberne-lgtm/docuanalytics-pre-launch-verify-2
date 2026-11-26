@@ -7,6 +7,7 @@ on:
   pull_request:
     branches:
       - main
+      - feature/openai-ads-registration-tracking
 jobs:
   frontend:
     runs-on: ubuntu-latest
