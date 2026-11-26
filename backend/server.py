@@ -9,6 +9,8 @@ import uuid
 from pathlib import Path
 from datetime import datetime, timezone, timedelta
 from registration_tracking import recently_verified_registration
+from analytics_purchase import stripe_purchase, paypal_purchase
+from analytics_activation import first_analysis_candidate, claim_first_analysis
 from typing import Optional
 
 from fastapi import FastAPI, APIRouter, HTTPException, Request, Header
@@ -362,12 +364,23 @@ Nella sezione audit, esegui controlli di quadratura (es. saldo F24, netto busta 
     u2 = await db.users.find_one({"user_id": uid}, {"_id": 0})
 
     analysis_id = str(uuid.uuid4())
+    first_candidate = False
+    try:
+        first_candidate = await first_analysis_candidate(db, u2)
+    except Exception:
+        logger.warning("first analysis eligibility unavailable")
     await db.analyses.insert_one({
         "analysis_id": analysis_id, "user_id": uid, "doc_type": req.doc_type,
         "filename": req.filename, "result": data, "ai_provider": used_provider,
         "created_at": datetime.now(timezone.utc).isoformat(),
     })
-    return {"analysis_id": analysis_id, "result": data, "credits": u2["credits"], "ai_provider": used_provider}
+    first_analysis = False
+    if first_candidate:
+        try:
+            first_analysis = await claim_first_analysis(db, uid, datetime.now(timezone.utc).isoformat())
+        except Exception:
+            logger.warning("first analysis milestone unavailable")
+    return {"analysis_id": analysis_id, "result": data, "credits": u2["credits"], "ai_provider": used_provider, "first_document_analyzed": first_analysis}
 
 
 @api.post("/chat")
@@ -691,10 +704,16 @@ async def payment_status(session_id: str):
     record = await db.payment_transactions.find_one({"session_id": session_id}, {"_id": 0})
     if not record:
         raise HTTPException(404, "Transazione non trovata")
-    if record.get("payment_status") != "paid":
+    measurement = None
+    try:
+        s = stripe.checkout.Session.retrieve(session_id)
+        measurement = stripe_purchase(s, record)
+    except Exception as e:
+        logger.warning(f"status check error: {e}")
+        s = None
+    if record.get("payment_status") != "paid" and s is not None:
         try:
-            s = stripe.checkout.Session.retrieve(session_id)
-            if s.payment_status == "paid" or s.status == "complete":
+            if s.payment_status == "paid":
                 await db.payment_transactions.update_one(
                     {"session_id": session_id, "payment_status": {"$ne": "paid"}},
                     {"$set": {"status": "completed", "payment_status": "paid",
@@ -712,6 +731,7 @@ async def payment_status(session_id: str):
     return {"session_id": session_id, "status": record["status"],
             "payment_status": record["payment_status"],
             "is_subscription": record.get("is_subscription", False),
+            "analytics_purchase": measurement if record.get("payment_status") == "paid" else None,
             "credits_added": record["credits"] if record.get("payment_status") == "paid" else 0,
             "user_credits": u["credits"] if u else None}
 
@@ -737,7 +757,7 @@ async def stripe_webhook(request: Request):
         # Authoritative re-check against Stripe before crediting (protects against spoofed/unsigned events).
         try:
             s = stripe.checkout.Session.retrieve(sid)
-            if not (s.payment_status == "paid" or s.status == "complete"):
+            if s.payment_status != "paid":
                 return {"status": "ignored"}
         except Exception:
             return {"status": "ignored"}
@@ -936,7 +956,7 @@ async def paypal_capture(req: PaypalCaptureReq):
         raise HTTPException(404, "Ordine non trovato")
     if record.get("payment_status") == "paid":
         u = await db.users.find_one({"user_id": record["user_id"]}, {"_id": 0})
-        return {"status": "paid", "credits_added": 0, "user_credits": u["credits"] if u else None}
+        return {"status": "paid", "credits_added": 0, "user_credits": u["credits"] if u else None, "analytics_purchase": record.get("analytics_purchase") if PAYPAL_MODE == "live" else None}
     token = await _paypal_token()
     async with httpx.AsyncClient(timeout=30) as c:
         r = await c.post(f"{PAYPAL_BASE}/v2/checkout/orders/{req.order_id}/capture",
@@ -947,15 +967,16 @@ async def paypal_capture(req: PaypalCaptureReq):
         data = {}
     status = data.get("status")
     if r.status_code in (200, 201) and status == "COMPLETED":
+        measurement = paypal_purchase(data, record, PAYPAL_MODE)
         await db.payment_transactions.update_one(
             {"session_id": req.order_id, "payment_status": {"$ne": "paid"}},
             {"$set": {"status": "completed", "payment_status": "paid",
-                      "paypal_capture": data.get("id"),
+                      "paypal_capture": data.get("id"), "analytics_purchase": measurement,
                       "updated_at": datetime.now(timezone.utc).isoformat()}})
         record = await db.payment_transactions.find_one({"session_id": req.order_id}, {"_id": 0})
         await _credit_if_paid(record)
         u = await db.users.find_one({"user_id": record["user_id"]}, {"_id": 0})
-        return {"status": "paid", "credits_added": record["credits"], "user_credits": u["credits"] if u else None}
+        return {"status": "paid", "credits_added": record["credits"], "user_credits": u["credits"] if u else None, "analytics_purchase": record.get("analytics_purchase") if PAYPAL_MODE == "live" else None}
     logger.error(f"paypal capture not completed {r.status_code}: {r.text}")
     return {"status": status or "pending", "credits_added": 0}
 

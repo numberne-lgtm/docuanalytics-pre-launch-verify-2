@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef, useCallback, createContext, useContext } from "react";
 import "@/App.css";
-import { BrowserRouter, Routes, Route, Link, useNavigate, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Link, useNavigate, Navigate, useLocation } from "react-router-dom";
 import axios from "axios";
 import {
   Upload, Zap, CreditCard, FileText, ScrollText, Building2, Landmark, Wallet,
@@ -14,6 +14,7 @@ import {
 import { createPortal } from "react-dom";
 import { BlogIndex, BlogPost } from "./Blog";
 import { adsConsentChosen, initAdsPixel, setAdsMeasurementConsent, trackAdsRegistration } from "./openaiAds";
+import { analyticsChoice, setAnalyticsConsent, trackAnalyticsPage, trackAnalytics, trackVerifiedSignup } from "./analyticsMeasurement";
 import { MT, MARK, SECTORS, DEMO, validatePiva, validateCF } from "./content";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -56,7 +57,17 @@ const scrollToId = (id) => {
   if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
 };
 /* lightweight GA4 event helper (no-op if gtag not present) */
-const track = (event, params = {}) => { try { if (window.gtag) window.gtag("event", event, params); } catch (e) { /* noop */ } };
+const track = trackAnalytics;
+
+function AnalyticsPreferences() {
+  const location = useLocation();
+  const [choice, setChoice] = useState(analyticsChoice);
+  const [editing, setEditing] = useState(false);
+  useEffect(() => { if (choice === "yes") trackAnalyticsPage(location.key); }, [choice, location.key]);
+  const choose = (granted) => { if (setAnalyticsConsent(granted)) { setChoice(granted ? "yes" : "no"); setEditing(false); } };
+  if (choice !== null && !editing) return <div className="privacy-banner"><span>Statistiche di utilizzo: {choice === "yes" ? "attive" : "disattivate"}.</span><button type="button" onClick={() => setEditing(true)}>Preferenze statistiche</button></div>;
+  return <div className="privacy-banner" role="group" aria-label="Consenso statistiche"><span>Con il tuo consenso usiamo Google Analytics per misurare visite e utilizzo. Puoi rifiutare o revocare senza perdere funzionalità.</span><button type="button" onClick={() => choose(false)}>Rifiuta statistiche</button><button type="button" onClick={() => choose(true)}>Accetta statistiche</button></div>;
+}
 
 initAdsPixel();
 
@@ -508,7 +519,7 @@ const DOC_TYPES = [
 ];
 
 const SECTOR_SLUGS = ["commercialisti", "avvocati", "notai", "cfo", "hr"];
-const PUBLIC_ORIGIN = "https://docuanalytics.it";
+const PUBLIC_ORIGIN = "https://docuanalytics.online";
 
 function useUser() {
   const [user, setUser] = useState({ user_id: null, credits: 0, email: null });
@@ -609,8 +620,8 @@ function Home() {
     const langs = ["it", "en", "es", "de", "fr"];
     const links = [];
     const add = (hl, href) => { const l = document.createElement("link"); l.rel = "alternate"; l.hreflang = hl; l.href = href; l.setAttribute("data-hl", "1"); document.head.appendChild(l); links.push(l); };
-    langs.forEach((l) => add(l, l === "it" ? "https://docuanalytics.it/" : `https://docuanalytics.it/?lang=${l}`));
-    add("x-default", "https://docuanalytics.it/");
+    langs.forEach((l) => add(l, l === "it" ? "https://docuanalytics.online/" : `https://docuanalytics.online/?lang=${l}`));
+    add("x-default", "https://docuanalytics.online/");
     return () => links.forEach((l) => l.remove());
   }, []);
 
@@ -631,7 +642,7 @@ function Home() {
       const { data } = await axios.get(`${API}/payments/status/${sid}`);
       if (data.payment_status === "paid") {
         refresh();
-        track("purchase", { method: "stripe", credits: data.credits_added, subscription: !!data.is_subscription });
+        if (data.analytics_purchase) track("purchase", data.analytics_purchase);
         notify(data.is_subscription
           ? `${t("n_sub_ok")} +${data.credits_added}. ${t("n_renew")}`
           : `${t("n_pay_ok")} +${data.credits_added}`);
@@ -664,6 +675,7 @@ function Home() {
       });
       setResult(data.result); setAnalysisId(data.analysis_id); setUsedProvider(data.ai_provider);
       track("document_analyzed", { doc_type: data.result?.doc_type || docType });
+      if (data.first_document_analyzed === true) track("first_document_analyzed");
       setUser((u) => ({ ...u, credits: data.credits }));
       setStage(3);
       setTimeout(() => document.getElementById("results")?.scrollIntoView({ behavior: "smooth" }), 200);
@@ -1279,7 +1291,7 @@ function HeroDemo() {
   );
   return (
     <div className="hero-demo" data-testid="hero-demo" aria-hidden="true">
-      <div className="hd-bar"><span className="hd-dot" /><span className="hd-dot" /><span className="hd-dot" /><span className="hd-addr">app.docuanalytics.it</span></div>
+      <div className="hd-bar"><span className="hd-dot" /><span className="hd-dot" /><span className="hd-dot" /><span className="hd-addr">docuanalytics.online</span></div>
       <div className="hd-app">
         <aside className="hd-side">
           <div className="hd-brand">Docu<span className="grad">Analytics</span></div>
@@ -1659,7 +1671,7 @@ function DemoPlayer() {
     <div className="glass demo-player" data-testid="tutorial-video">
       <div className="demo-chrome">
         <span className="dotc r" /><span className="dotc y" /><span className="dotc g" />
-        <span className="demo-url">docuanalytics.it — Demo</span>
+        <span className="demo-url">docuanalytics.online — Demo</span>
         <button className="demo-play" data-testid="demo-playpause" onClick={() => setPlaying((p) => !p)}>
           {playing ? "❚❚" : <Play size={14} />}
         </button>
@@ -1783,7 +1795,7 @@ function PaypalCheckout({ user, packs, subs, notify, onClose }) {
     const b = window.paypal.Buttons({
       style: { color: "gold", shape: "pill", label: "paypal", height: 45 },
       createOrder: async () => { track("begin_checkout", { method: "paypal", plan: selPackRef.current }); const { data } = await axios.post(`${API}/paypal/order`, { user_id: user.user_id, package_id: selPackRef.current }); return data.order_id; },
-      onApprove: async (d) => { try { const { data: res } = await axios.post(`${API}/paypal/capture`, { order_id: d.orderID }); if (res.status === "paid") { track("purchase", { method: "paypal", credits: res.credits_added }); notify(`${t("n_pay_ok")} +${res.credits_added}`); refresh(); onClose(); } else notify(t("n_pay_fail")); } catch { notify(t("n_pay_fail")); } },
+      onApprove: async (d) => { try { const { data: res } = await axios.post(`${API}/paypal/capture`, { order_id: d.orderID }); if (res.status === "paid") { if (res.analytics_purchase) track("purchase", res.analytics_purchase); notify(`${t("n_pay_ok")} +${res.credits_added}`); refresh(); onClose(); } else notify(t("n_pay_fail")); } catch { notify(t("n_pay_fail")); } },
       onError: () => notify(t("n_pay_start_err")),
     });
     if (b.isEligible && !b.isEligible()) return;
@@ -1802,8 +1814,8 @@ function PaypalCheckout({ user, packs, subs, notify, onClose }) {
       if (closed) return;
       btn = window.paypalSub.Buttons({
         style: { color: "blue", shape: "pill", label: "subscribe", height: 45 },
-        createSubscription: (d, actions) => actions.subscription.create({ plan_id: planId }),
-        onApprove: async (d) => { try { const { data: res } = await axios.post(`${API}/paypal/subscription/activate`, { user_id: user.user_id, package_id: selSub, subscription_id: d.subscriptionID }); if (res.status === "active") { track("purchase", { method: "paypal_sub", credits: res.credits_added }); notify(`${t("n_sub_ok")} +${res.credits_added}. ${t("n_renew")}`); refresh(); onClose(); } else notify(t("n_pay_fail")); } catch { notify(t("n_pay_fail")); } },
+        createSubscription: (d, actions) => { track("begin_checkout", {method:"paypal_sub", plan:selSub}); return actions.subscription.create({ plan_id: planId }); },
+        onApprove: async (d) => { try { const { data: res } = await axios.post(`${API}/paypal/subscription/activate`, { user_id: user.user_id, package_id: selSub, subscription_id: d.subscriptionID }); if (res.status === "active") { /* Subscription activation is not proof of a captured payment. */ notify(`${t("n_sub_ok")} +${res.credits_added}. ${t("n_renew")}`); refresh(); onClose(); } else notify(t("n_pay_fail")); } catch { notify(t("n_pay_fail")); } },
         onError: () => notify(t("n_pay_start_err")),
       });
       if (btn.isEligible && !btn.isEligible()) return;
@@ -2055,13 +2067,14 @@ function AuthModal({ user, onClose, onAuthed, notify }) {
           return;
         }
         onAuthed(data.token, data.user); notify(`${t("n_welcome")}, ${data.user.name}! 🎉`); onClose();
-        track("sign_up", { method: "email", hero_variant: localStorage.getItem("da_hero_ab") || "A" });
+        track("registration_created", { method: "email" });
         trackAdsRegistration(data.user?.user_id);
       } else {
         const { data } = await axios.post(`${API}/auth/login`, { email, password });
         onAuthed(data.token, data.user); notify(t("n_login_ok")); onClose();
         track("login", { method: "email" });
         if (data.recently_verified_registration) trackAdsRegistration(data.user?.user_id);
+        if (data.recently_verified_registration) trackVerifiedSignup(data.user?.user_id);
       }
     } catch (e) {
       setErr(fmtErr(e?.response?.data?.detail) || t("auth_err"));
@@ -2360,6 +2373,7 @@ function App() {
   return (
     <I18nProvider>
       <BrowserRouter>
+        <AnalyticsPreferences />
         <Routes>
           <Route path="/blog" element={<BlogIndex />} />
           <Route path="/blog/:slug" element={<BlogPost />} />
