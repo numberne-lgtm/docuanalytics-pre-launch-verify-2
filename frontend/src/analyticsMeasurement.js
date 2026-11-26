@@ -101,7 +101,7 @@ export function trackAnalyticsPage(key) {
 
 const PARAMS = {
   view_pricing:["src"], experiment_impression:["experiment","variant"],
-  document_analyzed:["doc_type"], model_compared:["model"],
+  document_analyzed:["doc_type"], first_document_analyzed:[], model_compared:["model"],
   cta_click:["location","hero_variant","sector"], copilot_used:[],
   begin_checkout:["method","plan"], sign_up:["method","hero_variant"],
   registration_created:["method"], login:["method"], view_item:["item_category","sector"]
