@@ -36,6 +36,22 @@ async def main():
 
             await page.route("**/*", intercept)
             await page.goto(f"http://127.0.0.1:{PORT}/", wait_until="domcontentloaded")
+            ga = page.get_by_role("group", name="Consenso statistiche")
+            await ga.wait_for(timeout=20000)
+            assert not any("googletagmanager.com" in url for url in external_requests), external_requests
+            await ga.get_by_role("button", name="Rifiuta statistiche").click()
+            assert await page.evaluate("localStorage.getItem('da_ga4_analytics_consent')") == "no"
+            assert not any("googletagmanager.com" in url for url in external_requests), external_requests
+            await page.get_by_role("button", name="Preferenze statistiche").click()
+            await page.get_by_role("button", name="Accetta statistiche").click()
+            await page.wait_for_function(
+                "() => !!document.querySelector('script[src*=\\\"googletagmanager.com\\\"]')",
+                timeout=10000)
+            assert await page.evaluate("localStorage.getItem('da_ga4_analytics_consent')") == "yes"
+            assert await page.evaluate("dataLayer.some(x => x[0] === 'event' && x[1] === 'page_view')")
+            await page.get_by_role("button", name="Preferenze statistiche").click()
+            await page.get_by_role("button", name="Rifiuta statistiche").click()
+            assert await page.evaluate("window['ga-disable-G-ZQ2FJJKY2H'] === true")
             consent = page.get_by_role("group", name="Consenso alla misurazione pubblicitaria")
             await consent.wait_for(timeout=20000)
             assert not any("bzrcdn.openai.com" in url for url in external_requests), external_requests
