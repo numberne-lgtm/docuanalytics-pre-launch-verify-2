@@ -104,7 +104,7 @@ const PARAMS = {
   document_analyzed:["doc_type"], model_compared:["model"],
   cta_click:["location","hero_variant","sector"], copilot_used:[],
   begin_checkout:["method","plan"], sign_up:["method","hero_variant"],
-  login:["method"], view_item:["item_category","sector"]
+  registration_created:["method"], login:["method"], view_item:["item_category","sector"]
 };
 
 export function validPurchase(p) {
@@ -139,4 +139,14 @@ export function trackAnalytics(event, params = {}) {
     if (event === "purchase") sent.add(params.transaction_id);
     return true;
   } catch { return false; }
+}
+
+export function trackVerifiedSignup(userId) {
+  if (typeof userId !== "string" || !userId || analyticsChoice() !== "yes") return false;
+  // Local deduplication only. User identifiers never enter the GA4 event.
+  const marker = "da_ga4_signup_" + userId;
+  try { if (window.localStorage.getItem(marker) === "sent") return false; } catch { return false; }
+  const ok = trackAnalytics("sign_up", {method:"email"});
+  if (ok) { try { window.localStorage.setItem(marker, "sent"); } catch { /* best effort */ } }
+  return ok;
 }
